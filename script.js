@@ -182,3 +182,15 @@ function closeCamera() {
     }
     document.getElementById('camera-container').style.display = 'none';
 }
+
+// Taruh ini di paling bawah script.js Abang
+document.addEventListener('DOMContentLoaded', () => {
+    const btnScan = document.getElementById('btnScanAction');
+    if (btnScan) {
+        btnScan.addEventListener('click', (e) => {
+            console.log("Tombol Foto diklik lewat Listener!");
+            openScanner(e);
+        });
+    }
+});
+
