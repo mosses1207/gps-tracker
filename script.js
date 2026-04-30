@@ -53,7 +53,18 @@ const google = {
 };
 
 ///////////////////////////////////////////////
-let worker; // Pastikan ini 'let' bukan 'et'
+
+
+// Paksa munculin loading begitu script dibaca
+document.addEventListener('DOMContentLoaded', () => {
+    const loader = document.getElementById('loading-satpam');
+    if(loader) {
+        loader.style.setProperty('display', 'flex', 'important');
+        console.log("Loading Screen dipaksa muncul!");
+    }
+});
+
+let worker;
 let scanInterval;
 let isProcessing = false;
 
