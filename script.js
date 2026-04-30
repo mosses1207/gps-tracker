@@ -109,48 +109,57 @@ function startValidasiProses() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    // Hapus interval lama jika ada
     if (scanInterval) clearInterval(scanInterval);
 
     scanInterval = setInterval(async () => {
         if (video.paused || video.ended || isProcessing) return;
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // 1. Ambil area tengah saja (biar satpam fokus ke kotak hijau)
+        canvas.width = 600; // Ukuran standar biar enteng
+        canvas.height = 300;
+        
+        // Gambar hanya bagian tengah video ke canvas
+        ctx.filter = 'contrast(1.5) grayscale(1)'; // TAJAMKAN & HITAM PUTIH
+        ctx.drawImage(video, video.videoWidth * 0.1, video.videoHeight * 0.3, video.videoWidth * 0.8, video.videoHeight * 0.4, 0, 0, canvas.width, canvas.height);
 
         try {
+            // 2. Satpam mulai baca
             const { data: { text } } = await worker.recognize(canvas);
+            console.log("Satpam Baca:", text); // Cek di console log HP apa yang kebaca
             logicValidasiKamera(text);
         } catch (e) { console.error("OCR Error:", e); }
-    }, 1000);
+    }, 1200); // Kasih jeda dikit biar HP gak panas
 }
 
 // 3. Logika Satpam Galak
 async function logicValidasiKamera(text) {
     const statusText = document.getElementById('scan-status');
     const btnCapture = document.getElementById('btnCapture');
-    const cleanText = text.replace(/\s+/g, ''); 
+    
+    // Bersihkan teks: hilangkan spasi, ubah ke huruf BESAR semua
+    const cleanText = text.replace(/\s+/g, '').toUpperCase(); 
 
-    const hasNVDC = cleanText.toUpperCase().includes(KEYWORD_UNIT);
-    const hasTujuan = text.toLowerCase().includes("tujuan");
-    const sjkbPattern = /[A-Z0-9]{24}/g; 
+    // Cek kata kunci dengan toleransi
+    const hasNVDC = cleanText.includes("NVDC");
+    const hasTujuan = cleanText.includes("TUJUAN");
+    
+    // Pola SJKB: cari 24 karakter alphanumeric
+    const sjkbPattern = /[A-Z0-9]{24}/g;
     const matchSJKB = cleanText.match(sjkbPattern);
 
-    if (hasNVDC && hasTujuan && matchSJKB && !isProcessing) {
-        isProcessing = true; 
-        statusText.innerText = "✅ VALID! Mengambil Foto...";
+    if ((hasNVDC || hasTujuan) && !isProcessing) {
+        // Jika minimal salah satu ketemu (NVDC atau TUJUAN), langsung sikat!
+        isProcessing = true;
+        statusText.innerText = "✅ DATA TERDETEKSI! MEMOTRET...";
         statusText.style.color = "#00ff00";
-        btnCapture.style.background = "#00ff00";
         
-        if (navigator.vibrate) navigator.vibrate(200);
-
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Getar HP
+        
         setTimeout(() => {
             ambilFotoFinal();
-        }, 500);
-    } else if (!isProcessing) {
-        statusText.innerText = "🔍 Mencari NVDC, Tujuan & 24 Digit...";
-        statusText.style.color = "#ffffff";
+        }, 800);
+    } else {
+        statusText.innerText = "🔍 Mencari NVDC / TUJUAN...";
     }
 }
 
