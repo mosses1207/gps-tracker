@@ -66,32 +66,45 @@ let scanInterval;
 let isProcessing = false;
 
 // 1. Fungsi Buka Kamera
-async function openScanner() {
-    console.log("Membuka Kamera...");
-    const container = document.getElementById('camera-container');
-    if (!container) return console.error("Elemen camera-container tidak ditemukan!");
-    
-    container.style.display = 'block'; // Tampilkan layar hitam dulu
-    isProcessing = false;
+async function openScanner(e) {
+  if (e) e.preventDefault(); // Stop fungsi bawaan browser (biar gak buka folder)
+  
+  console.log("Memulai proses kamera...");
+  const container = document.getElementById('camera-container');
+  const video = document.getElementById('video');
 
-    try {
-        const video = document.getElementById('video');
-        const constraints = { 
-            video: { facingMode: "environment" } 
-        };
-        
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
-        video.setAttribute("playsinline", true); // Penting untuk iPhone
-        await video.play();
-        
-        console.log("Kamera Aktif!");
-        startValidasiProses();
-    } catch (err) {
-        console.error("Error Kamera:", err);
-        alert("Gagal buka kamera. Pastikan pakai HTTPS dan beri izin kamera.");
-        closeCamera();
-    }
+  // 1. Tampilkan container dulu
+  container.style.display = 'block';
+  isProcessing = false;
+
+  // 2. Cek apakah browser support kamera
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("Browser tidak mendukung kamera. Pastikan pakai HTTPS.");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { 
+        facingMode: "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      } 
+    });
+    
+    video.srcObject = stream;
+    video.setAttribute("playsinline", true); // Wajib buat iPhone/Safari
+    
+    // Tunggu video beneran jalan
+    await video.play();
+    console.log("Kamera Berhasil Dimulai");
+    
+    startValidasiProses();
+  } catch (err) {
+    console.error("Gagal Akses Kamera:", err);
+    alert("Kamera tidak bisa dibuka. Cek izin kamera di browser Anda.");
+    closeCamera();
+  }
 }
 
 // 2. Mesin Scanner
