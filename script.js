@@ -52,11 +52,35 @@ const google = {
   }
 };
 
-let wakeLock = null;
-async function requestWakeLock() {
-  try {
-    wakeLock = await navigator.wakeLock.request('screen');
-  } catch (err) {
-    console.error(`${err.name}, ${err.message}`);
-  }
+// Konfigurasi Baru
+const KEYWORD_UNIT = "NVDC"; 
+const TOTAL_SJKB_CHAR = 24;
+
+async function logicValidasiKamera(text) {
+    const statusText = document.getElementById('scan-status');
+    const btnCapture = document.getElementById('btnCapture');
+
+    // 1. Cek apakah ada kata NVDC & TUJUAN
+    const hasNVDC = text.toUpperCase().includes(KEYWORD_UNIT);
+    const hasTujuan = text.toLowerCase().includes("tujuan");
+
+    // 2. Cek apakah ada deretan karakter sepanjang 24 (Contoh: NVDC2026... atau SJKB...)
+    // Regex ini nyari kata yang panjangnya pas 24 karakter
+    const sjkbPattern = /\b[A-Z0-9]{24}\b/g; 
+    const matchSJKB = text.match(sjkbPattern);
+
+    if (hasNVDC && hasTujuan && matchSJKB) {
+        statusText.innerText = "✅ DATA VALID: " + matchSJKB[0];
+        statusText.style.color = "#00ff00"; // Hijau
+        
+        btnCapture.disabled = false;
+        btnCapture.style.background = "#ff0000"; // Tombol aktif jadi merah
+        btnCapture.style.cursor = "pointer";
+    } else {
+        statusText.innerText = "❌ NVDC / Tujuan / 24 Karakter tidak terbaca";
+        statusText.style.color = "#ff0000"; // Merah
+        
+        btnCapture.disabled = true;
+        btnCapture.style.background = "gray";
+    }
 }
