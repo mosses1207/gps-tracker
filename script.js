@@ -67,44 +67,40 @@ let isProcessing = false;
 
 // 1. Fungsi Buka Kamera
 async function openScanner(e) {
-  if (e) e.preventDefault(); // Stop fungsi bawaan browser (biar gak buka folder)
-  
-  console.log("Memulai proses kamera...");
-  const container = document.getElementById('camera-container');
-  const video = document.getElementById('video');
+    if (e) e.preventDefault();
+    console.log("Mencoba mengakses kamera..."); // Cek ini muncul gak di Console nanti
 
-  // 1. Tampilkan container dulu
-  container.style.display = 'block';
-  isProcessing = false;
+    const container = document.getElementById('camera-container');
+    const video = document.getElementById('video');
 
-  // 2. Cek apakah browser support kamera
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert("Browser tidak mendukung kamera. Pastikan pakai HTTPS.");
-    return;
-  }
+    if (!container || !video) {
+        console.error("Elemen kamera tidak ditemukan di HTML!");
+        return;
+    }
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        facingMode: "environment",
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      } 
-    });
+    container.style.display = 'block';
     
-    video.srcObject = stream;
-    video.setAttribute("playsinline", true); // Wajib buat iPhone/Safari
-    
-    // Tunggu video beneran jalan
-    await video.play();
-    console.log("Kamera Berhasil Dimulai");
-    
-    startValidasiProses();
-  } catch (err) {
-    console.error("Gagal Akses Kamera:", err);
-    alert("Kamera tidak bisa dibuka. Cek izin kamera di browser Anda.");
-    closeCamera();
-  }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "environment" } 
+        });
+        console.log("Izin diberikan, stream aktif!");
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        await video.play();
+        startValidasiProses();
+    } catch (err) {
+        console.error("Error Detail:", err.name, err.message);
+        
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+            alert("Akses kamera ditolak. Silakan klik ikon gembok di sebelah alamat web untuk mengizinkan.");
+        } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+            alert("Kamera tidak ditemukan di perangkat ini.");
+        } else {
+            alert("Terjadi kesalahan: " + err.message);
+        }
+        container.style.display = 'none';
+    }
 }
 
 // 2. Mesin Scanner
