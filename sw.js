@@ -1,27 +1,18 @@
-const CACHE_NAME = 'nvdc-v1';
+const CACHE_NAME = 'nvdc-cache-v3';
 const assets = [
   '/',
   '/index.html',
   '/style.css',
   '/script.js',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
+  'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js', // Core OCR
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
-// Install Service Worker
-self.addEventListener('install', evt => {
-  evt.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      cache.addAll(assets);
-    })
-  );
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(assets)));
 });
 
-// Fetch data (Offline Mode)
-self.addEventListener('fetch', evt => {
-  evt.respondWith(
-    caches.match(evt.request).then(cacheRes => {
-      return cacheRes || fetch(evt.request);
-    })
-  );
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
 });
