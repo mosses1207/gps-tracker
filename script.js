@@ -53,42 +53,44 @@ const google = {
 };
 
 ///////////////////////////////////////////////
-let worker;
+let worker; // Pastikan ini 'let' bukan 'et'
 let scanInterval;
 let isProcessing = false;
 
-// 1. Inisialisasi Satpam (Hanya Sekali)
+// 1. Inisialisasi Satpam (Langsung jalan begitu script keload)
 async function initSatpam() {
     const progressText = document.getElementById('load-progress');
     const loadingOverlay = document.getElementById('loading-satpam');
 
+    if (!progressText || !loadingOverlay) {
+        console.error("Elemen loading tidak ditemukan!");
+        return;
+    }
+
     try {
+        console.log("Menghubungi Satpam...");
+        // Gunakan parameter v5 terbaru
         worker = await Tesseract.createWorker('eng', 1, {
-            // Ini akan otomatis menyimpan data bahasa di IndexedDB browser
-            cacheMethod: 'readOnly', 
             logger: m => {
-                if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
+                if (m.status === 'loading language traineddata' || m.status === 'loading tesseract core') {
                     const prog = Math.round(m.progress * 100);
                     progressText.innerText = `Sedang mengunduh ilmu: ${prog}%`;
+                    console.log("Progress:", prog);
                 }
-                console.log(m.status, m.progress);
             }
         });
 
-        console.log("Satpam Sudah Standby!");
-        
-        // HAPUS LOADING SETELAH SIAP
+        console.log("Satpam Standby!");
         loadingOverlay.style.display = 'none'; 
-        
     } catch (e) {
-        console.error("Satpam gagal bangun:", e);
-        progressText.innerText = "Gagal memuat sistem. Coba refresh halaman.";
-        progressText.style.color = "red";
+        console.error("Satpam pingsan:", e);
+        progressText.innerText = "Gagal memuat. Periksa koneksi internet.";
     }
 }
 
-// Panggil fungsi ini tepat saat script dijalankan
+// EKSEKUSI LANGSUNG
 initSatpam();
+
 
 // 2. Event Listener Tombol (Cukup satu di sini)
 document.addEventListener('DOMContentLoaded', () => {
