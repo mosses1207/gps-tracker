@@ -69,37 +69,41 @@ let scanInterval;
 let isProcessing = false;
 
 // 1. Inisialisasi Satpam (Langsung jalan begitu script keload)
+// --- DI BARIS PALING ATAS script.js ---
+console.log("Script dimuat, memulai initSatpam...");
+
 async function initSatpam() {
     const progressText = document.getElementById('load-progress');
     const loadingOverlay = document.getElementById('loading-satpam');
 
-    if (!progressText || !loadingOverlay) {
-        console.error("Elemen loading tidak ditemukan!");
+    // Cek apakah elemennya ada
+    if (!loadingOverlay) {
+        console.error("Elemen loading-satpam tidak ketemu!");
         return;
     }
 
     try {
-        console.log("Menghubungi Satpam...");
-        // Gunakan parameter v5 terbaru
+        // Tampilkan loading secara paksa di awal
+        loadingOverlay.style.setProperty('display', 'flex', 'important');
+
         worker = await Tesseract.createWorker('eng', 1, {
             logger: m => {
                 if (m.status === 'loading language traineddata' || m.status === 'loading tesseract core') {
                     const prog = Math.round(m.progress * 100);
-                    progressText.innerText = `Sedang mengunduh ilmu: ${prog}%`;
-                    console.log("Progress:", prog);
+                    if (progressText) progressText.innerText = `Sedang mengunduh ilmu: ${prog}%`;
                 }
             }
         });
 
-        console.log("Satpam Standby!");
-        loadingOverlay.style.display = 'none'; 
+        console.log("Satpam Ready!");
+        // Sembunyikan kalau sudah 100%
+        loadingOverlay.style.setProperty('display', 'none', 'important');
     } catch (e) {
-        console.error("Satpam pingsan:", e);
-        progressText.innerText = "Gagal memuat. Periksa koneksi internet.";
+        console.error("Gagal init Tesseract:", e);
+        if (progressText) progressText.innerText = "Error: Coba Refresh Halaman";
     }
 }
 
-// EKSEKUSI LANGSUNG
 initSatpam();
 
 
