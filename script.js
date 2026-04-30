@@ -68,17 +68,35 @@ let isProcessing = false;
 
 // 1. Fungsi Buka Kamera
 async function openScanner() {
+  console.log("Tombol Scan Dipencet"); // Cek di console log muncul gak
+  
+  const container = document.getElementById('camera-container');
+  container.style.setProperty('display', 'block', 'important'); // Paksa muncul
+  
   isProcessing = false;
-  document.getElementById('camera-container').style.display = 'block';
+
   try {
     const video = document.getElementById('video');
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { facingMode: "environment", focusMode: "continuous" } 
-    });
+    const constraints = { 
+      video: { 
+        facingMode: "environment",
+        // Hapus focusMode dulu buat ngetes, karena gak semua HP support
+      } 
+    };
+    
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
-    video.onloadedmetadata = () => { startValidasiProses(); };
+    
+    // Pastikan video main
+    video.play(); 
+    
+    video.onloadedmetadata = () => { 
+      console.log("Kamera Aktif!");
+      startValidasiProses(); 
+    };
   } catch (err) {
-    alert("Gagal akses kamera: " + err);
+    console.error("Error Kamera:", err);
+    alert("Kamera Error: " + err.message);
     closeCamera();
   }
 }
