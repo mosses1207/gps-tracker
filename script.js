@@ -59,15 +59,35 @@ let isProcessing = false;
 
 // 1. Inisialisasi Satpam (Hanya Sekali)
 async function initSatpam() {
-    console.log("Menghubungi Satpam...");
+    const progressText = document.getElementById('load-progress');
+    const loadingOverlay = document.getElementById('loading-satpam');
+
     try {
-        // Pakai cara inisialisasi versi terbaru
-        worker = await Tesseract.createWorker('eng'); 
-        console.log("Satpam Sudah Standby di Pos!");
+        worker = await Tesseract.createWorker('eng', 1, {
+            // Ini akan otomatis menyimpan data bahasa di IndexedDB browser
+            cacheMethod: 'readOnly', 
+            logger: m => {
+                if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
+                    const prog = Math.round(m.progress * 100);
+                    progressText.innerText = `Sedang mengunduh ilmu: ${prog}%`;
+                }
+                console.log(m.status, m.progress);
+            }
+        });
+
+        console.log("Satpam Sudah Standby!");
+        
+        // HAPUS LOADING SETELAH SIAP
+        loadingOverlay.style.display = 'none'; 
+        
     } catch (e) {
-        console.error("Satpam Gagal Tugas:", e);
+        console.error("Satpam gagal bangun:", e);
+        progressText.innerText = "Gagal memuat sistem. Coba refresh halaman.";
+        progressText.style.color = "red";
     }
 }
+
+// Panggil fungsi ini tepat saat script dijalankan
 initSatpam();
 
 // 2. Event Listener Tombol (Cukup satu di sini)
