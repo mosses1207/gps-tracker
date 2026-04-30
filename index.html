@@ -3,7 +3,154 @@
 <head>
   <title>GPS Tracker</title>
 </head>
+
 <body>
-  <h1>Halo bro, ini web pertama lu coba test my name is nday🚀</h1>
+
+  <!-- 🔷 HEADER -->
+  <header class="main-header">
+    <div class="brand-section">
+      <div class="brand-logo">
+        <img src="https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png" alt="Toyota">
+      </div>
+
+      <div class="brand-title">
+        <h1>NVDC CIBITUNG</h1>
+        <p>Delivery Monitoring System</p>
+      </div>
+    </div>
+
+    <div class="system-status">
+      <div class="status-dot"></div>
+      <span>SYSTEM ONLINE</span>
+    </div>
+  </header>
+  <!-- 🔷 END HEADER -->
+
+
+  <!-- 🔷 NAV BUTTON -->
+  <button class="btn-monitor-nav" onclick="toMonitor()">🖥️ Dashboard</button>
+
+
+  <!-- 🔷 LOGIN OVERLAY -->
+  <div id="login-overlay">
+    <div class="login-card">
+      <h2>Admin Access</h2>
+
+      <input type="text" id="userAdmin" placeholder="Username">
+      <input type="password" id="passAdmin" placeholder="Password">
+
+      <div class="login-footer">
+        <button class="btn-cancel" onclick="hideLogin()">Batal</button>
+        <button class="btn-blue" onclick="prosesLogin()">Masuk</button>
+      </div>
+    </div>
+  </div>
+  <!-- 🔷 END LOGIN -->
+
+
+  <!-- 🔷 MAIN CONTAINER -->
+  <div class="container">
+
+    <!-- 🔷 INPUT CARD -->
+    <div class="card">
+
+      <div class="input-group-wrapper">
+        <input type="text" id="no_sjkb" placeholder="Scan / Input No SJKB">
+        <input type="text" id="tujuan_dealer" placeholder="Tujuan">
+
+        <div class="mobile-input-row">
+          <input type="text" id="lt_input" placeholder="LT" readonly>
+          <button id="btnScanAction" onclick="document.getElementById('fileInput').click()" class="btn-scan">
+            📸 Foto
+          </button>
+        </div>
+      </div>
+
+      <!-- 🔷 ROUTE SELECTION -->
+      <div id="ruteSelectionArea" style="margin-top: 15px; display: none; border-top: 1px solid #eee; padding-top: 15px;">
+        <p style="font-size: 13px; margin-bottom: 8px; font-weight: bold;">
+          📍 Pilih Jalur Rute:
+        </p>
+        <div id="ruteButtons" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+      </div>
+
+      <!-- 🔷 ACTION BUTTON -->
+      <div id="actionArea">
+        <br>
+        <button id="btnBerangkat" onclick="handleBerangkat()" class="btn-blue">
+          🚀 Mulai Perjalanan (Berangkat)
+        </button>
+
+        <button id="btnSampai" onclick="handleSampai()" class="btn-green">
+          ✅ Sampai di Tujuan
+        </button>
+      </div>
+
+    </div>
+    <!-- 🔷 END INPUT CARD -->
+
+
+    <!-- 🔷 GPS STATUS -->
+    <div id="gpsStatus">
+      <div id="targetInfo" style="margin-top:10px; font-size:14px; display:none;">
+        ⏱ Target Sampai: <b id="targetTime">-</b>
+      </div>
+
+      📡 <b>Status GPS:</b> <span id="gpsText">Mencari Lokasi...</span><br>
+      📍 Lat: <span id="lat">-</span> |
+      📍 Lng: <span id="lng">-</span> |
+      ⚡ Speed: <span id="spdDisplay">0</span> km/h
+    </div>
+    <!-- 🔷 END GPS -->
+
+
+    <!-- 🔷 MAP -->
+    <div class="card" style="padding: 0; overflow: hidden; height: 300px; position: relative;">
+      <div id="map" style="width: 100%; height: 100%;"></div>
+
+      <button class="btn-center-map" onclick="recenterMap()" title="Kembali ke Lokasi Saya">
+        🎯
+      </button>
+    </div>
+    <!-- 🔷 END MAP -->
+
+
+    <!-- 🔷 TABLE -->
+    <div class="card" style="padding: 15px;">
+
+      <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari No SJKB atau Tujuan..." style="margin-bottom: 10px;">
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>No SJKB</th>
+              <th>Tujuan</th>
+              <th>Berangkat</th>
+              <th>Sampai</th>
+            </tr>
+          </thead>
+
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+    <!-- 🔷 END TABLE -->
+
+  </div>
+  <!-- 🔷 END CONTAINER -->
+
+
+  <!-- 🔷 LOADER -->
+  <div id="loader-overlay">
+    <div class="spinner"></div>
+    <div id="loader-text">Sedang memproses...</div>
+  </div>
+
+
+  <!-- 🔷 FILE INPUT (HIDDEN) -->
+  <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none">
+
 </body>
 </html>
