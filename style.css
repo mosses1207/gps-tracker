@@ -48,4 +48,5 @@ body {margin: 0;padding: 0;}
 .mobile-input-row {display: flex;gap: 10px;align-items: center;}
 #lt_input {max-width: 100px;flex: none;}
 .mobile-input-row .btn-scan {flex: 1; height: 48px;display: flex;align-items: center;justify-content: center;}
-
+input[readonly] {background-color: #f8fafc;border: 1px solid #e2e8f0;color: #64748b;cursor: not-allowed;}
+input[readonly]:focus {outline: none;border-color: #e2e8f0;}
