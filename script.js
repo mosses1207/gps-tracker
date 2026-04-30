@@ -52,118 +52,114 @@ const google = {
   }
 };
 
-// Inisialisasi Tesseract (Satpam)
-const worker = Tesseract.createWorker();
-(async () => {
-    await worker.load();
-    await worker.loadLanguage('eng');
-    await worker.initialize('eng');
-    console.log("Satpam Galak Siap Tugas!");
-})();
-
-document.getElementById('btnScanAction').addEventListener('click', function(e) {
-    e.preventDefault(); // STOP Buka Folder/File
-    e.stopPropagation();
-    console.log("Tombol diklik, memanggil kamera...");
-    openScanner(e);
-}, true);
-
-const KEYWORD_UNIT = "NVDC";
+///////////////////////////////////////////////
+let worker;
 let scanInterval;
 let isProcessing = false;
 
-// 1. Fungsi Buka Kamera
+// 1. Inisialisasi Satpam (Hanya Sekali)
+async function initSatpam() {
+    console.log("Menghubungi Satpam...");
+    try {
+        // Pakai cara inisialisasi versi terbaru
+        worker = await Tesseract.createWorker('eng'); 
+        console.log("Satpam Sudah Standby di Pos!");
+    } catch (e) {
+        console.error("Satpam Gagal Tugas:", e);
+    }
+}
+initSatpam();
+
+// 2. Event Listener Tombol (Cukup satu di sini)
+document.addEventListener('DOMContentLoaded', () => {
+    const btnScan = document.getElementById('btnScanAction');
+    if (btnScan) {
+        btnScan.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Tombol Foto diklik, memanggil kamera...");
+            openScanner(e);
+        });
+    }
+});
+
+// 3. Fungsi Buka Kamera
 async function openScanner(e) {
-    if (e) e.preventDefault();
-    
     const container = document.getElementById('camera-container');
     const video = document.getElementById('video');
-
-    console.log("Status container:", container); // Cek di console log
-
-    // Munculkan layar kamera
-    container.style.setProperty('display', 'block', 'important');
     
+    container.style.setProperty('display', 'block', 'important');
+    isProcessing = false;
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: "environment" } 
         });
-        
         video.srcObject = stream;
         video.setAttribute("playsinline", true);
         await video.play();
         console.log("Kamera Aktif!");
         
-        // Pancing izin muncul di sini
         startValidasiProses();
     } catch (err) {
         console.error("Gagal kamera:", err);
-        alert("Pesan dari Browser: " + err.message);
+        alert("Akses Kamera Gagal: " + err.message);
         container.style.display = 'none';
     }
 }
 
-// 2. Mesin Scanner
+// 4. Proses Scan (Mata Satpam)
 function startValidasiProses() {
     const video = document.getElementById('video');
+    const statusText = document.getElementById('scan-status');
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
     if (scanInterval) clearInterval(scanInterval);
 
     scanInterval = setInterval(async () => {
-        if (video.paused || video.ended || isProcessing) return;
+        if (!worker || isProcessing || video.paused) return;
 
-        // 1. Ambil area tengah saja (biar satpam fokus ke kotak hijau)
-        canvas.width = 600; // Ukuran standar biar enteng
-        canvas.height = 300;
-        
-        // Gambar hanya bagian tengah video ke canvas
-        ctx.filter = 'contrast(1.5) grayscale(1)'; // TAJAMKAN & HITAM PUTIH
-        ctx.drawImage(video, video.videoWidth * 0.1, video.videoHeight * 0.3, video.videoWidth * 0.8, video.videoHeight * 0.4, 0, 0, canvas.width, canvas.height);
+        canvas.width = 640;
+        canvas.height = 360;
+
+        // FILTER TAJAM: Biar tulisan NVDC terlihat jelas
+        ctx.filter = 'contrast(150%) grayscale(100%)';
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         try {
-            // 2. Satpam mulai baca
+            statusText.innerText = "🔍 Satpam sedang membaca...";
             const { data: { text } } = await worker.recognize(canvas);
-            console.log("Satpam Baca:", text); // Cek di console log HP apa yang kebaca
+            
+            console.log("Hasil Baca:", text); 
             logicValidasiKamera(text);
-        } catch (e) { console.error("OCR Error:", e); }
-    }, 1200); // Kasih jeda dikit biar HP gak panas
+        } catch (err) {
+            console.error("OCR Gagal:", err);
+        }
+    }, 1500);
 }
 
-// 3. Logika Satpam Galak
-async function logicValidasiKamera(text) {
+// 5. Logika Validasi (Keputusan Satpam)
+function logicValidasiKamera(text) {
+    const cleanText = text.toUpperCase().replace(/\s+/g, '');
     const statusText = document.getElementById('scan-status');
-    const btnCapture = document.getElementById('btnCapture');
-    
-    // Bersihkan teks: hilangkan spasi, ubah ke huruf BESAR semua
-    const cleanText = text.replace(/\s+/g, '').toUpperCase(); 
 
-    // Cek kata kunci dengan toleransi
-    const hasNVDC = cleanText.includes("NVDC");
-    const hasTujuan = cleanText.includes("TUJUAN");
-    
-    // Pola SJKB: cari 24 karakter alphanumeric
-    const sjkbPattern = /[A-Z0-9]{24}/g;
-    const matchSJKB = cleanText.match(sjkbPattern);
-
-    if ((hasNVDC || hasTujuan) && !isProcessing) {
-        // Jika minimal salah satu ketemu (NVDC atau TUJUAN), langsung sikat!
+    // Kita cari kata NVDC atau TUJUAN
+    if (cleanText.includes("NVDC") || cleanText.includes("TUJUAN")) {
         isProcessing = true;
-        statusText.innerText = "✅ DATA TERDETEKSI! MEMOTRET...";
+        statusText.innerText = "✅ TARGET DITEMUKAN! MEMOTRET...";
         statusText.style.color = "#00ff00";
         
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Getar HP
+        if (navigator.vibrate) navigator.vibrate(200);
         
-        setTimeout(() => {
-            ambilFotoFinal();
-        }, 800);
+        setTimeout(() => ambilFotoFinal(), 800);
     } else {
         statusText.innerText = "🔍 Mencari NVDC / TUJUAN...";
+        statusText.style.color = "white";
     }
 }
 
-// 4. Jepret
+// 6. Jepret Foto Final
 function ambilFotoFinal() {
     const video = document.getElementById('video');
     const canvas = document.createElement('canvas');
@@ -172,10 +168,11 @@ function ambilFotoFinal() {
     canvas.getContext('2d').drawImage(video, 0, 0);
     
     const base64Image = canvas.toDataURL('image/jpeg', 0.8);
-    console.log("Foto diambil!");
+    console.log("Foto sukses diambil!");
     
     closeCamera();
-    // Di sini nanti panggil panggilGeminiAPI(base64Image);
+    // Panggil fungsi Gemini Abang di sini
+    // panggilGeminiAPI(base64Image);
 }
 
 function closeCamera() {
@@ -187,15 +184,3 @@ function closeCamera() {
     }
     document.getElementById('camera-container').style.display = 'none';
 }
-
-// Taruh ini di paling bawah script.js Abang
-document.addEventListener('DOMContentLoaded', () => {
-    const btnScan = document.getElementById('btnScanAction');
-    if (btnScan) {
-        btnScan.addEventListener('click', (e) => {
-            console.log("Tombol Foto diklik lewat Listener!");
-            openScanner(e);
-        });
-    }
-});
-
