@@ -50,3 +50,4 @@ body {margin: 0;padding: 0;}
 .mobile-input-row .btn-scan {flex: 1; height: 48px;display: flex;align-items: center;justify-content: center;}
 input[readonly] {background-color: #f8fafc;border: 1px solid #e2e8f0;color: #64748b;cursor: not-allowed;}
 input[readonly]:focus {outline: none;border-color: #e2e8f0;}
+#camera-container {display: none; position: fixed;top: 0;left: 0;width: 100vw;height: 100vh;background: #000;z-index: 10000 !important;}
