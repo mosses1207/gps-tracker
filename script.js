@@ -61,6 +61,13 @@ const worker = Tesseract.createWorker();
     console.log("Satpam Galak Siap Tugas!");
 })();
 
+document.getElementById('btnScanAction').addEventListener('click', function(e) {
+    e.preventDefault(); // STOP Buka Folder/File
+    e.stopPropagation();
+    console.log("Tombol diklik, memanggil kamera...");
+    openScanner(e);
+}, true);
+
 const KEYWORD_UNIT = "NVDC";
 let scanInterval;
 let isProcessing = false;
@@ -68,37 +75,30 @@ let isProcessing = false;
 // 1. Fungsi Buka Kamera
 async function openScanner(e) {
     if (e) e.preventDefault();
-    console.log("Mencoba mengakses kamera..."); // Cek ini muncul gak di Console nanti
-
+    
     const container = document.getElementById('camera-container');
     const video = document.getElementById('video');
 
-    if (!container || !video) {
-        console.error("Elemen kamera tidak ditemukan di HTML!");
-        return;
-    }
+    console.log("Status container:", container); // Cek di console log
 
-    container.style.display = 'block';
+    // Munculkan layar kamera
+    container.style.setProperty('display', 'block', 'important');
     
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: "environment" } 
         });
-        console.log("Izin diberikan, stream aktif!");
+        
         video.srcObject = stream;
         video.setAttribute("playsinline", true);
         await video.play();
+        console.log("Kamera Aktif!");
+        
+        // Pancing izin muncul di sini
         startValidasiProses();
     } catch (err) {
-        console.error("Error Detail:", err.name, err.message);
-        
-        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-            alert("Akses kamera ditolak. Silakan klik ikon gembok di sebelah alamat web untuk mengizinkan.");
-        } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-            alert("Kamera tidak ditemukan di perangkat ini.");
-        } else {
-            alert("Terjadi kesalahan: " + err.message);
-        }
+        console.error("Gagal kamera:", err);
+        alert("Pesan dari Browser: " + err.message);
         container.style.display = 'none';
     }
 }
