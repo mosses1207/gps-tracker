@@ -52,35 +52,116 @@ const google = {
   }
 };
 
-// Konfigurasi Baru
-const KEYWORD_UNIT = "NVDC"; 
-const TOTAL_SJKB_CHAR = 24;
+// Inisialisasi Satpam di awal sekali
+const worker = Tesseract.createWorker();
+(async () => {
+    await worker.load();
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+    console.log("Satpam Galak Siap Tugas!");
+})();
+
+
+const KEYWORD_UNIT = "NVDC";
+let scanInterval;
+let isProcessing = false;
+
+// 1. Fungsi Buka Kamera
+async function openScanner() {
+  isProcessing = false;
+  document.getElementById('camera-container').style.display = 'block';
+  try {
+    const video = document.getElementById('video');
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: "environment", focusMode: "continuous" } 
+    });
+    video.srcObject = stream;
+    video.onloadedmetadata = () => { startValidasiProses(); };
+  } catch (err) {
+    alert("Gagal akses kamera: " + err);
+    closeCamera();
+  }
+}
+
+// 2. Fungsi Validasi (Satpam Galak)
 
 async function logicValidasiKamera(text) {
     const statusText = document.getElementById('scan-status');
     const btnCapture = document.getElementById('btnCapture');
+    const cleanText = text.replace(/\s+/g, ''); 
 
-    // 1. Cek apakah ada kata NVDC & TUJUAN
-    const hasNVDC = text.toUpperCase().includes(KEYWORD_UNIT);
+    const hasNVDC = cleanText.toUpperCase().includes(KEYWORD_UNIT);
     const hasTujuan = text.toLowerCase().includes("tujuan");
+    const sjkbPattern = /[A-Z0-9]{24}/g; 
+    const matchSJKB = cleanText.match(sjkbPattern);
 
-    // 2. Cek apakah ada deretan karakter sepanjang 24 (Contoh: NVDC2026... atau SJKB...)
-    // Regex ini nyari kata yang panjangnya pas 24 karakter
-    const sjkbPattern = /\b[A-Z0-9]{24}\b/g; 
-    const matchSJKB = text.match(sjkbPattern);
+    // Cek apakah data valid DAN sistem lagi nggak proses jepretan lain
+    if (hasNVDC && hasTujuan && matchSJKB && !isProcessing) {
+        // Set jadi true supaya nggak jepret berkali-kali
+        isProcessing = true; 
 
-    if (hasNVDC && hasTujuan && matchSJKB) {
-        statusText.innerText = "✅ DATA VALID: " + matchSJKB[0];
-        statusText.style.color = "#00ff00"; // Hijau
+        statusText.innerText = "✅ DATA VALID! Mengambil Foto...";
+        statusText.style.color = "#00ff00";
         
-        btnCapture.disabled = false;
-        btnCapture.style.background = "#ff0000"; // Tombol aktif jadi merah
-        btnCapture.style.cursor = "pointer";
-    } else {
-        statusText.innerText = "❌ NVDC / Tujuan / 24 Karakter tidak terbaca";
-        statusText.style.color = "#ff0000"; // Merah
+        btnCapture.style.background = "#00ff00"; // Ubah warna jadi hijau tanda sukses
         
+        // Kasih delay dikit (misal 500ms) biar driver sadar datanya dapet
+        setTimeout(() => {
+            ambilFotoFinal();
+        }, 500);
+
+    } else if (!isProcessing) {
+        statusText.innerText = "🔍 Mencari NVDC, Tujuan & 24 Digit...";
+        statusText.style.color = "#ffffff";
         btnCapture.disabled = true;
         btnCapture.style.background = "gray";
     }
+}
+
+// 3. Mesin Scanner
+async function startValidasiProses() {
+  const video = document.getElementById('video');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  scanInterval = setInterval(async () => {
+    if (video.paused || video.ended) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    try {
+      // Kita pakai Tesseract versi simpel
+      const { data: { text } } = await worker.recognize(canvas);
+      logicValidasiKamera(text);
+    } catch (e) { console.error(e); }
+  }, 1000); 
+}
+
+// 4. JEPRET & KIRIM KE GEMINI
+async function ambilFotoFinal() {
+    const video = document.getElementById('video');
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    
+    const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+    
+    closeCamera(); // Matikan kamera dulu biar HP adem
+    showLoader("Sedang Memproses Data via AI...");
+    
+    // Panggil fungsi Gemini Abang (yang sudah kita bahas sebelumnya)
+    // panggilGeminiAPI(base64Image); 
+}
+
+// 5. Tutup Kamera
+function closeCamera() {
+  isProcessing = false;
+  clearInterval(scanInterval);
+  const video = document.getElementById('video');
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(track => track.stop());
+  }
+  document.getElementById('camera-container').style.display = 'none';
 }
