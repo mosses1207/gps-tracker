@@ -176,20 +176,19 @@
 
 
   <!-- 🔷 FILE INPUT (HIDDEN) -->
-  <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
   <script src="https://unpkg.com/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
+  
   <script src="script.js"></script>
+
   <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('Service Worker Registered!', reg))
-        .catch(err => console.error('SW Registration Failed', err));
-    });
-  }
+    // Hanya untuk Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
+      });
+    }
   </script>
 </body>
-</html>
