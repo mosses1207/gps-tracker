@@ -13,28 +13,32 @@ let isProcessing = false;
 
 // 1. Inisialisasi Satpam (Langsung jalan begitu script keload)
 console.log("Script dimuat, memulai initSatpam...");
-
 async function initSatpam() {
     const progressText = document.getElementById('load-progress');
     const loadingOverlay = document.getElementById('loading-satpam');
 
     try {
-        // Tampilkan loading
         loadingOverlay.style.display = 'flex';
 
         // Inisialisasi worker v5
-// Di scan.js bagian initSatpam
-worker = await Tesseract.createWorker('eng', 1, {
-  workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
-  langPath: '/path-ke-folder-data-kamu/', // Simpan eng.traineddata di sini
-  corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
-});
+        // JANGAN pakai langPath lokal dulu kalau file .traineddata-nya belum kamu upload manual ke server
+        worker = await Tesseract.createWorker('eng', 1, {
+            logger: m => {
+                if (m.status === 'loading eng.traineddata') {
+                    const prog = Math.round(m.progress * 100);
+                    if (progressText) progressText.innerText = `Mendownload Ilmu OCR: ${prog}%`;
+                }
+            },
+            // Biarkan workerPath dan corePath ke CDN agar terpancing masuk ke sw.js cache
+            workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+            corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
+        });
 
         console.log("Worker Tesseract Siap!");
-        loadingOverlay.style.display = 'none';
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
     } catch (e) {
         console.error("Gagal init Tesseract:", e);
-        progressText.innerText = "Gagal memuat sistem OCR.";
+        if (progressText) progressText.innerText = "Gagal memuat sistem OCR. Cek koneksi.";
     }
 }
 
@@ -66,6 +70,7 @@ async function openScanner(e) {
             video: { facingMode: "environment" } 
         });
         video.srcObject = stream;
+        video.muted = true;
         video.setAttribute("playsinline", true);
         await video.play();
         console.log("Kamera Aktif!");
