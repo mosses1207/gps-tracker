@@ -170,18 +170,36 @@ async function startValidasiProses() {
 
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-            setTimeout(() => {
-                const fullCanvas = document.createElement('canvas');
-                fullCanvas.width = video.videoWidth;
-                fullCanvas.height = video.videoHeight;
-                const fullCtx = fullCanvas.getContext('2d');
+setTimeout(() => {
+    const fullCanvas = document.createElement('canvas');
+    const MAX_WIDTH = 800; 
+    let width = video.videoWidth;
+    let height = video.videoHeight;
 
-                fullCtx.drawImage(video, 0, 0, fullCanvas.width, fullCanvas.height);
-                const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.95);
+    if (width > MAX_WIDTH) {
+        height *= MAX_WIDTH / width;
+        width = MAX_WIDTH;
+    }
 
-                closeCamera();
-                uploadKeGemini(finalBlob);
-            }, 300);
+    fullCanvas.width = width;
+    fullCanvas.height = height;
+    const fullCtx = fullCanvas.getContext('2d');
+
+    // 1. Set filter DULU sebelum drawImage
+    fullCtx.filter = 'grayscale(1) contrast(1.3) brightness(1.1)';
+    
+    // 2. Gambar ke canvas
+    fullCtx.drawImage(video, 0, 0, width, height);
+    
+    // 3. (Opsional) Re-apply filter untuk memastikan browser lama juga nurut
+    // Kalau mau sangat ekstrim kecilnya, bisa turunkan kualitas ke 0.4
+    const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.4);
+
+    closeCamera();
+    uploadKeGemini(finalBlob);
+    logKeLayar("Ukuran Base64 (karakter):", finalBlob.length);
+    
+}, 300);
         }
 
     } catch (err) {
