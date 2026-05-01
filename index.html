@@ -66,7 +66,13 @@
 
 <div id="camera-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999;">
 <video id="video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
-<div class="scan-container">
+  
+  <!-- Mini Logger -->
+  <div id="debug-log" style="position: fixed; bottom: 80px; left: 10px; right: 10px; height: 120px; background: rgba(0,0,0,0.8); color: #00ff00; font-family: monospace; font-size: 10px; padding: 5px; overflow-y: auto; z-index: 10000; border-radius: 5px; pointer-events: none;">
+    <div>-- System Log Ready --</div>
+  </div>
+  
+  <div class="scan-container">
     <div class="scan-label">Posisikan SJKB sesuai arahan</div>
     <div id="scan-box">
         <img src="https://lh3.googleusercontent.com/d/1m8WsVMjpzbvCXIMxA64xtDjqW631ZpGF" id="guide-overlay">
@@ -89,13 +95,6 @@
 </div>
   
 <!-- 🔷 END KAMERA -->
-
-  <!-- Mini Logger -->
-  <div id="debug-log" style="position: fixed; bottom: 80px; left: 10px; right: 10px; height: 120px; background: rgba(0,0,0,0.8); color: #00ff00; font-family: monospace; font-size: 10px; padding: 5px; overflow-y: auto; z-index: 10000; border-radius: 5px; pointer-events: none;">
-    <div>-- System Log Ready --</div>
-  </div>
-
-
   
   <!-- 🔷 MAIN CONTAINER -->
   <div class="container">
@@ -137,21 +136,6 @@
 
     </div>
     <!-- 🔷 END INPUT CARD -->
-
-    <!-- 🔷 PREVIEW HASIL JEPRETAN (Untuk Pengecekan) -->
-<div id="preview-gemini-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10001; flex-direction:column; align-items:center; justify-content:center;">
-    <h3 style="color:#00ff00; margin-bottom:10px;">Hasil Foto untuk Gemini:</h3>
-    
-    <!-- Tempat Foto Muncul -->
-    <img id="img-preview-final" style="width:90%; border:2px solid white; border-radius:10px; margin-bottom:20px;">
-
-    <div style="display:flex; gap:10px;">
-        <button onclick="retakePhoto()" style="background:#ff0000; color:white; padding:10px 20px; border:none; border-radius:5px;">Ulangi</button>
-        <button onclick="confirmSendToGemini()" style="background:#00ff00; color:black; padding:10px 20px; border:none; border-radius:5px; font-weight:bold;">Kirim Sekarang</button>
-    </div>
-</div>
-
-    <!-- 🔷 END PREVIEW HASIL JEPRETAN (Untuk Pengecekan) -->
     
     <!-- 🔷 GPS STATUS -->
     <div id="gpsStatus">
