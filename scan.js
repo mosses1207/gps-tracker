@@ -170,7 +170,8 @@ async function startValidasiProses() {
 
 async function uploadKeGemini(base64Data) {
     logKeLayar("🚀 Mengirim ke Gemini via GAS...");
-    
+    document.getElementById('no_sjkb').value = "Loading...";
+    document.getElementById('tujuan_dealer').value = "Loading...";
     const pureBase64 = base64Data.split(',')[1];
     const gasUrl = "https://script.google.com/macros/s/AKfycbzJqgr_NoIACivq5IWwPyFKVFKmYgaTBkFjNwymBA7mPRC0vVKn8UN9mVPZZERPjZzr/exec";
 
