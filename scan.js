@@ -2,6 +2,7 @@
 let worker;
 let isProcessing = false;
 let isLocked = false; // Flag biar nggak jepret berkali-kali dalam satu sesi
+let isCameraActive = false;
 const debugLog = true;
 
 const processingCanvas = document.createElement('canvas');
@@ -63,8 +64,12 @@ async function initSatpam() {
 async function openScanner() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
+
+    // 🔥 RESET TOTAL
     isLocked = false;
     isProcessing = false;
+    isCameraActive = true;
+
     if (!worker) {
         alert("Sistem belum siap.");
         return;
@@ -74,19 +79,17 @@ async function openScanner() {
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: "environment",
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            } 
+            video: { facingMode: "environment" } 
         });
 
         video.srcObject = stream;
+
         video.onloadeddata = async () => {
             await video.play();
             logKeLayar("Mencari Target...");
             startValidasiProses();
         };
+
     } catch (err) {
         alert("Kamera Error: " + err.message);
     }
@@ -96,7 +99,7 @@ async function startValidasiProses() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     
-    if (isProcessing || container.style.display === 'none' || isLocked) return;
+    if (isProcessing || !isCameraActive || isLocked) return;
     isProcessing = true;
 
     const scanBox = document.getElementById('scan-box');
@@ -148,8 +151,7 @@ async function startValidasiProses() {
 } catch (err) {
     logKeLayar("OCR error: " + err.message);
 } finally {
-    // 🔥 LOOP TERUS SELAMA BELUM LOCK
-    if (!isLocked && document.getElementById('camera-container').style.display !== 'none') {
+    if (!isLocked && isCameraActive) {
         isProcessing = false;
         requestAnimationFrame(startValidasiProses);
     }
@@ -191,11 +193,7 @@ async function uploadKeGemini(base64Data) {
     setTimeout(() => {
         isProcessing = false;
         isLocked = false;
-
         logKeLayar("🔄 Restart scanning...");
-
-        // 🔥 START LAGI LOOP OCR
-        startValidasiProses();
 
     }, 1000);
 }
@@ -220,12 +218,14 @@ function closeCamera() {
         video.srcObject = null;
     }
 
-    // 🔥 RESET TOTAL
+    // 🔥 HARD RESET
     isProcessing = false;
     isLocked = false;
+    isCameraActive = false;
 
     container.style.display = 'none';
-    logKeLayar("🔴 Kamera Mati.");
+
+    logKeLayar("🔴 Kamera Mati Total.");
 }
 
 function logKeLayar(msg) {
