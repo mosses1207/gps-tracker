@@ -40,30 +40,23 @@ self.addEventListener('activate', e => {
 
 // FETCH (🔥 FIX DISINI)
 self.addEventListener('fetch', e => {
-  const url = e.request.url;
-
-  // ❌ JANGAN CACHE TESSERACT / WASM / CDN OCR
-  if (
-    url.includes('tesseract') ||
-    url.includes('wasm') ||
-    url.includes('cdn.jsdelivr.net')
-  ) {
-    return; // langsung network (biar OCR nggak stuck)
-  }
-
-  // ✅ cache biasa
   e.respondWith(
     caches.match(e.request).then(cachedRes => {
-      const fetchPromise = fetch(e.request)
-        .then(networkRes => {
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(e.request, networkRes.clone());
-          });
-          return networkRes;
-        })
-        .catch(() => cachedRes);
+
+      const fetchPromise = fetch(e.request).then(networkRes => {
+
+        // ❗ clone SEKALI aja
+        const cloned = networkRes.clone();
+
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(e.request, cloned);
+        });
+
+        return networkRes;
+      }).catch(() => cachedRes);
 
       return cachedRes || fetchPromise;
     })
   );
 });
+
