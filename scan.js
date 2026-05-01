@@ -172,7 +172,7 @@ async function startValidasiProses() {
 
 setTimeout(() => {
     const fullCanvas = document.createElement('canvas');
-    const MAX_WIDTH = 800; 
+    const MAX_WIDTH = 1280; 
     let width = video.videoWidth;
     let height = video.videoHeight;
 
@@ -186,14 +186,14 @@ setTimeout(() => {
     const fullCtx = fullCanvas.getContext('2d');
 
     // 1. Set filter DULU sebelum drawImage
-    fullCtx.filter = 'grayscale(1) contrast(1.3) brightness(1.1)';
+    fullCtx.filter = 'grayscale(1) contrast(1.4) brightness(1.1)';
     
     // 2. Gambar ke canvas
     fullCtx.drawImage(video, 0, 0, width, height);
     
     // 3. (Opsional) Re-apply filter untuk memastikan browser lama juga nurut
     // Kalau mau sangat ekstrim kecilnya, bisa turunkan kualitas ke 0.4
-    const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.4);
+    const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.75);
 
     closeCamera();
     uploadKeGemini(finalBlob);
