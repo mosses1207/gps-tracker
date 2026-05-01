@@ -197,7 +197,7 @@ setTimeout(() => {
 
     closeCamera();
     uploadKeGemini(finalBlob);
-    logKeLayar("Ukuran Base64 (karakter):", finalBlob.length);
+    logKeLayar("Ukuran Base64: " + finalBlob.length + " karakter");
     
 }, 300);
         }
