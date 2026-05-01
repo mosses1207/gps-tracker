@@ -170,33 +170,40 @@ async function startValidasiProses() {
 
 async function uploadKeGemini(base64Data) {
     logKeLayar("🚀 Mengirim ke Gemini via GAS...");
+    
+    // loading dulu ke input
     document.getElementById('no_sjkb').value = "Loading...";
     document.getElementById('tujuan_dealer').value = "Loading...";
+
     const pureBase64 = base64Data.split(',')[1];
     const gasUrl = "https://script.google.com/macros/s/AKfycbzJqgr_NoIACivq5IWwPyFKVFKmYgaTBkFjNwymBA7mPRC0vVKn8UN9mVPZZERPjZzr/exec";
 
     try {
         const response = await fetch(gasUrl, {
             method: "POST",
+            mode: "cors",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
             body: JSON.stringify({ image: pureBase64 })
         });
 
         const result = await response.json();
 
-        logKeLayar("📥 Response diterima");
-
         if (result.success) {
-            isiHasilScan(result);
+            logKeLayar("✅ Data diterima dari GAS");
+
+            document.getElementById('no_sjkb').value = result.no_sjkb || "-";
+            document.getElementById('tujuan_dealer').value = result.tujuan || "-";
+
         } else {
             logKeLayar("❌ Gagal: " + result.error);
-            alert("Gagal baca data");
+            alert(result.error);
         }
 
     } catch (err) {
-        logKeLayar("‼️ ERROR: " + err.message);
+        logKeLayar("‼️ Fetch Error: " + err.message);
+        console.error(err);
     }
 }
 
