@@ -107,13 +107,14 @@ async function openScanner() {
 }
 
 async function startValidasiProses() {
-    
+
     if (!worker) {
-    logKeLayar("⚠️ Worker belum siap");
-    return;
+        logKeLayar("⚠️ Worker belum siap");
+        return;
     }
+
     const video = document.getElementById('video');
-    
+
     if (isProcessing || !isCameraActive || isLocked) return;
     isProcessing = true;
 
@@ -121,12 +122,13 @@ async function startValidasiProses() {
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
 
+    // ✅ kalau video belum siap, jangan spam
     if (!video.videoWidth || !video.videoHeight || !videoRect.width || video.readyState < 2 ) {
         isProcessing = false;
         setTimeout(() => requestAnimationFrame(startValidasiProses), 300);
         return;
     }
-    
+
     const scaleX = video.videoWidth / videoRect.width;
     const scaleY = video.videoHeight / videoRect.height;
 
@@ -135,47 +137,60 @@ async function startValidasiProses() {
     const scanWidth = rect.width * scaleX;
     const scanHeight = rect.height * scaleY;
 
-    const scaleDown = 0.7; // 0.5 - 0.8 recommended
-    processingCanvas.width = scanWidth * scaleDown;
-    processingCanvas.height = scanHeight * scaleDown;
-    processingContext.filter = 'grayscale(1) contrast(1.5)';
-    processingContext.drawImage(video,startX, startY, scanWidth, scanHeight,0, 0,processingCanvas.width,processingCanvas.height);
-    
+    // 🔥 BALIKIN KE RESOLUSI FULL (ini penting)
+    processingCanvas.width = scanWidth;
+    processingCanvas.height = scanHeight;
+
+    // 🔥 FILTER JANGAN TERLALU KERAS
+    processingContext.filter = 'grayscale(1) contrast(1.2)';
+
+    processingContext.drawImage(
+        video,
+        startX, startY, scanWidth, scanHeight,
+        0, 0, scanWidth, scanHeight
+    );
+
     try {
-    const result = await worker.recognize(processingCanvas);
-    const rawText = result.data.text.toUpperCase().replace(/O/g, '0').replace(/\s+/g, ' ');
-    
-    logKeLayar("👁️ Anchor: " + rawText.substring(0, 30));
+        const result = await worker.recognize(processingCanvas);
+        const rawText = result.data.text
+            .toUpperCase()
+            .replace(/O/g, '0')
+            .replace(/\s+/g, ' ');
 
-    const hasToyota = /TOYOTA|T0YOTA|TOY0TA|T0Y0TA/.test(rawText);
-    const hasAstra  = /ASTRA/.test(rawText);
-    const hasMotor  = /M0T0R|MOTOR|M0TOR|MOT0R/.test(rawText);
+        logKeLayar("👁️ Anchor: " + rawText.substring(0, 30));
 
-    if (hasToyota && hasAstra && hasMotor) {
-        isLocked = true;
-        document.getElementById('scan-status').innerText = "🎯 MATCH! CAPTURING...";
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        const hasToyota = /TOYOTA|T0YOTA|TOY0TA|T0Y0TA/.test(rawText);
+        const hasAstra  = /ASTRA/.test(rawText);
+        const hasMotor  = /M0T0R|MOTOR|M0TOR|MOT0R/.test(rawText);
 
-        setTimeout(() => {
-            const fullCanvas = document.createElement('canvas');
-            fullCanvas.width = video.videoWidth;
-            fullCanvas.height = video.videoHeight;
-            const fullCtx = fullCanvas.getContext('2d');
-            
-            fullCtx.drawImage(video, 0, 0, fullCanvas.width, fullCanvas.height);
-            const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.95);
+        if (hasToyota && hasAstra && hasMotor) {
+            isLocked = true;
+            document.getElementById('scan-status').innerText = "🎯 MATCH! CAPTURING...";
 
-            closeCamera();
-            uploadKeGemini(finalBlob);
-        }, 500);
-    }
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-} catch (err) {
-    logKeLayar("OCR error: " + err.message);
-} finally {
-if (!isLocked && isCameraActive) {
-    isProcessing = false;
-    setTimeout(() => requestAnimationFrame(startValidasiProses), 800);
+            setTimeout(() => {
+                const fullCanvas = document.createElement('canvas');
+                fullCanvas.width = video.videoWidth;
+                fullCanvas.height = video.videoHeight;
+                const fullCtx = fullCanvas.getContext('2d');
+
+                fullCtx.drawImage(video, 0, 0, fullCanvas.width, fullCanvas.height);
+                const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.95);
+
+                closeCamera();
+                uploadKeGemini(finalBlob);
+            }, 300);
+        }
+
+    } catch (err) {
+        logKeLayar("OCR error: " + err.message);
+    } finally {
+        if (!isLocked && isCameraActive) {
+            isProcessing = false;
+
+            // 🔥 DELAY BALANCE (cepet tapi gak brutal)
+            setTimeout(() => requestAnimationFrame(startValidasiProses), 800);
         }
     }
 }
