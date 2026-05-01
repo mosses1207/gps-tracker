@@ -124,7 +124,7 @@ async function startValidasiProses() {
     const tempOcrCtx = tempOcrCanvas.getContext('2d');
     
     // Kasih filter di sini (tidak akan kelihatan di layar)
-    tempOcrCtx.filter = 'grayscale(1) contrast(1.4) brightness(0.9)';
+    //tempOcrCtx.filter = 'grayscale(1) contrast(1.4) brightness(0.9)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0);
 
     try {
