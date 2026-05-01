@@ -136,7 +136,9 @@ async function startValidasiProses() {
         logKeLayar("Bidikan: " + text.substring(0, 15).trim()); 
 
         // Syarat: Harus ada kata TUJUAN dan MOTOR
-        const isMatch = cleanText.includes("TUJUAN") && cleanText.includes("MOTOR");
+        // Logika: Harus ada "NVDC" DAN (boleh SJKB atau TUJUAN atau MOTOR)
+        const isMatch = cleanText.includes("MOTOR") && 
+                (cleanText.includes("TUJUAN") || cleanText.includes("UAN") || cleanText.includes("TUJ") || cleanText.includes("KET") || cleanText.includes("PEN")|| cleanText.includes("PEM"));
 
         if (isMatch) {
             logKeLayar("✅ TARGET TERKUNCI!");
