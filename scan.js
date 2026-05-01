@@ -137,7 +137,7 @@ async function startValidasiProses() {
     tempOcrCtx.scale(scale, scale);
 
     // 🔥 FILTER KUAT
-    tempOcrCtx.filter = 'grayscale(1) contrast(2.5) brightness(1.3)';
+    tempOcrCtx.filter = 'grayscale(1) contrast(3) brightness(1.4)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0);
 
     // 🔥 THRESHOLD
@@ -167,18 +167,19 @@ async function startValidasiProses() {
 
         const hasSJKB = sjkbPattern.test(cleanText);
         const hasTujuan = tujuanPattern.test(cleanText);
-
+        logKeLayar(`SJKB:${hasSJKB} | TUJUAN:${hasTujuan}`);
+        
         // 🔥 FINAL LOGIC
         const isMatch = hasSJKB; // ← ini kunci stabil
 
         if (isMatch) {
             logKeLayar("✅ SJKB TERDETEKSI!");
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
+            isProcessing = true;
             setTimeout(() => ambilFotoFinal(video), 200);
         } else {
             isProcessing = false;
-            setTimeout(startValidasiProses, 600); 
+            setTimeout(startValidasiProses, 350); 
         }
 
     } catch (err) {
