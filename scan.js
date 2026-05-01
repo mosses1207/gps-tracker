@@ -157,7 +157,7 @@ async function startValidasiProses() {
             isLocked = true;
             logKeLayar("✅ TARGET VALID (Full Area)!");
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            setTimeout(() => ambilFotoFinal(video), 300);
+            setTimeout(() =>  300); //ambilFotoFinal(video),
         } else {
             isProcessing = false;
             setTimeout(startValidasiProses, 400); 
