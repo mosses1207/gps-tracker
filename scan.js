@@ -159,12 +159,10 @@ async function startValidasiProses() {
                 }
             }, 500);
         } else {
-            // --- PERBAIKAN 1: Else ini harus sejajar dengan IF Anchor ---
             isProcessing = false;
             setTimeout(startValidasiProses, 300);
         }
     } catch (err) {
-        // --- PERBAIKAN 2: Catch ini untuk menangkap error Tesseract ---
         isProcessing = false;
         setTimeout(startValidasiProses, 1000);
     }
