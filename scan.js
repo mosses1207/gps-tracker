@@ -102,7 +102,6 @@ const processingCanvas = document.createElement('canvas');
 const processingContext = processingCanvas.getContext('2d');
 
 async function startValidasiProses() {
-    // Stop jika proses sedang jalan atau kamera ditutup
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     if (isProcessing || container.style.display === 'none') return;
@@ -115,30 +114,41 @@ async function startValidasiProses() {
         return;
     }
 
-    processingCanvas.width = video.videoWidth;
-    processingCanvas.height = video.videoHeight;
+    // 1. Tentukan area kotak hijau (misal: di tengah layar, ambil 60% lebar & 40% tinggi)
+    const scanWidth = video.videoWidth * 0.8;  // Ambil 80% lebar video
+    const scanHeight = video.videoHeight * 0.3; // Ambil 30% tinggi video (fokus ke area teks)
+    const startX = (video.videoWidth - scanWidth) / 2;
+    const startY = (video.videoHeight - scanHeight) / 2;
 
-    // Filter untuk meningkatkan akurasi baca
-    processingContext.filter = 'grayscale(1) contrast(1.5)';
-    processingContext.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
+    processingCanvas.width = scanWidth;
+    processingCanvas.height = scanHeight;
+
+    // 2. Crop gambar: drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+    processingContext.filter = 'grayscale(1) contrast(1.8) brightness(1.2)';
+    processingContext.drawImage(
+        video, 
+        startX, startY, scanWidth, scanHeight, // Sumber (Crop)
+        0, 0, scanWidth, scanHeight            // Hasil di canvas
+    );
 
     try {
+        // 3. Scan area kecil saja (Jauh lebih cepat!)
         const result = await worker.recognize(processingCanvas);
         const text = result.data.text.toUpperCase();
         
-        logKeLayar("Read: " + text.substring(0, 25).replace(/\n/g, ' ')); 
+        // Bersihkan teks dari spasi berlebih untuk pencarian
+        const cleanText = text.replace(/\s+/g, '');
+        logKeLayar("Scan Area: " + text.substring(0, 20)); 
 
-        // Logika Validasi Utama
-        if (text.includes("NVDC") || text.includes("SJKB") || text.includes("TUJUAN")) {
-            logKeLayar("✅ TARGET DITEMUKAN!");
+        // 4. Logika cek: Gunakan regex atau includes yang lebih fleksibel
+        if (cleanText.includes("NVDC") || cleanText.includes("SJKB") || cleanText.includes("TUJUAN")) {
+            logKeLayar("✅ TARGET MATCH!");
             if (navigator.vibrate) navigator.vibrate(200);
-            
-            // Beri jeda sebentar agar user tahu ada yang terdeteksi
             setTimeout(() => ambilFotoFinal(video), 300);
         } else {
             isProcessing = false;
-            // Loop setiap 1 detik agar tidak panas
-            setTimeout(startValidasiProses, 1000); 
+            // Interval dipercepat ke 500ms karena area scan sudah kecil (ringan)
+            setTimeout(startValidasiProses, 500); 
         }
     } catch (err) {
         logKeLayar("‼️ OCR ERROR: " + err.message);
