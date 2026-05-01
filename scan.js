@@ -137,7 +137,7 @@ async function startValidasiProses() {
 
         // Syarat: Harus ada kata TUJUAN dan MOTOR
         // Logika: Harus ada "NVDC" DAN (boleh SJKB atau TUJUAN atau MOTOR)
-        const isMatch = cleanText.includes("MOTOR") && 
+        const isMatch = (cleanText.includes("MOTOR") || cleanText.includes("M0T0R") || cleanText.includes("M0TOR") || cleanText.includes("MOT0R")) && 
                 (cleanText.includes("TUJUAN") || cleanText.includes("UAN") || cleanText.includes("TUJ") || cleanText.includes("KET") || cleanText.includes("PEN")|| cleanText.includes("PEM"));
 
         if (isMatch) {
