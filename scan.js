@@ -18,30 +18,43 @@ async function initSatpam() {
     const loadingOverlay = document.getElementById('loading-satpam');
 
     try {
+        // Pastikan overlay muncul di awal
         loadingOverlay.style.display = 'flex';
+        progressText.innerText = "Menghubungi Satpam (0%)";
 
-        // Inisialisasi worker v5
-        // JANGAN pakai langPath lokal dulu kalau file .traineddata-nya belum kamu upload manual ke server
+        // Inisialisasi Tesseract v5
         worker = await Tesseract.createWorker('eng', 1, {
             logger: m => {
-                if (m.status === 'loading eng.traineddata') {
+                if (m.status === 'loading eng.traineddata' || m.status === 'loading tesseract core') {
                     const prog = Math.round(m.progress * 100);
-                    if (progressText) progressText.innerText = `Mendownload Ilmu OCR: ${prog}%`;
+                    progressText.innerText = `Mengunduh Ilmu OCR (${prog}%)`;
+                    // Update progress bar jika ada
+                    if (prog === 100) progressText.innerText = "Menyusun Data...";
                 }
             },
-            // Biarkan workerPath dan corePath ke CDN agar terpancing masuk ke sw.js cache
             workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
             corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
         });
 
-        console.log("Worker Tesseract Siap!");
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        // TANDA BAHWA PROSES SELESAI
+        console.log("Satpam Ready!");
+        
+        // Kasih jeda sedikit biar smooth
+        setTimeout(() => {
+            loadingOverlay.style.opacity = '0'; // Efek fade out
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none'; // Benar-benar hilang
+            }, 500);
+        }, 1000);
+
     } catch (e) {
         console.error("Gagal init Tesseract:", e);
-        if (progressText) progressText.innerText = "Gagal memuat sistem OCR. Cek koneksi.";
+        progressText.innerText = "Gagal memuat sistem. Cek koneksi internet.";
+        progressText.style.color = "red";
     }
 }
 
+// Panggil fungsi inisialisasi
 initSatpam();
 
 // 2. Event Listener Tombol (Cukup satu di sini)
@@ -59,27 +72,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 3. Fungsi Buka Kamera
 async function openScanner(e) {
-    const container = document.getElementById('camera-container');
     const video = document.getElementById('video');
+    const container = document.getElementById('camera-container');
     
-    container.style.setProperty('display', 'block', 'important');
-    isProcessing = false;
+    // Pastikan worker sudah ada sebelum buka kamera
+    if (!worker) {
+        alert("Sistem OCR belum siap. Tunggu loading selesai.");
+        return;
+    }
+
+    container.style.display = 'block';
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: "environment" } 
         });
+
         video.srcObject = stream;
         video.muted = true;
-        video.setAttribute("playsinline", true);
-        await video.play();
-        console.log("Kamera Aktif!");
         
-        startValidasiProses();
+        // Gunakan event 'canplay' daripada langsung play()
+        video.oncanplay = async () => {
+            try {
+                await video.play();
+                startValidasiProses();
+            } catch (pErr) {
+                console.log("Play interrupted: ", pErr);
+            }
+        };
     } catch (err) {
-        console.error("Gagal kamera:", err);
-        alert("Akses Kamera Gagal: " + err.message);
-        container.style.display = 'none';
+        alert("Kamera Error: " + err.message);
     }
 }
 
