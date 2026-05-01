@@ -111,24 +111,31 @@ async function startValidasiProses() {
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
 
-    // --- DEBUG VIEW ---
-    let debugView = document.getElementById('debug-canvas-view');
-    if (!debugView) {
-        processingCanvas.id = 'debug-canvas-view';
-        processingCanvas.style.cssText = `position:fixed;top:10px;left:10px;z-index:9999;border:2px solid red;width:150px;background:black;pointer-events:none;`;
-        document.body.appendChild(processingCanvas);
-    }
-
-    processingContext.filter = 'grayscale(1) contrast(1.4) brightness(0.9)';
+    // --- TAMPILAN DI LAYAR (NATURAL) ---
+    // Gambar ke canvas tanpa filter dulu agar Abang liatnya jernih
+    processingContext.filter = 'none'; 
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
+    // --- PROSES OCR (FILTER TERPISAH) ---
+    // Buat canvas bayangan kecil hanya untuk filter Tesseract
+    const tempOcrCanvas = document.createElement('canvas');
+    tempOcrCanvas.width = scanWidth;
+    tempOcrCanvas.height = scanHeight;
+    const tempOcrCtx = tempOcrCanvas.getContext('2d');
+    
+    // Kasih filter di sini (tidak akan kelihatan di layar)
+    tempOcrCtx.filter = 'grayscale(1) contrast(1.4) brightness(0.9)';
+    tempOcrCtx.drawImage(processingCanvas, 0, 0);
+
     try {
-        const result = await worker.recognize(processingCanvas);
+        // Tesseract membaca dari canvas bayangan yang sudah difilter
+        const result = await worker.recognize(tempOcrCanvas); 
         const text = result.data.text.toUpperCase();
         const cleanText = text.replace(/[^A-Z0-9]/g, '');
         
         logKeLayar("Bidikan: " + text.substring(0, 15).trim()); 
 
+        // Syarat: Harus ada kata TUJUAN dan MOTOR
         const isMatch = cleanText.includes("TUJUAN") && cleanText.includes("MOTOR");
 
         if (isMatch) {
