@@ -106,42 +106,43 @@ async function openScanner(e) {
 }
 
 // 4. Proses Scan (Mata Satpam)
-function startValidasiProses() {
+async function startValidasiProses() {
+    if (isProcessing) return;
+    isProcessing = true;
+    
+    logKeLayar("Mencoba capture frame...");
+
     const video = document.getElementById('video');
-    const statusText = document.getElementById('scan-status');
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const context = canvas.getContext('2d');
 
-    if (scanInterval) clearInterval(scanInterval);
+    // Pakai resolusi asli video biar tajam
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    scanInterval = setInterval(async () => {
-        // CEK 1: Apakah worker sudah ada?
-        // CEK 2: Apakah video sudah siap datanya? (HAVE_ENOUGH_DATA = 4)
-        if (!worker || isProcessing || video.readyState !== 4) return;
+    try {
+        logKeLayar("OCR sedang bekerja...");
+        
+        const { data: { text } } = await worker.recognize(canvas);
+        
+        // Tampilkan hasil mentah OCR di layar HP
+        logKeLayar("Hasil Mentah: " + text.substring(0, 50) + "..."); 
 
-        isProcessing = true; // Kunci biar tidak numpuk prosesnya
-
-        // Samakan ukuran canvas dengan video asli
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        // Gambar frame dari video ke canvas
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        try {
-            statusText.innerText = "🔍 Mencoba membaca teks...";
-            
-            // Lakukan OCR
-            const { data: { text } } = await worker.recognize(canvas);
-            
-            console.log("Hasil OCR:", text);
-            logicValidasiKamera(text);
-        } catch (err) {
-            console.error("Proses OCR Error:", err);
-        } finally {
-            isProcessing = false; // Buka kunci setelah selesai (berhasil/gagal)
+        // Logika pencarian kode SJKB
+        const pattern = /NVDC/gi; 
+        if (pattern.test(text)) {
+            logKeLayar("✅ KODE NVDC DITEMUKAN!");
+            alert("Berhasil Scan: " + text);
+        } else {
+            logKeLayar("❌ Kode belum ketemu, ulangi...");
+            isProcessing = false;
+            setTimeout(startValidasiProses, 1500); 
         }
-    }, 1500); // Interval 1.5 detik
+    } catch (err) {
+        logKeLayar("‼️ ERROR OCR: " + err.message);
+        isProcessing = false;
+    }
 }
 
 // 5. Logika Validasi (Keputusan Satpam)
@@ -187,4 +188,15 @@ function closeCamera() {
         video.srcObject.getTracks().forEach(track => track.stop());
     }
     document.getElementById('camera-container').style.display = 'none';
+}
+
+function logKeLayar(msg) {
+    const logBox = document.getElementById('debug-log');
+    if (logBox) {
+        const newLog = document.createElement('div');
+        newLog.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logBox.appendChild(newLog);
+        // Otomatis scroll ke paling bawah
+        logBox.scrollTop = logBox.scrollHeight;
+    }
 }
