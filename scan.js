@@ -148,26 +148,23 @@ async function startValidasiProses() {
 }
 
 function ambilFotoFinal(videoElement) {
-    // Buat canvas baru yang fresh khusus untuk jepretan final
     const finalCanvas = document.createElement('canvas');
     finalCanvas.width = videoElement.videoWidth;
     finalCanvas.height = videoElement.videoHeight;
     const ctx = finalCanvas.getContext('2d');
     
-    // PENTING: Pastikan filter 'none' agar hasil foto natural (apa adanya)
+    // Matikan filter agar gambar tidak item/kontras (Natural)
     ctx.filter = 'none'; 
     ctx.drawImage(videoElement, 0, 0);
     
-    // Ambil data base64 dengan kualitas tinggi (0.9)
-    const base64Image = finalCanvas.toDataURL('image/jpeg', 0.9);
-    logKeLayar("📸 Foto natural berhasil diambil!");
+    const base64Image = finalCanvas.toDataURL('image/jpeg', 0.8);
+    logKeLayar("📸 Foto jernih berhasil diambil!");
     
-    // Langsung tutup kamera agar sensor mati (titik hijau hilang)
-    closeCamera();
-    
-    // Kirim hasil jepretan apa adanya ke AI
+    closeCamera(); // Pastikan panggil ini agar titik hijau mati
     uploadKeGemini(base64Image); 
 }
+
+
 async function uploadKeGemini(base64Data) {
     logKeLayar("🤖 AI sedang menganalisis foto asli...");
     const btnScan = document.getElementById('btnScanAction');
@@ -212,43 +209,38 @@ function resetSistemScan() {
     const btnScan = document.getElementById('btnScanAction');
     if (btnScan) btnScan.disabled = false;
     
-    const debugView = document.getElementById('debug-canvas-view');
-    if (debugView) {
-        debugView.getContext('2d').clearRect(0, 0, debugView.width, debugView.height);
-    }
+    //const debugView = document.getElementById('debug-canvas-view');
+    //if (debugView) {
+    //    debugView.getContext('2d').clearRect(0, 0, debugView.width, debugView.height);
+    //}
 }
 
 function closeCamera() {
     isProcessing = false;
     const video = document.getElementById('video');
+    const container = document.getElementById('camera-container');
     
     if (video && video.srcObject) {
-        const stream = video.srcObject;
-        const tracks = stream.getTracks();
-        
-        tracks.forEach(track => {
-            track.stop(); // Menghentikan hardware kamera secara fisik
-            logKeLayar("Hardware " + track.label + " dimatikan.");
-        });
-        
+        const tracks = video.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
         video.srcObject = null;
-        video.pause(); // Hentikan mesin pemutar video di browser
     }
     
-    document.getElementById('camera-container').style.display = 'none';
-    logKeLayar("🔴 Kamera & Sensor Off (Titik Hijau Mati)");
+    container.style.display = 'none';
+    logKeLayar("🔴 Kamera dimatikan total.");
 }
-
-
 
 function logKeLayar(msg) {
     if (!debugLog) return;
-    const logBox = document.getElementById('debug-log');
-    if (logBox) {
-        const newLog = document.createElement('div');
-        newLog.style.borderBottom = "1px solid #333";
-        newLog.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        logBox.appendChild(newLog);
-        logBox.scrollTop = logBox.scrollHeight;
+    // Pakai querySelectorAll supaya semua elemen dengan ID debug-log dapet pesannya
+    const logBoxes = document.querySelectorAll('#debug-log');
+    if (logBoxes.length > 0) {
+        logBoxes.forEach(box => {
+            const newLog = document.createElement('div');
+            newLog.style.borderBottom = "1px solid #333";
+            newLog.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            box.appendChild(newLog);
+            box.scrollTop = box.scrollHeight;
+        });
     }
 }
