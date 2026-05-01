@@ -33,16 +33,22 @@ async function initSatpam() {
 
     try {
         logKeLayar("Menyiapkan Tesseract...");
-        worker = await Tesseract.createWorker('eng', 1, {
-            logger: m => {
-                if (m.status.includes('loading')) {
-                    const prog = Math.round(m.progress * 100);
-                    progressText.innerText = `Mengunduh Data OCR (${prog}%)`;
-                }
-            },
-            workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
-            corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
-        });
+worker = await Tesseract.createWorker({
+    logger: m => {
+        if (m.status.includes('loading')) {
+            const prog = Math.round(m.progress * 100);
+            progressText.innerText = `Mengunduh Data OCR (${prog}%)`;
+        }
+    }
+});
+
+await worker.loadLanguage('eng');
+await worker.initialize('eng');
+
+await worker.setParameters({
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
+    tessedit_pageseg_mode: '3'
+});
 
         await worker.setParameters({
             tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
