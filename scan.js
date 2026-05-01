@@ -4,7 +4,7 @@ let isProcessing = false;
 let isLocked = false;
 const debugLog = true;
 
-// Canvas utama
+// Satu canvas permanen untuk proses OCR
 const processingCanvas = document.createElement('canvas');
 const processingContext = processingCanvas.getContext('2d');
 
@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initSatpam();
 });
 
-// --- INIT OCR ---
 async function initSatpam() {
     const progressText = document.getElementById('load-progress');
     const loadingOverlay = document.getElementById('loading-satpam');
@@ -46,12 +45,11 @@ async function initSatpam() {
         });
 
         await worker.setParameters({
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-            tessedit_pageseg_mode: '7'
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        tessedit_pageseg_mode: '7'
         });
 
         logKeLayar("Satpam Siap!");
-
         setTimeout(() => {
             loadingOverlay.style.opacity = '0';
             setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
@@ -63,11 +61,10 @@ async function initSatpam() {
     }
 }
 
-// --- BUKA KAMERA ---
 async function openScanner() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
-
+    
     if (!worker) {
         alert("Sistem belum siap.");
         return;
@@ -76,12 +73,12 @@ async function openScanner() {
     container.style.display = 'block';
 
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
                 facingMode: "environment",
                 width: { ideal: 1280 },
                 height: { ideal: 720 }
-            }
+            } 
         });
 
         video.srcObject = stream;
@@ -90,17 +87,15 @@ async function openScanner() {
             logKeLayar("Mencari Target...");
             startValidasiProses();
         };
-
     } catch (err) {
         alert("Kamera Error: " + err.message);
     }
 }
 
-// --- LOOP OCR ---
 async function startValidasiProses() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
-
+    
     if (isProcessing || container.style.display === 'none') return;
     isProcessing = true;
 
@@ -110,6 +105,7 @@ async function startValidasiProses() {
         return;
     }
 
+    // 🔥 AMBIL AREA DARI KOTAK HIJAU
     const scanBox = document.getElementById('scan-box');
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
@@ -125,23 +121,28 @@ async function startValidasiProses() {
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
 
+    // 🔥 DELAY BIAR FOKUS
     await new Promise(r => setTimeout(r, 250));
 
-    processingContext.filter = 'none';
+    // --- CAPTURE ---
+    processingContext.filter = 'none'; 
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
-    // OCR canvas
+    // --- OCR CANVAS (UPSCALE) ---
     const scale = 2;
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = scanWidth * scale;
-    tempCanvas.height = scanHeight * scale;
+    const tempOcrCanvas = document.createElement('canvas');
+    tempOcrCanvas.width = scanWidth * scale;
+    tempOcrCanvas.height = scanHeight * scale;
 
-    const ctx = tempCanvas.getContext('2d');
-    ctx.scale(scale, scale);
-    ctx.filter = 'grayscale(1) contrast(3) brightness(1.4)';
-    ctx.drawImage(processingCanvas, 0, 0);
+    const tempOcrCtx = tempOcrCanvas.getContext('2d');
+    tempOcrCtx.scale(scale, scale);
 
-    const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    // 🔥 FILTER KUAT
+    tempOcrCtx.filter = 'grayscale(1) contrast(3) brightness(1.4)';
+    tempOcrCtx.drawImage(processingCanvas, 0, 0);
+
+    // 🔥 THRESHOLD
+    const imageData = tempOcrCtx.getImageData(0, 0, tempOcrCanvas.width, tempOcrCanvas.height);
     const data = imageData.data;
 
     for (let i = 0; i < data.length; i += 4) {
@@ -150,38 +151,41 @@ async function startValidasiProses() {
         data[i] = data[i+1] = data[i+2] = val;
     }
 
-    ctx.putImageData(imageData, 0, 0);
+    tempOcrCtx.putImageData(imageData, 0, 0);
 
     try {
-        const result = await worker.recognize(tempCanvas);
+        const result = await worker.recognize(tempOcrCanvas); 
         const text = result.data.text.toUpperCase();
         const cleanText = text.replace(/[^A-Z0-9]/g, '');
 
         logKeLayar("Bidikan: " + text.substring(0, 30).trim());
 
+        // 🔥 DETEKSI SJKB (ANTI TYPO)
         const sjkbPattern = /NVD[C0]C[I1]B[A-Z0-9]{4,}/;
+
+        // 🔥 DETEKSI TUJUAN (FLEKSIBEL)
         const tujuanPattern = /(TUJUAN|TUJ|TUIUAN|TUJAN|UAN|KET|PEN|PEM)/;
 
         const hasSJKB = sjkbPattern.test(cleanText);
         const hasTujuan = tujuanPattern.test(cleanText);
-
         logKeLayar(`SJKB:${hasSJKB} | TUJUAN:${hasTujuan}`);
+        
+        // 🔥 FINAL LOGIC
+        const isMatch = hasSJKB; // ← ini kunci stabil
 
-        const sjkbMatch = cleanText.match(sjkbPattern);
-        const isMatch = sjkbMatch && sjkbMatch[0].length >= 10;
+if (isMatch && !isLocked) {
+    isLocked = true;
 
-        if (isMatch && !isLocked) {
-            isLocked = true;
+    logKeLayar("✅ SJKB TERDETEKSI!");
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-            logKeLayar("✅ SJKB TERDETEKSI!");
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-            setTimeout(() => ambilFotoFinal(video), 200);
-            return;
+    setTimeout(() => ambilFotoFinal(video), 200);
+    return; // 🔥 penting, stop loop langsung
+}
+        } else {
+            isProcessing = false;
+            setTimeout(startValidasiProses, 350); 
         }
-
-        isProcessing = false;
-        setTimeout(startValidasiProses, 350);
 
     } catch (err) {
         logKeLayar("‼️ OCR ERROR: " + err.message);
@@ -190,85 +194,100 @@ async function startValidasiProses() {
     }
 }
 
-// --- AMBIL FOTO ---
 function ambilFotoFinal(videoElement) {
-    const canvas = document.createElement('canvas');
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
-
-    const ctx = canvas.getContext('2d');
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = videoElement.videoWidth;
+    finalCanvas.height = videoElement.videoHeight;
+    const ctx = finalCanvas.getContext('2d');
+    
+    // Matikan filter agar gambar tidak item/kontras (Natural)
+    ctx.filter = 'none'; 
     ctx.drawImage(videoElement, 0, 0);
-
-    const base64Image = canvas.toDataURL('image/jpeg', 0.8);
-
-    logKeLayar("📸 Foto diambil!");
-
-    closeCamera();
-    uploadKeGemini(base64Image);
+    
+    const base64Image = finalCanvas.toDataURL('image/jpeg', 0.8);
+    logKeLayar("📸 Foto jernih berhasil diambil!");
+    
+    closeCamera(); // Pastikan panggil ini agar titik hijau mati
+    uploadKeGemini(base64Image); 
 }
 
-// --- API ---
+
 async function uploadKeGemini(base64Data) {
-    logKeLayar("🤖 AI menganalisis...");
-    const btn = document.getElementById('btnScanAction');
-    if (btn) btn.disabled = true;
+    logKeLayar("🤖 AI sedang menganalisis foto asli...");
+    const btnScan = document.getElementById('btnScanAction');
+    if(btnScan) btnScan.disabled = true;
 
     const pureBase64 = base64Data.split(',')[1];
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
-        const res = await fetch('https://api.anda.com/v1/analyze-sjkb', {
+        const response = await fetch('https://api.anda.com/v1/analyze-sjkb', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: pureBase64 })
+            signal: controller.signal,
+            body: JSON.stringify({ 
+                image: pureBase64, 
+                timestamp: new Date().toISOString() 
+            })
         });
 
-        const result = await res.json();
+        clearTimeout(timeoutId);
+        const result = await response.json();
 
         if (result.success) {
-            alert("SJKB: " + result.no_sjkb);
+            logKeLayar("✅ Validasi Berhasil!");
+            alert("SJKB Valid: " + result.no_sjkb);
         } else {
+            logKeLayar("❌ Validasi Gagal: " + result.message);
             alert("Gagal: " + result.message);
         }
-
     } catch (err) {
-        logKeLayar("‼️ ERROR: " + err.message);
+        logKeLayar(err.name === 'AbortError' ? "‼️ Timeout (15 detik)" : "‼️ Error: " + err.message);
     } finally {
+        // Beri jeda 2 detik agar sistem benar-benar bersih sebelum bisa scan lagi
         setTimeout(resetSistemScan, 2000);
     }
 }
 
-// --- RESET ---
 function resetSistemScan() {
-    logKeLayar("🔄 Standby...");
-    isProcessing = false;
-    isLocked = false;
-
-    const btn = document.getElementById('btnScanAction');
-    if (btn) btn.disabled = false;
+    logKeLayar("🔄 Sistem Standby...");
+    isProcessing = false; 
+    const btnScan = document.getElementById('btnScanAction');
+    if (btnScan) btnScan.disabled = false;
+    
+    //const debugView = document.getElementById('debug-canvas-view');
+    //if (debugView) {
+    //    debugView.getContext('2d').clearRect(0, 0, debugView.width, debugView.height);
+    //}
 }
 
-// --- TUTUP KAMERA ---
 function closeCamera() {
+    isProcessing = false;
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
-
-    if (video.srcObject) {
-        video.srcObject.getTracks().forEach(t => t.stop());
+    
+    if (video && video.srcObject) {
+        const tracks = video.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
         video.srcObject = null;
     }
-
+    
     container.style.display = 'none';
-    logKeLayar("🔴 Kamera off");
+    logKeLayar("🔴 Kamera dimatikan total.");
 }
 
-// --- LOG ---
 function logKeLayar(msg) {
     if (!debugLog) return;
-
-    document.querySelectorAll('#debug-log').forEach(box => {
-        const el = document.createElement('div');
-        el.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        box.appendChild(el);
-        box.scrollTop = box.scrollHeight;
-    });
+    // Pakai querySelectorAll supaya semua elemen dengan ID debug-log dapet pesannya
+    const logBoxes = document.querySelectorAll('#debug-log');
+    if (logBoxes.length > 0) {
+        logBoxes.forEach(box => {
+            const newLog = document.createElement('div');
+            newLog.style.borderBottom = "1px solid #333";
+            newLog.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            box.appendChild(newLog);
+            box.scrollTop = box.scrollHeight;
+        });
+    }
 }
