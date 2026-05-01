@@ -193,7 +193,7 @@ setTimeout(() => {
     
     // 3. (Opsional) Re-apply filter untuk memastikan browser lama juga nurut
     // Kalau mau sangat ekstrim kecilnya, bisa turunkan kualitas ke 0.4
-    const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.75);
+    const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
 
     closeCamera();
     uploadKeGemini(finalBlob);
