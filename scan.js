@@ -168,51 +168,35 @@ async function startValidasiProses() {
     }
 }
 
-function ambilFotoFinal(videoElement) {
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = videoElement.videoWidth;
-    finalCanvas.height = videoElement.videoHeight;
-    const ctx = finalCanvas.getContext('2d');
-    
-    ctx.filter = 'none'; 
-    ctx.drawImage(videoElement, 0, 0);
-    
-    const base64Image = finalCanvas.toDataURL('image/jpeg', 0.8);
-    logKeLayar("📸 Foto Jernih Diambil!");
-    
-    closeCamera(); 
-    uploadKeGemini(base64Image); 
-}
-
 async function uploadKeGemini(base64Data) {
-    logKeLayar("🤖 AI sedang menganalisis...");
-    const btnScan = document.getElementById('btnScanAction');
-    if(btnScan) btnScan.disabled = true;
-
-    const pureBase64 = base64Data.split(',')[1];
+    logKeLayar("🤖 Mengirim ke GAS Backend...");
     
+    // Ambil string base64 murni
+    const pureBase64 = base64Data.split(',')[1];
+    const gasUrl = "https://script.google.com/macros/s/AKfycbxYY2VDSk1zx8FRfk4dpkyPOZLNjNa4Qx1czvFl5XMNE9MgeMcOZ-oTPisXQzgtOAA/exec";
+
     try {
-        const response = await fetch('https://api.anda.com/v1/analyze-sjkb', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: pureBase64, timestamp: new Date().toISOString() })
+        // Gunakan form data atau JSON string
+        const response = await fetch(gasUrl, {
+            method: "POST",
+            mode: "no-cors", // Ini wajib biar gak kena blokir browser di Vercel
+            cache: "no-cache",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+            body: JSON.stringify({ image: pureBase64 })
         });
 
-        const result = await response.json();
-        if (result.success) {
-            logKeLayar("✅ Berhasil: " + result.no_sjkb);
-        } else {
-            logKeLayar("❌ Gagal: " + result.message);
-        }
+        // NOTE: Dengan mode 'no-cors', response.json() AKAN ERROR (opaque response).
+        // Tapi data tetep masuk ke Google Sheet / Gemini.
+        logKeLayar("🚀 Data terkirim! Cek log di Google Script.");
+        alert("Data terkirim ke sistem NVDC.");
+
     } catch (err) {
-        logKeLayar("‼️ Error: " + err.message);
+        logKeLayar("‼️ Fetch Error: " + err.message);
+        console.error(err);
     } finally {
-        setTimeout(() => {
-            isLocked = false;
-            isProcessing = false;
-            if (btnScan) btnScan.disabled = false;
-            logKeLayar("🔄 Sistem Standby...");
-        }, 2000);
+        selesaiProses();
     }
 }
 
