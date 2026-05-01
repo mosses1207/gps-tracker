@@ -154,8 +154,6 @@ async function startValidasiProses() {
         logKeLayar("👁️ Scan: " + rawText.substring(0, 30));
         const hasSJKB = cleanText.includes("SJKB") || cleanText.includes("NVD");
         const hasMotor = /MOTOR|M0T0R|M0TOR|MOT0R/.test(cleanText);
-        const hasSJKB = cleanText.includes("SJKB") || cleanText.includes("NVD");
-        const hasMotor = /MOTOR|M0T0R|M0TOR|MOT0R/.test(cleanText);
 
         if (hasSJKB || hasMotor) {
             isLocked = true; // Kunci agar tidak looping lagi
