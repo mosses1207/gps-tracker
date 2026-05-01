@@ -65,6 +65,18 @@
 <!-- 🔷 MAIN KAMERA -->
 
 <div id="camera-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999;">
+  <div id="preview-gemini-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10001; flex-direction:column; align-items:center; justify-content:center;">
+    <h3 style="color:#00ff00; margin-bottom:10px;">Hasil Foto untuk Gemini:</h3>
+    
+    <!-- Tempat Foto Muncul -->
+    <img id="img-preview-final" style="width:90%; border:2px solid white; border-radius:10px; margin-bottom:20px;">
+
+    <div style="display:flex; gap:10px;">
+        <button onclick="retakePhoto()" style="background:#ff0000; color:white; padding:10px 20px; border:none; border-radius:5px;">Ulangi</button>
+        <button onclick="confirmSendToGemini()" style="background:#00ff00; color:black; padding:10px 20px; border:none; border-radius:5px; font-weight:bold;">Kirim Sekarang</button>
+    </div>
+</div>
+  
   <!-- Mini Logger -->
   <div id="debug-log" style="position: fixed; bottom: 80px; left: 10px; right: 10px; height: 120px; background: rgba(0,0,0,0.8); color: #00ff00; font-family: monospace; font-size: 10px; padding: 5px; overflow-y: auto; z-index: 10000; border-radius: 5px; pointer-events: none;">
     <div>-- System Log Ready --</div>
@@ -91,8 +103,6 @@
         Sedang Membaca....
     </div>
     <br>
-    <!-- Tombol Auto-Capture (Visual Only) -->
-    <div id="capture-indicator" style="width:70px; height:70px; border-radius:50%; border:5px solid rgba(255,255,255,0.5); display:inline-block; transition:0.3s;"></div>
     <br><br>
     <button onclick="closeCamera()" style="color:white; background:rgba(255,0,0,0.5); border:1px solid white; padding:8px 20px; border-radius:5px; font-size:14px;">
         Batal / Kembali
