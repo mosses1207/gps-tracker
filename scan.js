@@ -169,31 +169,34 @@ async function startValidasiProses() {
 }
 
 async function uploadKeGemini(base64Data) {
-    logKeLayar("🤖 Mengirim ke GAS Backend...");
-    
-    // Ambil string base64 murni
+    logKeLayar("🤖 Mengirim ke Gemini via GAS...");
     const pureBase64 = base64Data.split(',')[1];
     const gasUrl = "https://script.google.com/macros/s/AKfycbxYY2VDSk1zx8FRfk4dpkyPOZLNjNa4Qx1czvFl5XMNE9MgeMcOZ-oTPisXQzgtOAA/exec";
 
     try {
-        // Gunakan form data atau JSON string
+        // Kita hilangkan 'no-cors' agar bisa membaca balikan JSON
         const response = await fetch(gasUrl, {
             method: "POST",
-            mode: "no-cors", // Ini wajib biar gak kena blokir browser di Vercel
-            cache: "no-cache",
             headers: {
                 "Content-Type": "text/plain;charset=utf-8",
             },
             body: JSON.stringify({ image: pureBase64 })
         });
 
-        // NOTE: Dengan mode 'no-cors', response.json() AKAN ERROR (opaque response).
-        // Tapi data tetep masuk ke Google Sheet / Gemini.
-        logKeLayar("🚀 Data terkirim! Cek log di Google Script.");
-        alert("Data terkirim ke sistem NVDC.");
+        const hasil = await response.json(); // Sekarang kita bisa baca JSON-nya
+        
+        if (hasil.status === "success") {
+            logKeLayar("✅ Data Berhasil Diolah!");
+            // Masukkan hasil dari Gemini ke TextBox
+            document.getElementById('no_sjkb').value = hasil.no_sjkb || "Tidak Terbaca";
+            document.getElementById('tujuan_dealer').value = hasil.tujuan || "Tidak Terbaca";
+            alert("Data SJKB Terdeteksi!");
+        } else {
+            logKeLayar("❌ Gemini Gagal Memproses");
+        }
 
     } catch (err) {
-        logKeLayar("‼️ Fetch Error: " + err.message);
+        logKeLayar("‼️ Error: Cek Pengaturan CORS di GAS");
         console.error(err);
     } finally {
         selesaiProses();
