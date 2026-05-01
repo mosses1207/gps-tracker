@@ -63,7 +63,8 @@ async function initSatpam() {
 async function openScanner() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
-    
+    isLocked = false;
+    isProcessing = false;
     if (!worker) {
         alert("Sistem belum siap.");
         return;
@@ -81,7 +82,7 @@ async function openScanner() {
         });
 
         video.srcObject = stream;
-        video.oncanplay = async () => {
+        video.onloadeddata = async () => {
             await video.play();
             logKeLayar("Mencari Target...");
             startValidasiProses();
@@ -116,55 +117,41 @@ async function startValidasiProses() {
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
     try {
-        const result = await worker.recognize(processingCanvas);
-        const rawText = result.data.text.toUpperCase().replace(/O/g, '0').replace(/\s+/g, ' ');
-        
-        logKeLayar("👁️ Anchor: " + rawText.substring(0, 30));
+    const result = await worker.recognize(processingCanvas);
+    const rawText = result.data.text.toUpperCase().replace(/O/g, '0').replace(/\s+/g, ' ');
+    
+    logKeLayar("👁️ Anchor: " + rawText.substring(0, 30));
 
-        const hasToyota = /TOYOTA|T0YOTA|TOY0TA|T0Y0TA/.test(rawText);
-        const hasAstra  = /ASTRA/.test(rawText);
-        const hasMotor  = /M0T0R|MOTOR|M0TOR|MOT0R/.test(rawText);
+    const hasToyota = /TOYOTA|T0YOTA|TOY0TA|T0Y0TA/.test(rawText);
+    const hasAstra  = /ASTRA/.test(rawText);
+    const hasMotor  = /M0T0R|MOTOR|M0TOR|MOT0R/.test(rawText);
 
-        if (hasToyota && hasAstra && hasMotor) {
-            isLocked = true;
-            document.getElementById('scan-status').innerText = "🎯 MATCH! CAPTURING...";
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    if (hasToyota && hasAstra && hasMotor) {
+        isLocked = true;
+        document.getElementById('scan-status').innerText = "🎯 MATCH! CAPTURING...";
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-            setTimeout(() => {
-                const fullCanvas = document.createElement('canvas');
-                fullCanvas.width = video.videoWidth;
-                fullCanvas.height = video.videoHeight;
-                const fullCtx = fullCanvas.getContext('2d');
-                
-                fullCtx.drawImage(video, 0, 0, fullCanvas.width, fullCanvas.height);
-                const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.95);
-                
-                const previewImg = document.getElementById('img-preview-final');
-                const previewContainer = document.getElementById('preview-gemini-container');
-                
-                if (previewImg && previewContainer) {
-                    previewImg.src = finalBlob;
-                    previewContainer.style.display = 'flex';
-                    logKeLayar("📸 Debug Preview (2s)...");
+        setTimeout(() => {
+            const fullCanvas = document.createElement('canvas');
+            fullCanvas.width = video.videoWidth;
+            fullCanvas.height = video.videoHeight;
+            const fullCtx = fullCanvas.getContext('2d');
+            
+            fullCtx.drawImage(video, 0, 0, fullCanvas.width, fullCanvas.height);
+            const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.95);
 
-                    setTimeout(() => {
-                        previewContainer.style.display = 'none';
-                        logKeLayar("🚀 Mengirim ke Gemini...");
-                        closeCamera();
-                        uploadKeGemini(finalBlob);
-                    }, 2000); 
-                } else {
-                    closeCamera();
-                    uploadKeGemini(finalBlob);
-                }
-            }, 500);
-        } else {
-            isProcessing = false;
-            setTimeout(startValidasiProses, 300);
-        }
-    } catch (err) {
+            closeCamera();
+            uploadKeGemini(finalBlob);
+        }, 500);
+    }
+
+} catch (err) {
+    logKeLayar("OCR error: " + err.message);
+} finally {
+    // 🔥 LOOP TERUS SELAMA BELUM LOCK
+    if (!isLocked && document.getElementById('camera-container').style.display !== 'none') {
         isProcessing = false;
-        setTimeout(startValidasiProses, 1000);
+        requestAnimationFrame(startValidasiProses);
     }
 }
 
@@ -200,8 +187,15 @@ async function uploadKeGemini(base64Data) {
     } catch (err) {
         logKeLayar("‼️ Fetch Error: " + err.message);
         console.error(err);
+    } finally {
+    setTimeout(() => {
+        isProcessing = false;
+        isLocked = false;
+        logKeLayar("🔄 Siap scan lagi");
+    }, 1000);
     }
 }
+
 function isiHasilScan(data) {
     const inputSJKB = document.getElementById('no_sjkb');
     const inputTujuan = document.getElementById('tujuan_dealer');
@@ -215,10 +209,16 @@ function isiHasilScan(data) {
 function closeCamera() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
+
     if (video && video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
         video.srcObject = null;
     }
+
+    // 🔥 RESET TOTAL
+    isProcessing = false;
+    isLocked = false;
+
     container.style.display = 'none';
     logKeLayar("🔴 Kamera Mati.");
 }
