@@ -172,7 +172,7 @@ async function uploadKeGemini(base64Data) {
     logKeLayar("🚀 Mengirim ke Gemini via GAS...");
     
     const pureBase64 = base64Data.split(',')[1];
-    const gasUrl = "https://script.google.com/macros/s/AKfycbxYY2VDSk1zx8FRfk4dpkyPOZLNjNa4Qx1czvFl5XMNE9MgeMcOZ-oTPisXQzgtOAA/exec";
+    const gasUrl = "https://script.google.com/macros/s/AKfycbzJqgr_NoIACivq5IWwPyFKVFKmYgaTBkFjNwymBA7mPRC0vVKn8UN9mVPZZERPjZzr/exec";
 
     try {
         // Menggunakan metode 'no-cors' agar request tetap tembus meskipun browser rewel
