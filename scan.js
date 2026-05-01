@@ -97,11 +97,11 @@ async function openScanner() {
     }
 }
 
-// Gunakan satu canvas permanen untuk menghemat memori
-const processingCanvas = document.createElement('canvas');
-const processingContext = processingCanvas.getContext('2d');
+    // Gunakan satu canvas permanen untuk menghemat memori
+    const processingCanvas = document.createElement('canvas');
+    const processingContext = processingCanvas.getContext('2d');
 
-async function startValidasiProses() {
+    async function startValidasiProses() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     if (isProcessing || container.style.display === 'none') return;
@@ -115,11 +115,11 @@ async function startValidasiProses() {
     }
 
     // 1. Tentukan area kotak hijau (misal: di tengah layar, ambil 60% lebar & 40% tinggi)
-// Ambil area tengah yang lebih proporsional untuk teks vertikal/blok
-const scanWidth = video.videoWidth * 0.9;   // Hampir full lebar
-const scanHeight = video.videoHeight * 0.5;  // Ambil setengah tinggi layar
-const startX = (video.videoWidth - scanWidth) / 2;
-const startY = (video.videoHeight - scanHeight) / 2;
+
+    const scanWidth = video.videoWidth * 0.9;   // Hampir full lebar
+    const scanHeight = video.videoHeight * 0.5;  // Ambil setengah tinggi layar
+    const startX = (video.videoWidth - scanWidth) / 2;
+    const startY = (video.videoHeight - scanHeight) / 2;
 
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
