@@ -96,6 +96,7 @@ async function startValidasiProses() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     
+    // Safety check: stop jika sedang proses, kamera tutup, atau sudah lock
     if (isProcessing || container.style.display === 'none' || isLocked) return;
     isProcessing = true;
 
@@ -105,6 +106,7 @@ async function startValidasiProses() {
         return;
     }
 
+    // --- 1. SET AREA SCAN (KOTAK HIJAU) ---
     const scanBox = document.getElementById('scan-box');
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
@@ -120,40 +122,46 @@ async function startValidasiProses() {
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
 
-    // --- CAPTURE ---
+    // --- 2. CAPTURE & PRE-PROCESS ---
     processingContext.filter = 'none'; 
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
-    // --- OCR CANVAS (UPSCALE + OPTIMASI ANTI-SILAU) ---
-    const scale = 2;
+    const scale = 2; // Upscale untuk akurasi Tesseract
     const tempOcrCanvas = document.createElement('canvas');
     tempOcrCanvas.width = scanWidth * scale;
     tempOcrCanvas.height = scanHeight * scale;
     const tempOcrCtx = tempOcrCanvas.getContext('2d');
     
-    // 🔥 PERBAIKAN: Turunin brightness dikit biar tulisan gak ilang terbakar kontras
-    // Grayscale tetep, tapi kontras jangan terlalu gila (2.0 cukup)
-    tempOcrCtx.filter = 'grayscale(1) contrast(1.8) brightness(0.9)';
+    // Filter anti-silau: Sedikit redup (0.95) & kontras tajam (1.8)
+    tempOcrCtx.filter = 'grayscale(1) contrast(1.8) brightness(0.95)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0, scanWidth * scale, scanHeight * scale);
 
     try {
+        // --- 3. JALANKAN OCR ---
         const result = await worker.recognize(tempOcrCanvas);
-        // Pakai regex untuk bersihin karakter aneh tapi jangan hapus spasi biar gampang dibaca
         const rawText = result.data.text.toUpperCase() || "";
         
-        // Cek log di layar, harusnya sekarang teksnya mulai muncul
+        // Log monitoring (potong 35 karakter biar gak menuhin layar)
         logKeLayar("👁️ Scan: " + rawText.substring(0, 35).replace(/\n/g, " "));
 
-        // --- VALIDASI SUPER LONGGAR (Yang penting ada bau-bau Toyota/NVDC) ---
-        const keywords = ["NVDC", "NVD", "CIB", "TOYOTA", "MOTOR", "SJKB", "DOC", "NO."];
-        const isFound = keywords.some(key => rawText.includes(key));
+        // --- 4. VALIDASI KETAT ---
+        // Wajib ada kata 'NVDC'
+        const hasIdentity = /NVD/.test(rawText);
+        
+        // Wajib ada penanda dokumen SJKB atau Header Tujuan
+        const hasAttribute = /SJKB|NO\.|TUJUAN|TUJ|UAN/.test(rawText);
 
-        if (isFound) {
-            isLocked = true;
-            logKeLayar("✅ TARGET TERKUNCI!");
+        // Eksekusi jika syarat terpenuhi
+        if (hasIdentity && hasAttribute) {
+            isLocked = true; 
+            logKeLayar("✅ TARGET VALID: NVDC TERDETEKSI!");
+            
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            
+            // Ambil foto final kualitas tinggi setelah jeda sinkronisasi
             setTimeout(() => ambilFotoFinal(video), 300);
         } else {
+            // Jika tidak valid, reset flag dan scan ulang setelah 300ms
             isProcessing = false;
             setTimeout(startValidasiProses, 300); 
         }
