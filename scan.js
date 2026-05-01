@@ -107,6 +107,7 @@ async function openScanner() {
 }
 
 async function startValidasiProses() {
+    
     if (!worker) {
     logKeLayar("⚠️ Worker belum siap");
     return;
@@ -121,9 +122,9 @@ async function startValidasiProses() {
     const videoRect = video.getBoundingClientRect();
 
     if (!video.videoWidth || !video.videoHeight || !videoRect.width || video.readyState < 2 ) {
-    isProcessing = false;
-    requestAnimationFrame(startValidasiProses);
-    return;
+        isProcessing = false;
+        setTimeout(() => requestAnimationFrame(startValidasiProses), 300);
+        return;
     }
     
     const scaleX = video.videoWidth / videoRect.width;
@@ -134,11 +135,12 @@ async function startValidasiProses() {
     const scanWidth = rect.width * scaleX;
     const scanHeight = rect.height * scaleY;
 
-    processingCanvas.width = scanWidth;
-    processingCanvas.height = scanHeight;
+    const scaleDown = 0.7; // 0.5 - 0.8 recommended
+    processingCanvas.width = scanWidth * scaleDown;
+    processingCanvas.height = scanHeight * scaleDown;
     processingContext.filter = 'grayscale(1) contrast(1.5)';
-    processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
-
+    processingContext.drawImage(video,startX, startY, scanWidth, scanHeight,0, 0,processingCanvas.width,processingCanvas.height);
+    
     try {
     const result = await worker.recognize(processingCanvas);
     const rawText = result.data.text.toUpperCase().replace(/O/g, '0').replace(/\s+/g, ' ');
@@ -173,7 +175,7 @@ async function startValidasiProses() {
 } finally {
 if (!isLocked && isCameraActive) {
     isProcessing = false;
-    setTimeout(() => requestAnimationFrame(startValidasiProses), 100);
+    setTimeout(() => requestAnimationFrame(startValidasiProses), 800);
         }
     }
 }
