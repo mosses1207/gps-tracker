@@ -99,12 +99,7 @@ async function startValidasiProses() {
     if (isProcessing || container.style.display === 'none' || isLocked) return;
     isProcessing = true;
 
-    if (!video.videoWidth) {
-        setTimeout(startValidasiProses, 500);
-        isProcessing = false;
-        return;
-    }
-
+    // 1. Ambil area di dalam kotak tipis (tengah layar)
     const scanBox = document.getElementById('scan-box');
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
@@ -117,51 +112,51 @@ async function startValidasiProses() {
     const scanWidth = rect.width * scaleX;
     const scanHeight = rect.height * scaleY;
 
-    // Canvas untuk Tesseract (Umpan)
+    // Canvas kecil khusus OCR Anchor
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
+    processingContext.filter = 'grayscale(1) contrast(1.5)';
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
-    // Filter Umpan: Kita buat agak tajam tapi jangan sampai bikin teks pecah
-    const scale = 2; 
-    const tempOcrCanvas = document.createElement('canvas');
-    tempOcrCanvas.width = scanWidth * scale;
-    tempOcrCanvas.height = scanHeight * scale;
-    const tempOcrCtx = tempOcrCanvas.getContext('2d');
-    
-    // Grayscale + Contrast standar biar baris teks "terlihat" oleh engine
-    tempOcrCtx.filter = 'grayscale(1) contrast(1.4) brightness(1.1)';
-    tempOcrCtx.drawImage(processingCanvas, 0, 0, scanWidth * scale, scanHeight * scale);
-
     try {
-        const result = await worker.recognize(tempOcrCanvas);
-        const rawText = result.data.text.toUpperCase();
+        const result = await worker.recognize(processingCanvas);
+        // Normalisasi teks (O jadi 0, dll) dan bersihkan whitespace
+        const rawText = result.data.text.toUpperCase().replace(/O/g, '0').replace(/\s+/g, ' ');
         
-        // Monitoring apa yang ditangkap umpan kita
-        logKeLayar("👁️ Umpan: " + rawText.substring(0, 40).replace(/\n/g, " "));
+        logKeLayar("👁️ Anchor Check: " + rawText.substring(0, 30));
 
-        // --- LOGIKA PEMICU (SENSITIF) ---
-        // Kita pakai regex yang sangat toleran terhadap typo OCR
-        // NVD, CIB, SJKB, atau TOYOTA (asal ada salah satu penanda kuat)
-        const triggerNVDC = /NVD|CIB|CINTUNG/.test(rawText);
-        const triggerHeader = /SJKB|TUJ|UAN|MOTOR/.test(rawText);
+        // 2. LOGIKA VALIDASI ANCHOR
+        // Kita cari variasi tulisan TOYOTA ASTRA MOTOR
+        const hasToyota = /TOYOTA|T0YOTA||TOY0TA|T0Y0TA/.test(rawText);
+        const hasAstra  = /ASTRA/.test(rawText);
+        const hasMotor  = /M0T0R|MOTOR|M0TOR|MOT0R/.test(rawText);
 
-        // Jika Tesseract menangkap sinyal NVDC DAN ada atribut form-nya
-        if (triggerNVDC && triggerHeader) {
-            isLocked = true;
-            logKeLayar("🎯 KERTAS TERDETEKSI! Mengirim ke Gemini...");
+        if (hasToyota && hasAstra && hasMotor) {
+        isLocked = true;
+            document.getElementById('scan-status').innerText = "🎯 ANCHOR FOUND! CAPTURING...";
+            document.getElementById('capture-indicator').style.borderColor = "#00ff00";
             
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            
-            // JEDA 500ms: Biar user ada waktu buat 'steady' (diam) bentar
+            if (navigator.vibrate) navigator.vibrate(200);
+
+            // Jeda sebentar agar kamera stabil
             setTimeout(() => {
-                // Ambil foto final dari area yang sama (Box Hijau) 
-                // tapi dengan resolusi asli video tanpa filter buat Gemini
-                //ambilFotoFinal(video);
+                // 🔥 JEPRET FULL FRAME (Tanpa Filter) untuk Gemini
+                const fullCanvas = document.createElement('canvas');
+                fullCanvas.width = video.videoWidth;
+                fullCanvas.height = video.videoHeight;
+                const fullCtx = fullCanvas.getContext('2d');
+                
+                // Ambil seluruh layar video asli
+                fullCtx.drawImage(video, 0, 0, fullCanvas.width, fullCanvas.height);
+                
+                const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
+                
+                // Kirim ke fungsi kirimKeGemini (pastikan fungsi ini sudah siap)
+                prosesKirimKeGemini(finalBlob); 
             }, 500);
         } else {
             isProcessing = false;
-            setTimeout(startValidasiProses, 300); 
+            setTimeout(startValidasiProses, 300);
         }
     } catch (err) {
         isProcessing = false;
