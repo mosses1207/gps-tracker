@@ -110,9 +110,11 @@ async function openScanner() {
 }
 
 async function startValidasiProses() {
-    if (!worker) return;
+    if (!worker) {
+    logKeLayar("⚠️ Worker belum siap");
+    return;
+    }
     const video = document.getElementById('video');
-    const container = document.getElementById('camera-container');
     
     if (isProcessing || !isCameraActive || isLocked) return;
     isProcessing = true;
@@ -121,7 +123,7 @@ async function startValidasiProses() {
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
 
-    if (!video.videoWidth || !video.videoHeight || !videoRect.width) {
+    if (!video.videoWidth || !video.videoHeight || !videoRect.width || video.readyState < 2 ) {
     isProcessing = false;
     requestAnimationFrame(startValidasiProses);
     return;
