@@ -18,9 +18,8 @@ async function initSatpam() {
     const loadingOverlay = document.getElementById('loading-satpam');
 
     try {
-        // Pastikan overlay muncul di awal
+        logKeLayar("Memulai inisialisasi worker...");
         loadingOverlay.style.display = 'flex';
-        progressText.innerText = "Menghubungi Satpam (0%)";
 
         // Inisialisasi Tesseract v5
         worker = await Tesseract.createWorker('eng', 1, {
@@ -28,7 +27,6 @@ async function initSatpam() {
                 if (m.status === 'loading eng.traineddata' || m.status === 'loading tesseract core') {
                     const prog = Math.round(m.progress * 100);
                     progressText.innerText = `Mengunduh Ilmu OCR (${prog}%)`;
-                    // Update progress bar jika ada
                     if (prog === 100) progressText.innerText = "Menyusun Data...";
                 }
             },
@@ -36,21 +34,24 @@ async function initSatpam() {
             corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
         });
 
-        // TANDA BAHWA PROSES SELESAI
-        console.log("Satpam Ready!");
-        
-        // Kasih jeda sedikit biar smooth
+        // --- PENTING: PROSES PEMANASAN ---
+        logKeLayar("Melakukan pemanasan sistem...");
+        await worker.setParameters({
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/- ',
+        });
+        logKeLayar("Satpam Ready!");
+        // ---------------------------------
+
         setTimeout(() => {
-            loadingOverlay.style.opacity = '0'; // Efek fade out
+            loadingOverlay.style.opacity = '0';
             setTimeout(() => {
-                loadingOverlay.style.display = 'none'; // Benar-benar hilang
+                loadingOverlay.style.display = 'none';
             }, 500);
         }, 1000);
 
     } catch (e) {
-        console.error("Gagal init Tesseract:", e);
+        logKeLayar("‼️ GAGAL INIT: " + e.message);
         progressText.innerText = "Gagal memuat sistem. Cek koneksi internet.";
-        progressText.style.color = "red";
     }
 }
 
@@ -110,38 +111,51 @@ async function startValidasiProses() {
     if (isProcessing) return;
     isProcessing = true;
     
-    logKeLayar("Mencoba capture frame...");
-
     const video = document.getElementById('video');
+    if (!video.videoWidth) {
+        // Video belum siap, tunggu sebentar
+        setTimeout(startValidasiProses, 500);
+        isProcessing = false;
+        return;
+    }
+
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
-    // Pakai resolusi asli video biar tajam
+    // Pakai resolusi video asli
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+
+    // TRIK: Kasih filter sedikit agar teks lebih hitam putih (Grayscale & Contrast)
+    context.filter = 'grayscale(1) contrast(1.5)';
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     try {
-        logKeLayar("OCR sedang bekerja...");
+        logKeLayar("Sedang membaca teks...");
         
-        const { data: { text } } = await worker.recognize(canvas);
+        // recognize() butuh waktu, log ini untuk memastikan dia tidak hang
+        const result = await worker.recognize(canvas);
+        const text = result.data.text;
         
-        // Tampilkan hasil mentah OCR di layar HP
-        logKeLayar("Hasil Mentah: " + text.substring(0, 50) + "..."); 
+        logKeLayar("Hasil: " + text.substring(0, 30).replace(/\n/g, ' ')); 
 
-        // Logika pencarian kode SJKB
-        const pattern = /NVDC/gi; 
-        if (pattern.test(text)) {
-            logKeLayar("✅ KODE NVDC DITEMUKAN!");
-            alert("Berhasil Scan: " + text);
+        // Logika pencarian kode
+        const txt = text.toUpperCase();
+        if (txt.includes("NVDC") || txt.includes("SJKB") || txt.includes("TUJUAN")) {
+            logKeLayar("✅ TARGET TERDETEKSI!");
+            if (navigator.vibrate) navigator.vibrate(200);
+            
+            // Ambil foto final tanpa filter untuk dikirim ke API
+            ambilFotoFinal(video); 
         } else {
-            logKeLayar("❌ Kode belum ketemu, ulangi...");
+            // Jika tidak ketemu, ulangi lagi
             isProcessing = false;
-            setTimeout(startValidasiProses, 1500); 
+            setTimeout(startValidasiProses, 1000); 
         }
     } catch (err) {
-        logKeLayar("‼️ ERROR OCR: " + err.message);
+        logKeLayar("‼️ OCR ERROR: " + err.message);
         isProcessing = false;
+        // Jika error berat, coba re-init atau stop
     }
 }
 
@@ -165,19 +179,21 @@ function logicValidasiKamera(text) {
 }
 
 // 6. Jepret Foto Final
-function ambilFotoFinal() {
-    const video = document.getElementById('video');
+function ambilFotoFinal(videoElement) {
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    // Foto final bersih tanpa filter debug
+    canvas.getContext('2d').drawImage(videoElement, 0, 0);
     
     const base64Image = canvas.toDataURL('image/jpeg', 0.8);
-    console.log("Foto sukses diambil!");
+    logKeLayar("📸 Foto sukses diambil!");
     
+    // Matikan kamera sebelum lanjut ke proses berikutnya
     closeCamera();
-    // Panggil fungsi Gemini Abang di sini
-    // panggilGeminiAPI(base64Image);
+    
+    // Tampilkan alert atau lanjut ke fungsi berikutnya
+    alert("Berhasil mendeteksi SJKB. Mengirim data...");
 }
 
 function closeCamera() {
