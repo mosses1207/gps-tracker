@@ -6,6 +6,7 @@ const assets = [
   '/scan.js',
   '/fake.js',
   '/manifest.json', // Tambahkan manifest agar PWA valid
+  'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
   'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
   'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js', // WAJIB ADA
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
