@@ -45,8 +45,8 @@ async function initSatpam() {
         });
 
         await worker.setParameters({
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-',
-            tessedit_pageseg_mode: '7'
+            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
+            tessedit_pageseg_mode: '6'
         });
 
         logKeLayar("Satpam Siap!");
@@ -134,7 +134,7 @@ async function startValidasiProses() {
     const tempOcrCtx = tempOcrCanvas.getContext('2d');
     
     // 🔥 FILTER KUAT SEBELUM THRESHOLD
-    tempOcrCtx.filter = 'grayscale(1) contrast(3) brightness(1.4)';
+    tempOcrCtx.filter = 'grayscale(1) contrast(3) brightness(1.1)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0, scanWidth * scale, scanHeight * scale);
 
     // 🔥 THRESHOLDING (Binarization: Hitam Putih Pekat)
@@ -142,7 +142,7 @@ async function startValidasiProses() {
     const data = imageData.data;
     for (let i = 0; i < data.length; i += 4) {
         const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-        const val = avg > 130 ? 255 : 0; // Piksel abu-abu jadi putih, gelap jadi hitam
+        const val = avg > 100 ? 255 : 0; // Piksel abu-abu jadi putih, gelap jadi hitam
         data[i] = data[i+1] = data[i+2] = val;
     }
     tempOcrCtx.putImageData(imageData, 0, 0);
@@ -151,11 +151,11 @@ async function startValidasiProses() {
         const result = await worker.recognize(tempOcrCanvas); 
         const text = result.data.text.toUpperCase();
         const cleanText = text.replace(/[^A-Z0-9]/g, '');
-
         logKeLayar("Bidikan: " + text.substring(0, 25).trim());
 
         // 🔥 DETEKSI SJKB (Pola: NVDC atau NVD0)
-        const hasSJKB = /NVD[C0]C[I1]B/.test(cleanText);
+        // Cek apakah ada kata SJKB atau pola NV
+        const hasSJKB = cleanText.includes("SJKB") || cleanText.includes("NVD");
         // 🔥 DETEKSI MOTOR / TUJUAN (Opsional tapi membantu)
         const hasMotor = /MOTOR|M0T0R|M0TOR|MOT0R/.test(cleanText);
 
