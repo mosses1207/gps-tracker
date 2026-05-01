@@ -191,9 +191,14 @@ async function uploadKeGemini(base64Data) {
     setTimeout(() => {
         isProcessing = false;
         isLocked = false;
-        logKeLayar("🔄 Siap scan lagi");
+
+        logKeLayar("🔄 Restart scanning...");
+
+        // 🔥 START LAGI LOOP OCR
+        startValidasiProses();
+
     }, 1000);
-    }
+}
 }
 
 function isiHasilScan(data) {
