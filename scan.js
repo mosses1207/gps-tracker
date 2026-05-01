@@ -96,7 +96,6 @@ async function startValidasiProses() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     
-    // Stop kalau sedang proses, kamera tutup, atau sudah terkunci
     if (isProcessing || container.style.display === 'none' || isLocked) return;
     isProcessing = true;
 
@@ -106,7 +105,6 @@ async function startValidasiProses() {
         return;
     }
 
-    // --- AMBIL AREA DARI KOTAK HIJAU ---
     const scanBox = document.getElementById('scan-box');
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
@@ -126,42 +124,37 @@ async function startValidasiProses() {
     processingContext.filter = 'none'; 
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
-    // --- OCR CANVAS (UPSCALE 2X + OPTIMASI FILTER) ---
+    // --- OCR CANVAS (UPSCALE + OPTIMASI ANTI-SILAU) ---
     const scale = 2;
     const tempOcrCanvas = document.createElement('canvas');
     tempOcrCanvas.width = scanWidth * scale;
     tempOcrCanvas.height = scanHeight * scale;
     const tempOcrCtx = tempOcrCanvas.getContext('2d');
     
-    // 🔥 Pake kontras tinggi tapi jangan binarization manual (biar Tesseract yang olah)
-    tempOcrCtx.filter = 'grayscale(1) contrast(2.5) brightness(1.2)';
+    // 🔥 PERBAIKAN: Turunin brightness dikit biar tulisan gak ilang terbakar kontras
+    // Grayscale tetep, tapi kontras jangan terlalu gila (2.0 cukup)
+    tempOcrCtx.filter = 'grayscale(1) contrast(1.8) brightness(0.9)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0, scanWidth * scale, scanHeight * scale);
 
     try {
         const result = await worker.recognize(tempOcrCanvas);
+        // Pakai regex untuk bersihin karakter aneh tapi jangan hapus spasi biar gampang dibaca
         const rawText = result.data.text.toUpperCase() || "";
         
-        // Log buat intip apa yang kebaca sama Tesseract
-        logKeLayar("👁️ Scan: " + rawText.substring(0, 30).replace(/\n/g, " "));
+        // Cek log di layar, harusnya sekarang teksnya mulai muncul
+        logKeLayar("👁️ Scan: " + rawText.substring(0, 35).replace(/\n/g, " "));
 
-        // --- LOGIKA VALIDASI FUZZY (GAMPANG NEMPEL) ---
-        // Kita cari kata kunci tanpa hapus spasi/simbol dulu biar nggak nempel semua
-        const hasSJKB  = /SJKB|NO\.|DOC/.test(rawText);
-        const hasNVDC  = /NVDC|NVD|CIBITUNG|CIB/.test(rawText);
-        const hasMotor = /MOTOR|MOT0R|M0TOR|M0T0R|ASTRA|TOYOTA/.test(rawText);
+        // --- VALIDASI SUPER LONGGAR (Yang penting ada bau-bau Toyota/NVDC) ---
+        const keywords = ["NVDC", "NVD", "CIB", "TOYOTA", "MOTOR", "SJKB", "DOC", "NO."];
+        const isFound = keywords.some(key => rawText.includes(key));
 
-        // Syarat: Ada tulisan NVDC ATAU (ada Motor DAN SJKB)
-        if (hasNVDC || (hasMotor && hasSJKB)) {
-            isLocked = true; // Kunci agar tidak looping lagi
+        if (isFound) {
+            isLocked = true;
             logKeLayar("✅ TARGET TERKUNCI!");
-            
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            
-            // Jeda dikit biar user tau udah kekunci
             setTimeout(() => ambilFotoFinal(video), 300);
         } else {
             isProcessing = false;
-            // Scan lagi dengan jeda tipis biar nggak nge-lag
             setTimeout(startValidasiProses, 300); 
         }
     } catch (err) {
