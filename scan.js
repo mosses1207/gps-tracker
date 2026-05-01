@@ -185,19 +185,41 @@ setTimeout(() => {
     fullCanvas.height = height;
     const fullCtx = fullCanvas.getContext('2d');
 
-    // 1. Set filter DULU sebelum drawImage
+    // Filter optimal untuk ketajaman teks tanpa merusak kualitas
     fullCtx.filter = 'contrast(1.4) brightness(1.1)';
-    
-    // 2. Gambar ke canvas
     fullCtx.drawImage(video, 0, 0, width, height);
-    
-    // 3. (Opsional) Re-apply filter untuk memastikan browser lama juga nurut
-    // Kalau mau sangat ekstrim kecilnya, bisa turunkan kualitas ke 0.4
-    const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
+
+    // --- LOGIKA AUTO COMPRESSION ---
+    let quality = 0.9; // Start di 0.9
+    let finalBlob = fullCanvas.toDataURL('image/jpeg', quality);
+    let currentLength = finalBlob.length;
+
+    logKeLayar(`Percobaan awal (Q:${quality}): ${currentLength} Karakter`);
+
+    // Jika hasil di bawah 70k, kita paksa ke kualitas maksimal (1.0)
+    if (currentLength < 70000) {
+        quality = 1.0;
+        finalBlob = fullCanvas.toDataURL('image/jpeg', quality);
+        currentLength = finalBlob.length;
+        logKeLayar(`Upscale ke (Q:1.0): ${currentLength} Karakter`);
+    } 
+    // Jika ternyata masih di bawah 70k (karena gambar terlalu simpel), 
+    // kita gunakan format PNG (Lossless) yang pasti jauh lebih besar/detail
+    if (currentLength < 70000) {
+        finalBlob = fullCanvas.toDataURL('image/png');
+        currentLength = finalBlob.length;
+        logKeLayar(`Force PNG (Detail Maksimal): ${currentLength} Karakter`);
+    }
+    // Jika kemahalan/kegedean banget (misal > 500k), baru kita turunkan
+    else if (currentLength > 500000) {
+        quality = 0.7;
+        finalBlob = fullCanvas.toDataURL('image/jpeg', quality);
+        logKeLayar(`Downscale ke (Q:0.7): ${finalBlob.length} Karakter`);
+    }
 
     closeCamera();
     uploadKeGemini(finalBlob);
-    logKeLayar("Ukuran Base64: " + finalBlob.length + " karakter");
+    logKeLayar("Final Base64: " + finalBlob.length + " karakter");
     
 }, 300);
         }
