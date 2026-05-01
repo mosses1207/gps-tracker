@@ -150,7 +150,6 @@ function ambilFotoFinal(videoElement) {
     const finalCanvas = document.createElement('canvas');
     finalCanvas.width = videoElement.videoWidth;
     finalCanvas.height = videoElement.videoHeight;
-    // Ambil foto jernih tanpa filter
     finalCanvas.getContext('2d').drawImage(videoElement, 0, 0);
     
     const base64Image = finalCanvas.toDataURL('image/jpeg', 0.8);
@@ -158,9 +157,8 @@ function ambilFotoFinal(videoElement) {
     
     closeCamera();
     
-    // Di sini panggil fungsi kirim data/Gemini
-    console.log("Image Ready for Processing");
-    alert("Berhasil Scan SJKB!");
+    // PANGGIL FUNGSI KIRIM KE AI
+    uploadKeGemini(base64Image); 
 }
 
 function closeCamera() {
@@ -182,5 +180,36 @@ function logKeLayar(msg) {
         newLog.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
         logBox.appendChild(newLog);
         logBox.scrollTop = logBox.scrollHeight;
+    }
+}
+
+// 7. Fungsi Kirim ke Gemini (AI Analysis)
+async function uploadKeGemini(base64Data) {
+    logKeLayar("🤖 AI sedang menganalisis foto...");
+    
+    // Hilangkan prefix "data:image/jpeg;base64,"
+    const pureBase64 = base64Data.split(',')[1];
+
+    try {
+        // Contoh pemanggilan API (Ganti URL dengan endpoint backend Abang)
+        const response = await fetch('https://api.anda.com/v1/analyze-sjkb', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                image: pureBase64,
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            logKeLayar("✅ AI: Data SJKB Berhasil diverifikasi!");
+            // Lanjut ke proses update sheet atau dashboard
+        } else {
+            logKeLayar("❌ AI: Data tidak valid. Coba foto lagi.");
+        }
+    } catch (err) {
+        logKeLayar("‼️ API ERROR: " + err.message);
     }
 }
