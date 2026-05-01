@@ -52,33 +52,8 @@ input[readonly] {background-color: #f8fafc;border: 1px solid #e2e8f0;color: #647
 input[readonly]:focus {outline: none;border-color: #e2e8f0;}
 #camera-container {display: none; position: fixed;top: 0;left: 0;width: 100vw;height: 100vh;background: #000;z-index: 99999 !important;}
 #video {width: 100%;height: 100%;object-fit: cover;}
-#loading-satpam {
-    position: fixed !important;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: white !important;
-    z-index: 999999 !important; /* Pastikan paling depan */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.5s ease; /* Biar transisinya halus */
-    pointer-events: all; /* Mencegah klik ke elemen di bawahnya */
-}
-
-/* Biar spinnernya muter */
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #ff0000;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+#loading-satpam {position: fixed !important;top: 0;left: 0;width: 100vw;height: 100vh;background: white !important;z-index: 999999 !important;display: flex;flex-direction: column;align-items: center;justify-content: center;transition: opacity 0.5s ease; pointer-events: all;}
+.spinner {width: 50px;height: 50px;border: 5px solid #f3f3f3;border-top: 5px solid #ff0000;border-radius: 50%;animation: spin 1s linear infinite;}
+@keyframes spin {0% { transform: rotate(0deg); }100% { transform: rotate(360deg); }}
+#scan-box {position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);width: 85%;height: 120px;border: 2px dashed rgba(255, 255, 255, 0.4);display: flex;align-items: center;justify-content: center;z-index: 10;pointer-events: none;}
+#guide-overlay {width: 90%; opacity: 0.25;filter: grayscale(100%); pointer-events: none;}
