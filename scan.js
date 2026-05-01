@@ -64,6 +64,12 @@ async function initSatpam() {
 async function openScanner() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
+    btnScan.disabled = true;
+    
+    if (isCameraActive) {
+        logKeLayar("⚠️ Kamera masih aktif");
+        return;
+    }
     document.getElementById('scan-status').innerText = "🔍 Scanning...";
     
     // 🔥 RESET TOTAL
@@ -159,10 +165,10 @@ async function startValidasiProses() {
 } catch (err) {
     logKeLayar("OCR error: " + err.message);
 } finally {
-    if (!isLocked && isCameraActive) {
-        isProcessing = false;
-        requestAnimationFrame(startValidasiProses);
-    }
+if (!isLocked && isCameraActive) {
+    isProcessing = false;
+    setTimeout(() => requestAnimationFrame(startValidasiProses), 100);
+}
 }
 
 async function uploadKeGemini(base64Data) {
@@ -218,6 +224,7 @@ function isiHasilScan(data) {
 }
 
 function closeCamera() {
+    btnScan.disabled = false;
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
 
