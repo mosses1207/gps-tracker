@@ -281,17 +281,21 @@ function logKeLayar(msg) {
         box.scrollTop = box.scrollHeight;
     });
 }
-function showLoading(text = "Memproses data...") {
-    const el = document.getElementById('loading-proses');
-    if (!el) return;
+function showLoading(text = "Memproses...") {
+    const overlay = document.getElementById('loading-overlay');
+    const textEl = document.getElementById('loading-text');
 
-    el.style.display = 'flex';
-    el.querySelector('.loading-text').innerText = text;
+    textEl.innerText = text;
+    overlay.style.display = 'flex';
+
+    // 🔥 KUNCI SCROLL
+    document.body.style.overflow = 'hidden';
 }
 
 function hideLoading() {
-    const el = document.getElementById('loading-proses');
-    if (!el) return;
+    const overlay = document.getElementById('loading-overlay');
+    overlay.style.display = 'none';
 
-    el.style.display = 'none';
+    // 🔥 BALIKIN SCROLL
+    document.body.style.overflow = '';
 }
