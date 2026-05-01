@@ -115,10 +115,11 @@ async function startValidasiProses() {
     }
 
     // 1. Tentukan area kotak hijau (misal: di tengah layar, ambil 60% lebar & 40% tinggi)
-    const scanWidth = video.videoWidth * 0.8;  // Ambil 80% lebar video
-    const scanHeight = video.videoHeight * 0.3; // Ambil 30% tinggi video (fokus ke area teks)
-    const startX = (video.videoWidth - scanWidth) / 2;
-    const startY = (video.videoHeight - scanHeight) / 2;
+// Ambil area tengah yang lebih proporsional untuk teks vertikal/blok
+const scanWidth = video.videoWidth * 0.9;   // Hampir full lebar
+const scanHeight = video.videoHeight * 0.5;  // Ambil setengah tinggi layar
+const startX = (video.videoWidth - scanWidth) / 2;
+const startY = (video.videoHeight - scanHeight) / 2;
 
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
