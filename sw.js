@@ -1,19 +1,20 @@
-const CACHE_NAME = 'nvdc-cache-v4'; // Naikkan versi
+const CACHE_NAME = 'nvdc-cache-v5'; // 🔥 WAJIB ganti versi
 const assets = [
   '/',
   '/index.html',
   '/style.css',
   '/scan.js',
   '/fake.js',
-  '/manifest.json', // Tambahkan manifest agar PWA valid
-  'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
-  'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
-  'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js', // WAJIB ADA
+  '/manifest.json',
+
+  // ❌ JANGAN CACHE TESSERACT FILES
+  // biarin langsung dari network (penting buat WASM)
+
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
-// Install Service Worker
+// Install
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -23,27 +24,43 @@ self.addEventListener('install', e => {
   );
 });
 
-// Activate & Cleanup Old Cache
+// Activate
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
       );
     })
   );
 });
 
-// Fetch Strategy: Stale-While-Revalidate
-// Ini lebih bagus buat PWA: Pakai cache yang ada, tapi tetep update di background
+// Fetch
 self.addEventListener('fetch', e => {
+
+  const url = e.request.url;
+
+  // 🔥 BYPASS TESSERACT (INI KUNCI UTAMA)
+  if (
+    url.includes('tesseract') ||
+    url.includes('.wasm')
+  ) {
+    return; // langsung network, jangan cache
+  }
+
   e.respondWith(
     caches.match(e.request).then(cachedRes => {
-      const fetchPromise = fetch(e.request).then(networkRes => {
-        // Simpan hasil fetch baru ke cache buat penggunaan berikutnya
-        caches.open(CACHE_NAME).then(cache => cache.put(e.request, networkRes.clone()));
-        return networkRes;
-      }).catch(() => cachedRes); // Kalau offline parah, balik ke cache
+
+      const fetchPromise = fetch(e.request)
+        .then(networkRes => {
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(e.request, networkRes.clone());
+          });
+          return networkRes;
+        })
+        .catch(() => cachedRes);
 
       return cachedRes || fetchPromise;
     })
