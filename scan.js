@@ -171,7 +171,6 @@ async function startValidasiProses() {
 async function uploadKeGemini(base64Data) {
     logKeLayar("🚀 Mengirim ke Gemini via GAS...");
     
-    // loading dulu ke input
     document.getElementById('no_sjkb').value = "Loading...";
     document.getElementById('tujuan_dealer').value = "Loading...";
 
@@ -181,9 +180,8 @@ async function uploadKeGemini(base64Data) {
     try {
         const response = await fetch(gasUrl, {
             method: "POST",
-            mode: "cors",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "text/plain", // 🔥 FIX DISINI
             },
             body: JSON.stringify({ image: pureBase64 })
         });
@@ -195,10 +193,8 @@ async function uploadKeGemini(base64Data) {
 
             document.getElementById('no_sjkb').value = result.no_sjkb || "-";
             document.getElementById('tujuan_dealer').value = result.tujuan || "-";
-
         } else {
             logKeLayar("❌ Gagal: " + result.error);
-            alert(result.error);
         }
 
     } catch (err) {
@@ -206,7 +202,6 @@ async function uploadKeGemini(base64Data) {
         console.error(err);
     }
 }
-
 function isiHasilScan(data) {
     const inputSJKB = document.getElementById('no_sjkb');
     const inputTujuan = document.getElementById('tujuan_dealer');
