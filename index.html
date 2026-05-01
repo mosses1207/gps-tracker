@@ -190,7 +190,7 @@
   <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js?v=3') // Tambahkan ?v=3 buat paksa refresh
+      navigator.serviceWorker.register('/sw.js?v=4') // Samakan dengan versi di sw.js
       .then(reg => {
           console.log("SW Terdaftar!");
           // Jika ada update, langsung paksa aktif
