@@ -119,7 +119,7 @@ async function startValidasiProses() {
         document.body.appendChild(processingCanvas);
     }
 
-    processingContext.filter = 'grayscale(1) contrast(2) brightness(1.1)';
+    processingContext.filter = 'grayscale(1) contrast(1.4) brightness(0.9)';
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
     try {
@@ -161,6 +161,7 @@ function ambilFotoFinal(videoElement) {
 }
 
 async function uploadKeGemini(base64Data) {
+    closeCamera();
     logKeLayar("🤖 AI sedang menganalisis...");
     const btnScan = document.getElementById('btnScanAction');
     if(btnScan) btnScan.disabled = true;
@@ -210,12 +211,24 @@ function resetSistemScan() {
 function closeCamera() {
     isProcessing = false;
     const video = document.getElementById('video');
+    
     if (video && video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
+        // Hentikan semua track (kamera & audio jika ada)
+        const tracks = video.srcObject.getTracks();
+        tracks.forEach(track => {
+            track.stop(); // Ini kunci mematikan titik hijau
+            logKeLayar("Kamera Track Stopped: " + track.label);
+        });
+        
         video.srcObject = null;
+        video.load(); // Paksa browser lepas resource
     }
+    
     document.getElementById('camera-container').style.display = 'none';
+    logKeLayar("🔴 Kamera Ditutup Total");
 }
+
+
 
 function logKeLayar(msg) {
     if (!debugLog) return;
