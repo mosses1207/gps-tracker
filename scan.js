@@ -148,21 +148,28 @@ async function startValidasiProses() {
 }
 
 function ambilFotoFinal(videoElement) {
+    // Buat canvas baru yang fresh khusus untuk jepretan final
     const finalCanvas = document.createElement('canvas');
     finalCanvas.width = videoElement.videoWidth;
     finalCanvas.height = videoElement.videoHeight;
-    finalCanvas.getContext('2d').drawImage(videoElement, 0, 0);
+    const ctx = finalCanvas.getContext('2d');
     
-    const base64Image = finalCanvas.toDataURL('image/jpeg', 0.8);
-    logKeLayar("📸 Foto Disimpan!");
+    // PENTING: Pastikan filter 'none' agar hasil foto natural (apa adanya)
+    ctx.filter = 'none'; 
+    ctx.drawImage(videoElement, 0, 0);
     
+    // Ambil data base64 dengan kualitas tinggi (0.9)
+    const base64Image = finalCanvas.toDataURL('image/jpeg', 0.9);
+    logKeLayar("📸 Foto natural berhasil diambil!");
+    
+    // Langsung tutup kamera agar sensor mati (titik hijau hilang)
     closeCamera();
+    
+    // Kirim hasil jepretan apa adanya ke AI
     uploadKeGemini(base64Image); 
 }
-
 async function uploadKeGemini(base64Data) {
-    closeCamera();
-    logKeLayar("🤖 AI sedang menganalisis...");
+    logKeLayar("🤖 AI sedang menganalisis foto asli...");
     const btnScan = document.getElementById('btnScanAction');
     if(btnScan) btnScan.disabled = true;
 
@@ -175,23 +182,26 @@ async function uploadKeGemini(base64Data) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             signal: controller.signal,
-            body: JSON.stringify({ image: pureBase64, timestamp: new Date().toISOString() })
+            body: JSON.stringify({ 
+                image: pureBase64, 
+                timestamp: new Date().toISOString() 
+            })
         });
 
         clearTimeout(timeoutId);
         const result = await response.json();
 
         if (result.success) {
-            logKeLayar("✅ AI Valid: " + result.no_sjkb);
-            alert("Berhasil Verifikasi: " + result.no_sjkb);
+            logKeLayar("✅ Validasi Berhasil!");
+            alert("SJKB Valid: " + result.no_sjkb);
         } else {
-            logKeLayar("❌ AI Gagal: " + result.message);
+            logKeLayar("❌ Validasi Gagal: " + result.message);
             alert("Gagal: " + result.message);
         }
     } catch (err) {
-        logKeLayar(err.name === 'AbortError' ? "‼️ Timeout" : "‼️ API Error: " + err.message);
+        logKeLayar(err.name === 'AbortError' ? "‼️ Timeout (15 detik)" : "‼️ Error: " + err.message);
     } finally {
-        // Reset sistem setelah jeda 2 detik agar siap scan dokumen berikutnya
+        // Beri jeda 2 detik agar sistem benar-benar bersih sebelum bisa scan lagi
         setTimeout(resetSistemScan, 2000);
     }
 }
@@ -213,19 +223,20 @@ function closeCamera() {
     const video = document.getElementById('video');
     
     if (video && video.srcObject) {
-        // Hentikan semua track (kamera & audio jika ada)
-        const tracks = video.srcObject.getTracks();
+        const stream = video.srcObject;
+        const tracks = stream.getTracks();
+        
         tracks.forEach(track => {
-            track.stop(); // Ini kunci mematikan titik hijau
-            logKeLayar("Kamera Track Stopped: " + track.label);
+            track.stop(); // Menghentikan hardware kamera secara fisik
+            logKeLayar("Hardware " + track.label + " dimatikan.");
         });
         
         video.srcObject = null;
-        video.load(); // Paksa browser lepas resource
+        video.pause(); // Hentikan mesin pemutar video di browser
     }
     
     document.getElementById('camera-container').style.display = 'none';
-    logKeLayar("🔴 Kamera Ditutup Total");
+    logKeLayar("🔴 Kamera & Sensor Off (Titik Hijau Mati)");
 }
 
 
