@@ -33,22 +33,14 @@ async function initSatpam() {
 
     try {
         logKeLayar("Menyiapkan Tesseract...");
-worker = await Tesseract.createWorker({
-    logger: m => {
-        if (m.status.includes('loading')) {
-            const prog = Math.round(m.progress * 100);
-            progressText.innerText = `Mengunduh Data OCR (${prog}%)`;
-        }
-    }
-});
 
-await worker.loadLanguage('eng');
-await worker.initialize('eng');
+        worker = await Tesseract.createWorker();
 
-await worker.setParameters({
-    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
-    tessedit_pageseg_mode: '3'
-});
+        progressText.innerText = "Load language...";
+        await worker.loadLanguage('eng');
+
+        progressText.innerText = "Initialize OCR...";
+        await worker.initialize('eng');
 
         await worker.setParameters({
             tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
@@ -56,6 +48,7 @@ await worker.setParameters({
         });
 
         logKeLayar("Satpam Siap!");
+
         setTimeout(() => {
             loadingOverlay.style.opacity = '0';
             setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
