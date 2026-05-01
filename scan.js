@@ -34,13 +34,9 @@ async function initSatpam() {
     try {
         logKeLayar("Menyiapkan Tesseract...");
 
-        worker = await Tesseract.createWorker();
+        worker = await Tesseract.createWorker('eng');
 
-        progressText.innerText = "Load language...";
-        await worker.loadLanguage('eng');
-
-        progressText.innerText = "Initialize OCR...";
-        await worker.initialize('eng');
+        progressText.innerText = "OCR Siap";
 
         await worker.setParameters({
             tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
