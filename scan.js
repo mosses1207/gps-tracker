@@ -64,7 +64,8 @@ async function initSatpam() {
 async function openScanner() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
-
+    document.getElementById('scan-status').innerText = "🔍 Scanning...";
+    
     // 🔥 RESET TOTAL
     isLocked = false;
     isProcessing = false;
@@ -84,6 +85,7 @@ async function openScanner() {
 
         video.srcObject = stream;
 
+        video.onloadeddata = null;
         video.onloadeddata = async () => {
             await video.play();
             logKeLayar("Mencari Target...");
@@ -106,6 +108,12 @@ async function startValidasiProses() {
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
 
+    if (!video.videoWidth || !video.videoHeight) {
+    isProcessing = false;
+    requestAnimationFrame(startValidasiProses);
+    return;
+    }
+    
     const scaleX = video.videoWidth / videoRect.width;
     const scaleY = video.videoHeight / videoRect.height;
 
@@ -193,7 +201,7 @@ async function uploadKeGemini(base64Data) {
     setTimeout(() => {
         isProcessing = false;
         isLocked = false;
-        logKeLayar("🔄 Restart scanning...");
+        logKeLayar("✅ Selesai. Siap scan lagi.");
 
     }, 1000);
 }
