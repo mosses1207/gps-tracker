@@ -101,59 +101,92 @@ async function openScanner() {
     const processingCanvas = document.createElement('canvas');
     const processingContext = processingCanvas.getContext('2d');
 
-    async function startValidasiProses() {
+async function startValidasiProses() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
+    
+    // Cegah proses ganda atau jika kamera ditutup
     if (isProcessing || container.style.display === 'none') return;
     
     isProcessing = true;
 
+    // Tunggu sampai video siap
     if (!video.videoWidth) {
         setTimeout(startValidasiProses, 500);
         isProcessing = false;
         return;
     }
 
-    // 1. Tentukan area kotak hijau (misal: di tengah layar, ambil 60% lebar & 40% tinggi)
-
-    const scanWidth = video.videoWidth * 0.9;   // Hampir full lebar
-    const scanHeight = video.videoHeight * 0.5;  // Ambil setengah tinggi layar
+    // --- 1. SETTING AREA CROP (SANGAT PENTING) ---
+    // Kita perkecil area baca agar Tesseract tidak bingung baca teks di luar kotak
+    const scanWidth = video.videoWidth * 0.7;   // 70% lebar kamera
+    const scanHeight = video.videoHeight * 0.2; // 20% tinggi kamera (fokus ke baris teks)
+    
+    // Titik tengah (Center Crop)
     const startX = (video.videoWidth - scanWidth) / 2;
     const startY = (video.videoHeight - scanHeight) / 2;
 
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
 
-    // 2. Crop gambar: drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
-    processingContext.filter = 'grayscale(1) contrast(1.8) brightness(1.2)';
+    // --- 2. FITUR DEBUG VIEW (MATA KETIGA) ---
+    // Menampilkan apa yang dilihat OCR di pojok kiri atas layar
+    let debugCanvas = document.getElementById('debug-canvas-view');
+    if (!debugCanvas) {
+        processingCanvas.id = 'debug-canvas-view';
+        processingCanvas.style.cssText = `
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 9999;
+            border: 2px solid #ff0000;
+            width: 150px;
+            background: black;
+            pointer-events: none;
+        `;
+        document.body.appendChild(processingCanvas);
+    }
+
+    // --- 3. PROSES GAMBAR (FILTER) ---
+    // Mengubah ke hitam putih & kontras tinggi agar teks lebih tajam
+    processingContext.filter = 'grayscale(1) contrast(2) brightness(1.1)';
     processingContext.drawImage(
         video, 
-        startX, startY, scanWidth, scanHeight, // Sumber (Crop)
-        0, 0, scanWidth, scanHeight            // Hasil di canvas
+        startX, startY, scanWidth, scanHeight, // Sumber (Crop dari video)
+        0, 0, scanWidth, scanHeight            // Hasil (Ke canvas)
     );
 
     try {
-        // 3. Scan area kecil saja (Jauh lebih cepat!)
+        // --- 4. JALANKAN OCR (TESSERACT) ---
         const result = await worker.recognize(processingCanvas);
         const text = result.data.text.toUpperCase();
         
-        // Bersihkan teks dari spasi berlebih untuk pencarian
-        const cleanText = text.replace(/\s+/g, '');
-        logKeLayar("Scan Area: " + text.substring(0, 20)); 
+        // Bersihkan teks: Hanya ambil huruf dan angka
+        const cleanText = text.replace(/[^A-Z0-9]/g, '');
+        
+        logKeLayar("Bidikan: " + text.substring(0, 15).trim()); 
 
-        // 4. Logika cek: Gunakan regex atau includes yang lebih fleksibel
-        if (cleanText.includes("NVDC") || cleanText.includes("SJKB") || cleanText.includes("TUJUAN")) {
-            logKeLayar("✅ TARGET MATCH!");
-            if (navigator.vibrate) navigator.vibrate(200);
-            setTimeout(() => ambilFotoFinal(video), 300);
+        // --- 5. LOGIKA VALIDASI KEYWORD ---
+        const isMatch = cleanText.includes("NVDC") || 
+                        cleanText.includes("SJKB") || 
+                        cleanText.includes("TUJUAN") ||
+                        cleanText.includes("TOYOTA");
+
+        if (isMatch) {
+            logKeLayar("✅ TARGET TERKUNCI!");
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Getar HP
+            
+            // Beri jeda dikit biar fokus stabil, lalu jepret foto Full HD
+            setTimeout(() => ambilFotoFinal(video), 200);
         } else {
+            // Jika tidak ketemu, ulangi lagi setelah 800ms
             isProcessing = false;
-            // Interval dipercepat ke 500ms karena area scan sudah kecil (ringan)
-            setTimeout(startValidasiProses, 500); 
+            setTimeout(startValidasiProses, 800); 
         }
     } catch (err) {
         logKeLayar("‼️ OCR ERROR: " + err.message);
         isProcessing = false;
+        setTimeout(startValidasiProses, 2000); // Jeda lebih lama jika error
     }
 }
 
