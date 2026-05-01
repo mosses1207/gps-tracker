@@ -185,41 +185,38 @@ setTimeout(() => {
     fullCanvas.height = height;
     const fullCtx = fullCanvas.getContext('2d');
 
-    // Filter optimal untuk ketajaman teks tanpa merusak kualitas
+    // 🔥 STEP 1: Filter Standar (Tanpa Grayscale biar detail warna tetap ada)
     fullCtx.filter = 'contrast(1.4) brightness(1.1)';
     fullCtx.drawImage(video, 0, 0, width, height);
 
-    // --- LOGIKA AUTO COMPRESSION ---
-    let quality = 0.9; // Start di 0.9
-    let finalBlob = fullCanvas.toDataURL('image/jpeg', quality);
+    // 🔥 STEP 2: Cek Kondisi Awal (JPEG 0.9)
+    let finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
     let currentLength = finalBlob.length;
 
-    logKeLayar(`Percobaan awal (Q:${quality}): ${currentLength} Karakter`);
+    logKeLayar(`Cek awal: ${currentLength} karakter`);
 
-    // Jika hasil di bawah 70k, kita paksa ke kualitas maksimal (1.0)
+    // 🔥 STEP 3: Logika Keputusan (Anti-Burik)
     if (currentLength < 70000) {
-        quality = 1.0;
-        finalBlob = fullCanvas.toDataURL('image/jpeg', quality);
-        currentLength = finalBlob.length;
-        logKeLayar(`Upscale ke (Q:1.0): ${currentLength} Karakter`);
-    } 
-    // Jika ternyata masih di bawah 70k (karena gambar terlalu simpel), 
-    // kita gunakan format PNG (Lossless) yang pasti jauh lebih besar/detail
-    if (currentLength < 70000) {
+        // KONDISI: Gambar terlalu enteng/pecah/burik
+        // KEPUTUSAN: Jangan dikompres, kirim format PNG (Lossless)
         finalBlob = fullCanvas.toDataURL('image/png');
-        currentLength = finalBlob.length;
-        logKeLayar(`Force PNG (Detail Maksimal): ${currentLength} Karakter`);
-    }
-    // Jika kemahalan/kegedean banget (misal > 500k), baru kita turunkan
+        logKeLayar("⚠️ Burik Terdeteksi! Force PNG (Detail Maksimal)");
+    } 
     else if (currentLength > 500000) {
-        quality = 0.7;
-        finalBlob = fullCanvas.toDataURL('image/jpeg', quality);
-        logKeLayar(`Downscale ke (Q:0.7): ${finalBlob.length} Karakter`);
+        // KONDISI: Gambar terlalu raksasa (bisa bikin GAS timeout)
+        // KEPUTUSAN: Kompres dikit ke 0.7
+        finalBlob = fullCanvas.toDataURL('image/jpeg', 0.7);
+        logKeLayar("⚡ Kegedean! Kompres ke JPEG 0.7");
+    }
+    else {
+        // KONDISI: Ukuran sudah pas (70k - 500k)
+        logKeLayar("✅ Ukuran Ideal, kirim JPEG 0.9");
     }
 
+    // 🔥 STEP 4: Kirim!
     closeCamera();
     uploadKeGemini(finalBlob);
-    logKeLayar("Final Base64: " + finalBlob.length + " karakter");
+    logKeLayar("🚀 Final Payload: " + finalBlob.length + " karakter");
     
 }, 300);
         }
