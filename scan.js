@@ -103,41 +103,54 @@ async function startValidasiProses() {
         return;
     }
 
+    // 🔥 AREA DIPERSEMPIT (lebih fokus ke teks)
     const scanWidth = video.videoWidth * 0.9;
-    const scanHeight = video.videoHeight * 0.4;
+    const scanHeight = video.videoHeight * 0.35;
     const startX = (video.videoWidth - scanWidth) / 2;
     const startY = (video.videoHeight - scanHeight) / 2;
 
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
 
-    // --- TAMPILAN DI LAYAR (NATURAL) ---
-    // Gambar ke canvas tanpa filter dulu agar Abang liatnya jernih
+    // 🔥 DELAY biar frame gak blur
+    await new Promise(r => setTimeout(r, 250));
+
+    // --- TAMPILAN NORMAL ---
     processingContext.filter = 'none'; 
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
-    // --- PROSES OCR (FILTER TERPISAH) ---
-    // Buat canvas bayangan kecil hanya untuk filter Tesseract
+    // --- OCR CANVAS ---
     const tempOcrCanvas = document.createElement('canvas');
     tempOcrCanvas.width = scanWidth;
     tempOcrCanvas.height = scanHeight;
     const tempOcrCtx = tempOcrCanvas.getContext('2d');
-    
-    // Kasih filter di sini (tidak akan kelihatan di layar)
-    //tempOcrCtx.filter = 'grayscale(1) contrast(1.4) brightness(0.9)';
+
+    // 🔥 FILTER DIPERKUAT
+    tempOcrCtx.filter = 'grayscale(1) contrast(2.2) brightness(1.2)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0);
 
+    // 🔥 THRESHOLD (GAME CHANGER)
+    const imageData = tempOcrCtx.getImageData(0, 0, tempOcrCanvas.width, tempOcrCanvas.height);
+    const data = imageData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+        const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+        const val = avg > 150 ? 255 : 0;
+        data[i] = data[i+1] = data[i+2] = val;
+    }
+
+    tempOcrCtx.putImageData(imageData, 0, 0);
+
     try {
-        // Tesseract membaca dari canvas bayangan yang sudah difilter
         const result = await worker.recognize(tempOcrCanvas); 
         const text = result.data.text.toUpperCase();
         const cleanText = text.replace(/[^A-Z0-9]/g, '');
         
-        logKeLayar("Bidikan: " + text.substring(0, 15).trim()); 
+        logKeLayar("Bidikan: " + text.substring(0, 20).trim()); 
 
-        // Syarat: Harus ada kata TUJUAN dan MOTOR
-        const isMatch = (cleanText.includes("MOTOR") || cleanText.includes("M0T0R") || cleanText.includes("M0TOR") || cleanText.includes("MOT0R")) && 
-                (cleanText.includes("TUJUAN") || cleanText.includes("UAN") || cleanText.includes("TUJ") || cleanText.includes("KET") || cleanText.includes("PEN")|| cleanText.includes("PEM"));
+        // 🔥 REGEX LEBIH KUAT (anti typo OCR)
+        const isMatch = /M[O0]T[O0]R/.test(cleanText) &&
+                        /(TUJUAN|TUJ|UAN|KET|PEN|PEM)/.test(cleanText);
 
         if (isMatch) {
             logKeLayar("✅ TARGET TERKUNCI!");
@@ -145,15 +158,15 @@ async function startValidasiProses() {
             setTimeout(() => ambilFotoFinal(video), 200);
         } else {
             isProcessing = false;
-            setTimeout(startValidasiProses, 800); 
+            setTimeout(startValidasiProses, 700); 
         }
+
     } catch (err) {
         logKeLayar("‼️ OCR ERROR: " + err.message);
         isProcessing = false;
-        setTimeout(startValidasiProses, 2000);
+        setTimeout(startValidasiProses, 1500);
     }
 }
-
 function ambilFotoFinal(videoElement) {
     const finalCanvas = document.createElement('canvas');
     finalCanvas.width = videoElement.videoWidth;
