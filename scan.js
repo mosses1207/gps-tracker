@@ -196,31 +196,50 @@ function logKeLayar(msg) {
 
 // 7. Fungsi Kirim ke Gemini (AI Analysis)
 async function uploadKeGemini(base64Data) {
+    const statusBox = document.getElementById('scan-status'); // Jika ada element status
     logKeLayar("🤖 AI sedang menganalisis foto...");
     
-    // Hilangkan prefix "data:image/jpeg;base64,"
+    // 1. Matikan tombol agar tidak double-click
+    const btnScan = document.getElementById('btnScanAction');
+    if(btnScan) btnScan.disabled = true;
+
     const pureBase64 = base64Data.split(',')[1];
 
+    // 2. Setup Timeout (Batal otomatis jika > 15 detik tidak ada respon)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
-        // Contoh pemanggilan API (Ganti URL dengan endpoint backend Abang)
         const response = await fetch('https://api.anda.com/v1/analyze-sjkb', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal, // Pasang signal timeout
             body: JSON.stringify({
                 image: pureBase64,
                 timestamp: new Date().toISOString()
             })
         });
 
+        clearTimeout(timeoutId); // Hapus timer jika respon datang tepat waktu
         const result = await response.json();
 
         if (result.success) {
-            logKeLayar("✅ AI: Data SJKB Berhasil diverifikasi!");
-            // Lanjut ke proses update sheet atau dashboard
+            logKeLayar("✅ AI: SJKB " + (result.no_sjkb || "") + " Valid!");
+            // Panggil fungsi sukses (misal: refresh dashboard atau tutup modal)
+            alert("Berhasil Verifikasi: " + result.no_sjkb);
         } else {
-            logKeLayar("❌ AI: Data tidak valid. Coba foto lagi.");
+            logKeLayar("❌ AI: " + (result.message || "Data tidak valid"));
+            alert("Gagal: " + result.message);
         }
     } catch (err) {
-        logKeLayar("‼️ API ERROR: " + err.message);
+        if (err.name === 'AbortError') {
+            logKeLayar("‼️ ERROR: Koneksi Lemot (Timeout)");
+        } else {
+            logKeLayar("‼️ API ERROR: " + err.message);
+        }
+    } finally {
+        // 3. Nyalakan kembali tombol setelah selesai (baik sukses/gagal)
+        if(btnScan) btnScan.disabled = false;
+        isProcessing = false; // Reset flag agar bisa scan lagi jika gagal
     }
 }
