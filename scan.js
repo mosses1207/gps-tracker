@@ -80,6 +80,8 @@ async function openScanner() {
 
     if (!worker) {
         alert("Sistem belum siap.");
+        const btnScan = document.getElementById('btnScanAction');
+        if (btnScan) btnScan.disabled = false;
         return;
     }
 
