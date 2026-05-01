@@ -186,7 +186,7 @@ setTimeout(() => {
     const fullCtx = fullCanvas.getContext('2d');
 
     // 1. Set filter DULU sebelum drawImage
-    fullCtx.filter = 'grayscale(1) contrast(1.4) brightness(1.1)';
+    fullCtx.filter = 'contrast(1.4) brightness(1.1)';
     
     // 2. Gambar ke canvas
     fullCtx.drawImage(video, 0, 0, width, height);
