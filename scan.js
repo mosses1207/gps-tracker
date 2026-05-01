@@ -169,12 +169,16 @@ async function startValidasiProses() {
 }
 
 async function uploadKeGemini(base64Data) {
-    logKeLayar("🤖 Mengirim ke Gemini via GAS...");
+    logKeLayar("🤖 AI sedang menganalisis SJKB...");
+    
+    // Pastikan tombol scan dimatikan biar gak double klik
+    const btnScan = document.getElementById('btnScanAction');
+    if(btnScan) btnScan.disabled = true;
+
     const pureBase64 = base64Data.split(',')[1];
     const gasUrl = "https://script.google.com/macros/s/AKfycbxYY2VDSk1zx8FRfk4dpkyPOZLNjNa4Qx1czvFl5XMNE9MgeMcOZ-oTPisXQzgtOAA/exec";
 
     try {
-        // Kita hilangkan 'no-cors' agar bisa membaca balikan JSON
         const response = await fetch(gasUrl, {
             method: "POST",
             headers: {
@@ -183,22 +187,31 @@ async function uploadKeGemini(base64Data) {
             body: JSON.stringify({ image: pureBase64 })
         });
 
-        const hasil = await response.json(); // Sekarang kita bisa baca JSON-nya
-        
-        if (hasil.status === "success") {
-            logKeLayar("✅ Data Berhasil Diolah!");
-            // Masukkan hasil dari Gemini ke TextBox
-            document.getElementById('no_sjkb').value = hasil.no_sjkb || "Tidak Terbaca";
-            document.getElementById('tujuan_dealer').value = hasil.tujuan || "Tidak Terbaca";
-            alert("Data SJKB Terdeteksi!");
+        // Ambil data JSON dari Google Script
+        const result = await response.json();
+
+        if (result.success) {
+            logKeLayar("✅ Data Berhasil Diekstrak!");
+            
+            // DISINI PROSES MASUKIN KE TEXTBOX NYA BANG
+            document.getElementById('no_sjkb').value = result.no_sjkb;
+            document.getElementById('tujuan_dealer').value = result.tujuan;
+            
+            // Kasih feedback visual dikit biar driver seneng
+            if (navigator.vibrate) navigator.vibrate([200]); 
+            alert("Data SJKB & Tujuan Otomatis Terisi!");
+            
         } else {
-            logKeLayar("❌ Gemini Gagal Memproses");
+            logKeLayar("❌ AI Gagal: " + result.message);
+            alert("AI gagal membaca gambar. Coba posisikan lebih tegak.");
         }
 
     } catch (err) {
-        logKeLayar("‼️ Error: Cek Pengaturan CORS di GAS");
+        logKeLayar("‼️ Connection Error: Cek Deployment GAS");
         console.error(err);
     } finally {
+        // Balikin tombol ke kondisi semula
+        if(btnScan) btnScan.disabled = false;
         selesaiProses();
     }
 }
