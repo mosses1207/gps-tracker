@@ -1,47 +1,56 @@
-// Paksa munculin loading begitu script dibaca
+// --- Inisialisasi Variabel Global ---
+let worker;
+let isProcessing = false;
+const debugLog = true; // Set false jika ingin mematikan log di layar nanti
+
+// --- Gabungkan DOMContentLoaded ---
 document.addEventListener('DOMContentLoaded', () => {
     const loader = document.getElementById('loading-satpam');
-    if(loader) {
+    if (loader) {
         loader.style.setProperty('display', 'flex', 'important');
-        console.log("Loading Screen dipaksa muncul!");
+        logKeLayar("Sistem dimulai...");
     }
+
+    // Listener Tombol Scan
+    const btnScan = document.getElementById('btnScanAction');
+    if (btnScan) {
+        btnScan.addEventListener('click', (e) => {
+            e.preventDefault();
+            logKeLayar("Membuka Kamera...");
+            openScanner();
+        });
+    }
+
+    // Jalankan Inisialisasi Tesseract
+    initSatpam();
 });
 
-let worker;
-let scanInterval;
-let isProcessing = false;
-
-// 1. Inisialisasi Satpam (Langsung jalan begitu script keload)
-console.log("Script dimuat, memulai initSatpam...");
 async function initSatpam() {
     const progressText = document.getElementById('load-progress');
     const loadingOverlay = document.getElementById('loading-satpam');
 
     try {
-        logKeLayar("Memulai inisialisasi worker...");
-        loadingOverlay.style.display = 'flex';
+        logKeLayar("Menyiapkan Tesseract...");
 
-        // Inisialisasi Tesseract v5
         worker = await Tesseract.createWorker('eng', 1, {
             logger: m => {
-                if (m.status === 'loading eng.traineddata' || m.status === 'loading tesseract core') {
+                if (m.status.includes('loading')) {
                     const prog = Math.round(m.progress * 100);
-                    progressText.innerText = `Mengunduh Ilmu OCR (${prog}%)`;
-                    if (prog === 100) progressText.innerText = "Menyusun Data...";
+                    progressText.innerText = `Mengunduh Data OCR (${prog}%)`;
                 }
             },
             workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
             corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
         });
 
-        // --- PENTING: PROSES PEMANASAN ---
-        logKeLayar("Melakukan pemanasan sistem...");
+        // Pemanasan & Whitelist (Hanya Huruf, Angka, dan simbol SJKB)
         await worker.setParameters({
             tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/- ',
         });
-        logKeLayar("Satpam Ready!");
-        // ---------------------------------
 
+        logKeLayar("Satpam Siap!");
+
+        // Efek transisi tutup loading
         setTimeout(() => {
             loadingOverlay.style.opacity = '0';
             setTimeout(() => {
@@ -51,34 +60,16 @@ async function initSatpam() {
 
     } catch (e) {
         logKeLayar("‼️ GAGAL INIT: " + e.message);
-        progressText.innerText = "Gagal memuat sistem. Cek koneksi internet.";
+        progressText.innerText = "Error Sistem. Cek Koneksi.";
     }
 }
 
-// Panggil fungsi inisialisasi
-initSatpam();
-
-// 2. Event Listener Tombol (Cukup satu di sini)
-document.addEventListener('DOMContentLoaded', () => {
-    const btnScan = document.getElementById('btnScanAction');
-    if (btnScan) {
-        btnScan.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log("Tombol Foto diklik, memanggil kamera...");
-            openScanner(e);
-        });
-    }
-});
-
-// 3. Fungsi Buka Kamera
-async function openScanner(e) {
+async function openScanner() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     
-    // Pastikan worker sudah ada sebelum buka kamera
     if (!worker) {
-        alert("Sistem OCR belum siap. Tunggu loading selesai.");
+        alert("Sistem belum siap.");
         return;
     }
 
@@ -86,133 +77,110 @@ async function openScanner(e) {
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment" } 
+            video: { 
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            } 
         });
 
         video.srcObject = stream;
         video.muted = true;
         
-        // Gunakan event 'canplay' daripada langsung play()
         video.oncanplay = async () => {
-            try {
-                await video.play();
-                startValidasiProses();
-            } catch (pErr) {
-                console.log("Play interrupted: ", pErr);
-            }
+            await video.play();
+            logKeLayar("Mencari Target...");
+            startValidasiProses(); // Mulai loop pendeteksian
         };
     } catch (err) {
         alert("Kamera Error: " + err.message);
     }
 }
 
-// 4. Proses Scan (Mata Satpam)
+// Gunakan satu canvas permanen untuk menghemat memori
+const processingCanvas = document.createElement('canvas');
+const processingContext = processingCanvas.getContext('2d');
+
 async function startValidasiProses() {
-    if (isProcessing) return;
-    isProcessing = true;
-    
+    // Stop jika proses sedang jalan atau kamera ditutup
     const video = document.getElementById('video');
+    const container = document.getElementById('camera-container');
+    if (isProcessing || container.style.display === 'none') return;
+    
+    isProcessing = true;
+
     if (!video.videoWidth) {
-        // Video belum siap, tunggu sebentar
         setTimeout(startValidasiProses, 500);
         isProcessing = false;
         return;
     }
 
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    processingCanvas.width = video.videoWidth;
+    processingCanvas.height = video.videoHeight;
 
-    // Pakai resolusi video asli
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // TRIK: Kasih filter sedikit agar teks lebih hitam putih (Grayscale & Contrast)
-    context.filter = 'grayscale(1) contrast(1.5)';
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Filter untuk meningkatkan akurasi baca
+    processingContext.filter = 'grayscale(1) contrast(1.5)';
+    processingContext.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
 
     try {
-        logKeLayar("Sedang membaca teks...");
+        const result = await worker.recognize(processingCanvas);
+        const text = result.data.text.toUpperCase();
         
-        // recognize() butuh waktu, log ini untuk memastikan dia tidak hang
-        const result = await worker.recognize(canvas);
-        const text = result.data.text;
-        
-        logKeLayar("Hasil: " + text.substring(0, 30).replace(/\n/g, ' ')); 
+        logKeLayar("Read: " + text.substring(0, 25).replace(/\n/g, ' ')); 
 
-        // Logika pencarian kode
-        const txt = text.toUpperCase();
-        if (txt.includes("NVDC") || txt.includes("SJKB") || txt.includes("TUJUAN")) {
-            logKeLayar("✅ TARGET TERDETEKSI!");
+        // Logika Validasi Utama
+        if (text.includes("NVDC") || text.includes("SJKB") || text.includes("TUJUAN")) {
+            logKeLayar("✅ TARGET DITEMUKAN!");
             if (navigator.vibrate) navigator.vibrate(200);
             
-            // Ambil foto final tanpa filter untuk dikirim ke API
-            ambilFotoFinal(video); 
+            // Beri jeda sebentar agar user tahu ada yang terdeteksi
+            setTimeout(() => ambilFotoFinal(video), 300);
         } else {
-            // Jika tidak ketemu, ulangi lagi
             isProcessing = false;
+            // Loop setiap 1 detik agar tidak panas
             setTimeout(startValidasiProses, 1000); 
         }
     } catch (err) {
         logKeLayar("‼️ OCR ERROR: " + err.message);
         isProcessing = false;
-        // Jika error berat, coba re-init atau stop
     }
 }
 
-// 5. Logika Validasi (Keputusan Satpam)
-function logicValidasiKamera(text) {
-    const statusText = document.getElementById('scan-status');
-    const txt = text.toUpperCase();
-
-    // Cari kata kunci secara parsial
-    if (txt.includes("NVDC") || txt.includes("TUJUAN") || txt.includes("SJKB")) {
-        console.log("Target Ditemukan!");
-        statusText.innerText = "✅ TERDETEKSI! MENGAMBIL FOTO...";
-        statusText.style.color = "#00ff00";
-
-        if (navigator.vibrate) navigator.vibrate(200);
-        
-        // Hentikan interval agar tidak foto berkali-kali
-        clearInterval(scanInterval);
-        setTimeout(() => ambilFotoFinal(), 500);
-    }
-}
-
-// 6. Jepret Foto Final
 function ambilFotoFinal(videoElement) {
-    const canvas = document.createElement('canvas');
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
-    // Foto final bersih tanpa filter debug
-    canvas.getContext('2d').drawImage(videoElement, 0, 0);
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = videoElement.videoWidth;
+    finalCanvas.height = videoElement.videoHeight;
+    // Ambil foto jernih tanpa filter
+    finalCanvas.getContext('2d').drawImage(videoElement, 0, 0);
     
-    const base64Image = canvas.toDataURL('image/jpeg', 0.8);
-    logKeLayar("📸 Foto sukses diambil!");
+    const base64Image = finalCanvas.toDataURL('image/jpeg', 0.8);
+    logKeLayar("📸 Foto Disimpan!");
     
-    // Matikan kamera sebelum lanjut ke proses berikutnya
     closeCamera();
     
-    // Tampilkan alert atau lanjut ke fungsi berikutnya
-    alert("Berhasil mendeteksi SJKB. Mengirim data...");
+    // Di sini panggil fungsi kirim data/Gemini
+    console.log("Image Ready for Processing");
+    alert("Berhasil Scan SJKB!");
 }
 
 function closeCamera() {
     isProcessing = false;
-    if (scanInterval) clearInterval(scanInterval);
     const video = document.getElementById('video');
     if (video && video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
     }
     document.getElementById('camera-container').style.display = 'none';
 }
 
 function logKeLayar(msg) {
+    if (!debugLog) return;
     const logBox = document.getElementById('debug-log');
     if (logBox) {
         const newLog = document.createElement('div');
+        newLog.style.borderBottom = "1px solid #333";
         newLog.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
         logBox.appendChild(newLog);
-        // Otomatis scroll ke paling bawah
         logBox.scrollTop = logBox.scrollHeight;
     }
 }
