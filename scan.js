@@ -175,30 +175,38 @@ async function uploadKeGemini(base64Data) {
     const gasUrl = "https://script.google.com/macros/s/AKfycbzJqgr_NoIACivq5IWwPyFKVFKmYgaTBkFjNwymBA7mPRC0vVKn8UN9mVPZZERPjZzr/exec";
 
     try {
-        // Menggunakan metode 'no-cors' agar request tetap tembus meskipun browser rewel
-        await fetch(gasUrl, {
+        const response = await fetch(gasUrl, {
             method: "POST",
-            mode: "no-cors", 
             headers: {
-                "Content-Type": "text/plain;charset=utf-8",
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({ image: pureBase64 })
         });
 
-        // Karena 'no-cors', kita tidak bisa baca JSON balik secara langsung.
-        // Tapi kita tahu kalau sampai sini tanpa 'catch', berarti data SUDAH TERKIRIM.
-        logKeLayar("📡 Data terkirim! Sedang diproses di background...");
-        logKeLayar("💡 Cek Spreadsheet Log_SJKB secara berkala.");
+        const result = await response.json();
 
-        // Trick: Tunggu 5 detik, lalu asumsikan data sudah di log sheet
-        setTimeout(() => {
-            alert("Selesai! Silakan cek Spreadsheet untuk melihat hasil ekstraksi Gemini.");
-        }, 5000);
+        logKeLayar("📥 Response diterima");
+
+        if (result.success) {
+            isiHasilScan(result);
+        } else {
+            logKeLayar("❌ Gagal: " + result.error);
+            alert("Gagal baca data");
+        }
 
     } catch (err) {
-        logKeLayar("‼️ Connection Error: Cek Deployment GAS");
-        console.error(err);
+        logKeLayar("‼️ ERROR: " + err.message);
     }
+}
+
+function isiHasilScan(data) {
+    const inputSJKB = document.getElementById('no_sjkb');
+    const inputTujuan = document.getElementById('tujuan_dealer');
+
+    if (inputSJKB) inputSJKB.value = data.no_sjkb || "";
+    if (inputTujuan) inputTujuan.value = data.tujuan || "";
+
+    logKeLayar("✅ Input terisi otomatis");
 }
 
 function closeCamera() {
