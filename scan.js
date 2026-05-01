@@ -12,43 +12,33 @@ let scanInterval;
 let isProcessing = false;
 
 // 1. Inisialisasi Satpam (Langsung jalan begitu script keload)
-// --- DI BARIS PALING ATAS script.js ---
 console.log("Script dimuat, memulai initSatpam...");
 
 async function initSatpam() {
     const progressText = document.getElementById('load-progress');
     const loadingOverlay = document.getElementById('loading-satpam');
 
-    // Cek apakah elemennya ada
-    if (!loadingOverlay) {
-        console.error("Elemen loading-satpam tidak ketemu!");
-        return;
-    }
-
     try {
-        // Tampilkan loading secara paksa di awal
-        loadingOverlay.style.setProperty('display', 'flex', 'important');
+        // Tampilkan loading
+        loadingOverlay.style.display = 'flex';
 
-        worker = await Tesseract.createWorker('eng', 1, {
-            logger: m => {
-                if (m.status === 'loading language traineddata' || m.status === 'loading tesseract core') {
-                    const prog = Math.round(m.progress * 100);
-                    if (progressText) progressText.innerText = `Sedang mengunduh ilmu: ${prog}%`;
-                }
-            }
-        });
+        // Inisialisasi worker v5
+// Di scan.js bagian initSatpam
+worker = await Tesseract.createWorker('eng', 1, {
+  workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+  langPath: '/path-ke-folder-data-kamu/', // Simpan eng.traineddata di sini
+  corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
+});
 
-        console.log("Satpam Ready!");
-        // Sembunyikan kalau sudah 100%
-        loadingOverlay.style.setProperty('display', 'none', 'important');
+        console.log("Worker Tesseract Siap!");
+        loadingOverlay.style.display = 'none';
     } catch (e) {
         console.error("Gagal init Tesseract:", e);
-        if (progressText) progressText.innerText = "Error: Coba Refresh Halaman";
+        progressText.innerText = "Gagal memuat sistem OCR.";
     }
 }
 
 initSatpam();
-
 
 // 2. Event Listener Tombol (Cukup satu di sini)
 document.addEventListener('DOMContentLoaded', () => {
@@ -93,49 +83,56 @@ function startValidasiProses() {
     const video = document.getElementById('video');
     const statusText = document.getElementById('scan-status');
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     if (scanInterval) clearInterval(scanInterval);
 
     scanInterval = setInterval(async () => {
-        if (!worker || isProcessing || video.paused) return;
+        // CEK 1: Apakah worker sudah ada?
+        // CEK 2: Apakah video sudah siap datanya? (HAVE_ENOUGH_DATA = 4)
+        if (!worker || isProcessing || video.readyState !== 4) return;
 
-        canvas.width = 640;
-        canvas.height = 360;
+        isProcessing = true; // Kunci biar tidak numpuk prosesnya
 
-        // FILTER TAJAM: Biar tulisan NVDC terlihat jelas
-        ctx.filter = 'contrast(150%) grayscale(100%)';
+        // Samakan ukuran canvas dengan video asli
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Gambar frame dari video ke canvas
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         try {
-            statusText.innerText = "🔍 Satpam sedang membaca...";
+            statusText.innerText = "🔍 Mencoba membaca teks...";
+            
+            // Lakukan OCR
             const { data: { text } } = await worker.recognize(canvas);
             
-            console.log("Hasil Baca:", text); 
+            console.log("Hasil OCR:", text);
             logicValidasiKamera(text);
         } catch (err) {
-            console.error("OCR Gagal:", err);
+            console.error("Proses OCR Error:", err);
+        } finally {
+            isProcessing = false; // Buka kunci setelah selesai (berhasil/gagal)
         }
-    }, 1500);
+    }, 1500); // Interval 1.5 detik
 }
 
 // 5. Logika Validasi (Keputusan Satpam)
 function logicValidasiKamera(text) {
-    const cleanText = text.toUpperCase().replace(/\s+/g, '');
     const statusText = document.getElementById('scan-status');
+    const txt = text.toUpperCase();
 
-    // Kita cari kata NVDC atau TUJUAN
-    if (cleanText.includes("NVDC") || cleanText.includes("TUJUAN")) {
-        isProcessing = true;
-        statusText.innerText = "✅ TARGET DITEMUKAN! MEMOTRET...";
+    // Cari kata kunci secara parsial
+    if (txt.includes("NVDC") || txt.includes("TUJUAN") || txt.includes("SJKB")) {
+        console.log("Target Ditemukan!");
+        statusText.innerText = "✅ TERDETEKSI! MENGAMBIL FOTO...";
         statusText.style.color = "#00ff00";
-        
+
         if (navigator.vibrate) navigator.vibrate(200);
         
-        setTimeout(() => ambilFotoFinal(), 800);
-    } else {
-        statusText.innerText = "🔍 Mencari NVDC / TUJUAN...";
-        statusText.style.color = "white";
+        // Hentikan interval agar tidak foto berkali-kali
+        clearInterval(scanInterval);
+        setTimeout(() => ambilFotoFinal(), 500);
     }
 }
 
