@@ -44,7 +44,8 @@ async function initSatpam() {
         });
 
         await worker.setParameters({
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/- ',
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        tessedit_pageseg_mode: '7'
         });
 
         logKeLayar("Satpam Siap!");
@@ -103,23 +104,30 @@ async function startValidasiProses() {
         return;
     }
 
-    // 🔥 AREA LEBIH FOKUS KE TENGAH LABEL
-    const scanWidth = video.videoWidth * 0.8;
-    const scanHeight = video.videoHeight * 0.25;
-    const startX = (video.videoWidth - scanWidth) / 2;
-    const startY = video.videoHeight * 0.3;
+    // 🔥 AMBIL AREA DARI KOTAK HIJAU
+    const scanBox = document.getElementById('scan-box');
+    const rect = scanBox.getBoundingClientRect();
+    const videoRect = video.getBoundingClientRect();
+
+    const scaleX = video.videoWidth / videoRect.width;
+    const scaleY = video.videoHeight / videoRect.height;
+
+    const startX = (rect.left - videoRect.left) * scaleX;
+    const startY = (rect.top - videoRect.top) * scaleY;
+    const scanWidth = rect.width * scaleX;
+    const scanHeight = rect.height * scaleY;
 
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
 
-    // 🔥 DELAY biar fokus kamera settle
+    // 🔥 DELAY BIAR FOKUS
     await new Promise(r => setTimeout(r, 250));
 
     // --- CAPTURE ---
     processingContext.filter = 'none'; 
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
-    // --- OCR CANVAS (UPSCALE 2X 🔥) ---
+    // --- OCR CANVAS (UPSCALE) ---
     const scale = 2;
     const tempOcrCanvas = document.createElement('canvas');
     tempOcrCanvas.width = scanWidth * scale;
@@ -128,17 +136,17 @@ async function startValidasiProses() {
     const tempOcrCtx = tempOcrCanvas.getContext('2d');
     tempOcrCtx.scale(scale, scale);
 
-    // 🔥 FILTER LEBIH KERAS
+    // 🔥 FILTER KUAT
     tempOcrCtx.filter = 'grayscale(1) contrast(2.5) brightness(1.3)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0);
 
-    // 🔥 THRESHOLD (biar huruf jadi tegas)
+    // 🔥 THRESHOLD
     const imageData = tempOcrCtx.getImageData(0, 0, tempOcrCanvas.width, tempOcrCanvas.height);
     const data = imageData.data;
 
     for (let i = 0; i < data.length; i += 4) {
         const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-        const val = avg > 130 ? 255 : 0; // 🔥 lebih sensitif
+        const val = avg > 130 ? 255 : 0;
         data[i] = data[i+1] = data[i+2] = val;
     }
 
@@ -149,15 +157,19 @@ async function startValidasiProses() {
         const text = result.data.text.toUpperCase();
         const cleanText = text.replace(/[^A-Z0-9]/g, '');
 
-        logKeLayar("Bidikan: " + text.substring(0, 25).trim());
+        logKeLayar("Bidikan: " + text.substring(0, 30).trim());
 
-        // 🔥 DETEKSI KHUSUS SJKB (ANTI TYPO OCR)
+        // 🔥 DETEKSI SJKB (ANTI TYPO)
         const sjkbPattern = /NVD[C0]C[I1]B[A-Z0-9]{4,}/;
 
-        // 🔥 opsional (kalau mau tambah validasi)
-        const tujuanPattern = /(TUJUAN|TUJ|KET)/;
+        // 🔥 DETEKSI TUJUAN (FLEKSIBEL)
+        const tujuanPattern = /(TUJUAN|TUJ|TUIUAN|TUJAN|UAN|KET|PEN|PEM)/;
 
-        const isMatch = sjkbPattern.test(cleanText);
+        const hasSJKB = sjkbPattern.test(cleanText);
+        const hasTujuan = tujuanPattern.test(cleanText);
+
+        // 🔥 FINAL LOGIC
+        const isMatch = hasSJKB; // ← ini kunci stabil
 
         if (isMatch) {
             logKeLayar("✅ SJKB TERDETEKSI!");
