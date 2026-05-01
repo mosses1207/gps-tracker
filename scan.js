@@ -185,7 +185,8 @@ async function startValidasiProses() {
 if (!isLocked && isCameraActive) {
     isProcessing = false;
     setTimeout(() => requestAnimationFrame(startValidasiProses), 100);
-}
+        }
+    }
 }
 
 async function uploadKeGemini(base64Data) {
