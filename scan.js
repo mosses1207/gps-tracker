@@ -112,58 +112,58 @@ async function startValidasiProses() {
     const scaleX = video.videoWidth / videoRect.width;
     const scaleY = video.videoHeight / videoRect.height;
 
-    // Tetap ambil sesuai box hijau (biar user bebas bidiknya)
     const startX = (rect.left - videoRect.left) * scaleX;
     const startY = (rect.top - videoRect.top) * scaleY;
     const scanWidth = rect.width * scaleX;
     const scanHeight = rect.height * scaleY;
 
+    // Canvas untuk Tesseract (Umpan)
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
-    // 🔥 STRATEGI: SUPER-RESOLUTION (UPSCALE 4X)
-    // Teks kecil di SJKB butuh pixel yang banyak biar karakternya kebentuk sempurna.
-    const scale = 4; 
+    // Filter Umpan: Kita buat agak tajam tapi jangan sampai bikin teks pecah
+    const scale = 2; 
     const tempOcrCanvas = document.createElement('canvas');
     tempOcrCanvas.width = scanWidth * scale;
     tempOcrCanvas.height = scanHeight * scale;
     const tempOcrCtx = tempOcrCanvas.getContext('2d');
     
-    // Matikan smoothing biar pixel-nya tajam pas di-resize (Pixelated Look)
-    tempOcrCtx.imageSmoothingEnabled = false;
-    
-    // Filter: Grayscale + Contrast Tinggi banget biar teks kecil "nendang" keluar
-    tempOcrCtx.filter = 'grayscale(1) contrast(3) brightness(0.9)';
+    // Grayscale + Contrast standar biar baris teks "terlihat" oleh engine
+    tempOcrCtx.filter = 'grayscale(1) contrast(1.4) brightness(1.1)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0, scanWidth * scale, scanHeight * scale);
 
     try {
-        // Kita panggil recognize
         const result = await worker.recognize(tempOcrCanvas);
+        const rawText = result.data.text.toUpperCase();
         
-        // Ambil SEMUA teks yang berhasil dibaca (bukan cuma rawText)
-        // Kita join semua baris teks yang ditemukan
-        const allDetectedText = result.data.text.toUpperCase();
-        
-        logKeLayar("👁️ OCR Catch: " + allDetectedText.substring(0, 50).replace(/\n/g, " "));
+        // Monitoring apa yang ditangkap umpan kita
+        logKeLayar("👁️ Umpan: " + rawText.substring(0, 40).replace(/\n/g, " "));
 
-        // --- VALIDASI GLOBAL ---
-        // Kita cek keberadaan kata kunci di manapun posisinya dalam box hijau
-        const hasNVDC = allDetectedText.includes("NVDC") || allDetectedText.includes("CIBITUNG");
-        const hasForm = /SJKB|NO|TUJUAN|MOTOR/.test(allDetectedText);
+        // --- LOGIKA PEMICU (SENSITIF) ---
+        // Kita pakai regex yang sangat toleran terhadap typo OCR
+        // NVD, CIB, SJKB, atau TOYOTA (asal ada salah satu penanda kuat)
+        const triggerNVDC = /NVD|CIB|CINTUNG/.test(rawText);
+        const triggerHeader = /SJKB|TUJ|UAN|MOTOR/.test(rawText);
 
-        // Jika salah satu dari NVDC ketemu, atau kombinasi Form & Motor, langsung jepret
-        if (hasNVDC && hasForm) {
+        // Jika Tesseract menangkap sinyal NVDC DAN ada atribut form-nya
+        if (triggerNVDC && triggerHeader) {
             isLocked = true;
-            logKeLayar("✅ TARGET VALID (Full Area)!");
+            logKeLayar("🎯 KERTAS TERDETEKSI! Mengirim ke Gemini...");
+            
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            setTimeout(() =>  300); //ambilFotoFinal(video),
+            
+            // JEDA 500ms: Biar user ada waktu buat 'steady' (diam) bentar
+            setTimeout(() => {
+                // Ambil foto final dari area yang sama (Box Hijau) 
+                // tapi dengan resolusi asli video tanpa filter buat Gemini
+                //ambilFotoFinal(video);
+            }, 500);
         } else {
             isProcessing = false;
-            setTimeout(startValidasiProses, 400); 
+            setTimeout(startValidasiProses, 300); 
         }
     } catch (err) {
-        logKeLayar("‼️ OCR ERROR: " + err.message);
         isProcessing = false;
         setTimeout(startValidasiProses, 1000);
     }
