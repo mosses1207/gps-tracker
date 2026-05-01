@@ -103,8 +103,8 @@ async function startValidasiProses() {
         return;
     }
 
-    const scanWidth = video.videoWidth * 0.7;
-    const scanHeight = video.videoHeight * 0.2;
+    const scanWidth = video.videoWidth * 0.9;
+    const scanHeight = video.videoHeight * 0.4;
     const startX = (video.videoWidth - scanWidth) / 2;
     const startY = (video.videoHeight - scanHeight) / 2;
 
