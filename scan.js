@@ -96,7 +96,6 @@ async function startValidasiProses() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     
-    // Safety check: stop jika sedang proses, kamera tutup, atau sudah lock
     if (isProcessing || container.style.display === 'none' || isLocked) return;
     isProcessing = true;
 
@@ -106,7 +105,6 @@ async function startValidasiProses() {
         return;
     }
 
-    // --- 1. SET AREA SCAN (KOTAK HIJAU) ---
     const scanBox = document.getElementById('scan-box');
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
@@ -114,6 +112,7 @@ async function startValidasiProses() {
     const scaleX = video.videoWidth / videoRect.width;
     const scaleY = video.videoHeight / videoRect.height;
 
+    // Tetap ambil sesuai box hijau (biar user bebas bidiknya)
     const startX = (rect.left - videoRect.left) * scaleX;
     const startY = (rect.top - videoRect.top) * scaleY;
     const scanWidth = rect.width * scaleX;
@@ -121,49 +120,47 @@ async function startValidasiProses() {
 
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
-
-    // --- 2. CAPTURE & PRE-PROCESS ---
-    processingContext.filter = 'none'; 
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
-    const scale = 2; // Upscale untuk akurasi Tesseract
+    // 🔥 STRATEGI: SUPER-RESOLUTION (UPSCALE 4X)
+    // Teks kecil di SJKB butuh pixel yang banyak biar karakternya kebentuk sempurna.
+    const scale = 4; 
     const tempOcrCanvas = document.createElement('canvas');
     tempOcrCanvas.width = scanWidth * scale;
     tempOcrCanvas.height = scanHeight * scale;
     const tempOcrCtx = tempOcrCanvas.getContext('2d');
     
-    // Filter anti-silau: Sedikit redup (0.95) & kontras tajam (1.8)
-    tempOcrCtx.filter = 'grayscale(1) contrast(1.8) brightness(0.95)';
+    // Matikan smoothing biar pixel-nya tajam pas di-resize (Pixelated Look)
+    tempOcrCtx.imageSmoothingEnabled = false;
+    
+    // Filter: Grayscale + Contrast Tinggi banget biar teks kecil "nendang" keluar
+    tempOcrCtx.filter = 'grayscale(1) contrast(3) brightness(0.9)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0, scanWidth * scale, scanHeight * scale);
 
     try {
-        // --- 3. JALANKAN OCR ---
+        // Kita panggil recognize
         const result = await worker.recognize(tempOcrCanvas);
-        const rawText = result.data.text.toUpperCase() || "";
         
-        // Log monitoring (potong 35 karakter biar gak menuhin layar)
-        logKeLayar("👁️ Scan: " + rawText.substring(0, 35).replace(/\n/g, " "));
-
-        // --- 4. VALIDASI KETAT ---
-        // Wajib ada kata 'NVDC'
-        const hasIdentity = /NVD/.test(rawText);
+        // Ambil SEMUA teks yang berhasil dibaca (bukan cuma rawText)
+        // Kita join semua baris teks yang ditemukan
+        const allDetectedText = result.data.text.toUpperCase();
         
-        // Wajib ada penanda dokumen SJKB atau Header Tujuan
-        const hasAttribute = /SJKB|NO\.|TUJUAN|TUJ|UAN/.test(rawText);
+        logKeLayar("👁️ OCR Catch: " + allDetectedText.substring(0, 50).replace(/\n/g, " "));
 
-        // Eksekusi jika syarat terpenuhi
-        if (hasIdentity && hasAttribute) {
-            isLocked = true; 
-            logKeLayar("✅ TARGET VALID: NVDC TERDETEKSI!");
-            
+        // --- VALIDASI GLOBAL ---
+        // Kita cek keberadaan kata kunci di manapun posisinya dalam box hijau
+        const hasNVDC = allDetectedText.includes("NVDC") || allDetectedText.includes("CIBITUNG");
+        const hasForm = /SJKB|NO|TUJUAN|MOTOR/.test(allDetectedText);
+
+        // Jika salah satu dari NVDC ketemu, atau kombinasi Form & Motor, langsung jepret
+        if (hasNVDC && hasForm) {
+            isLocked = true;
+            logKeLayar("✅ TARGET VALID (Full Area)!");
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            
-            // Ambil foto final kualitas tinggi setelah jeda sinkronisasi
             setTimeout(() => ambilFotoFinal(video), 300);
         } else {
-            // Jika tidak valid, reset flag dan scan ulang setelah 300ms
             isProcessing = false;
-            setTimeout(startValidasiProses, 300); 
+            setTimeout(startValidasiProses, 400); 
         }
     } catch (err) {
         logKeLayar("‼️ OCR ERROR: " + err.message);
