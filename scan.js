@@ -148,15 +148,13 @@ async function startValidasiProses() {
     tempOcrCtx.putImageData(imageData, 0, 0);
 
     try {
-        const result = await worker.recognize(tempOcrCanvas); 
-        const text = result.data.text.toUpperCase();
-        const cleanText = text.replace(/[^A-Z0-9]/g, '');
-        logKeLayar("Bidikan: " + text.substring(0, 25).trim());
-
-        // 🔥 DETEKSI SJKB (Pola: NVDC atau NVD0)
-        // Cek apakah ada kata SJKB atau pola NV
+        const result = await worker.recognize(tempOcrCanvas);
+        const rawText = result.data.text.trim().replace(/\n/g, " ") || "(Kosong)";
+        const cleanText = result.data.text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        logKeLayar("👁️ Scan: " + rawText.substring(0, 30));
         const hasSJKB = cleanText.includes("SJKB") || cleanText.includes("NVD");
-        // 🔥 DETEKSI MOTOR / TUJUAN (Opsional tapi membantu)
+        const hasMotor = /MOTOR|M0T0R|M0TOR|MOT0R/.test(cleanText);
+        const hasSJKB = cleanText.includes("SJKB") || cleanText.includes("NVD");
         const hasMotor = /MOTOR|M0T0R|M0TOR|MOT0R/.test(cleanText);
 
         if (hasSJKB || hasMotor) {
