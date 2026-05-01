@@ -46,7 +46,7 @@ async function initSatpam() {
 
         await worker.setParameters({
             tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
-            tessedit_pageseg_mode: '6'
+            tessedit_pageseg_mode: '3'
         });
 
         logKeLayar("Satpam Siap!");
@@ -106,7 +106,7 @@ async function startValidasiProses() {
         return;
     }
 
-    // 🔥 AMBIL AREA DARI KOTAK HIJAU
+    // --- AMBIL AREA DARI KOTAK HIJAU ---
     const scanBox = document.getElementById('scan-box');
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
@@ -126,49 +126,48 @@ async function startValidasiProses() {
     processingContext.filter = 'none'; 
     processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
-    // --- OCR CANVAS (UPSCALE 2X) ---
+    // --- OCR CANVAS (UPSCALE 2X + OPTIMASI FILTER) ---
     const scale = 2;
     const tempOcrCanvas = document.createElement('canvas');
     tempOcrCanvas.width = scanWidth * scale;
     tempOcrCanvas.height = scanHeight * scale;
     const tempOcrCtx = tempOcrCanvas.getContext('2d');
     
-    // 🔥 FILTER KUAT SEBELUM THRESHOLD
-    tempOcrCtx.filter = 'grayscale(1) contrast(3) brightness(1.1)';
+    // 🔥 Pake kontras tinggi tapi jangan binarization manual (biar Tesseract yang olah)
+    tempOcrCtx.filter = 'grayscale(1) contrast(2.5) brightness(1.2)';
     tempOcrCtx.drawImage(processingCanvas, 0, 0, scanWidth * scale, scanHeight * scale);
-
-    // 🔥 THRESHOLDING (Binarization: Hitam Putih Pekat)
-    const imageData = tempOcrCtx.getImageData(0, 0, tempOcrCanvas.width, tempOcrCanvas.height);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-        const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-        const val = avg > 100 ? 255 : 0; // Piksel abu-abu jadi putih, gelap jadi hitam
-        data[i] = data[i+1] = data[i+2] = val;
-    }
-    tempOcrCtx.putImageData(imageData, 0, 0);
 
     try {
         const result = await worker.recognize(tempOcrCanvas);
-        const rawText = result.data.text.trim().replace(/\n/g, " ") || "(Kosong)";
-        const cleanText = result.data.text.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        logKeLayar("👁️ Scan: " + rawText.substring(0, 30));
-        const hasSJKB = cleanText.includes("SJKB") || cleanText.includes("NVD");
-        const hasMotor = /MOTOR|M0T0R|M0TOR|MOT0R/.test(cleanText);
+        const rawText = result.data.text.toUpperCase() || "";
+        
+        // Log buat intip apa yang kebaca sama Tesseract
+        logKeLayar("👁️ Scan: " + rawText.substring(0, 30).replace(/\n/g, " "));
 
-        if (hasSJKB || hasMotor) {
+        // --- LOGIKA VALIDASI FUZZY (GAMPANG NEMPEL) ---
+        // Kita cari kata kunci tanpa hapus spasi/simbol dulu biar nggak nempel semua
+        const hasSJKB  = /SJKB|NO\.|DOC/.test(rawText);
+        const hasNVDC  = /NVDC|NVD|CIBITUNG|CIB/.test(rawText);
+        const hasMotor = /MOTOR|MOT0R|M0TOR|M0T0R|ASTRA|TOYOTA/.test(rawText);
+
+        // Syarat: Ada tulisan NVDC ATAU (ada Motor DAN SJKB)
+        if (hasNVDC || (hasMotor && hasSJKB)) {
             isLocked = true; // Kunci agar tidak looping lagi
             logKeLayar("✅ TARGET TERKUNCI!");
+            
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             
-            setTimeout(() => ambilFotoFinal(video), 200);
+            // Jeda dikit biar user tau udah kekunci
+            setTimeout(() => ambilFotoFinal(video), 300);
         } else {
             isProcessing = false;
-            setTimeout(startValidasiProses, 350); 
+            // Scan lagi dengan jeda tipis biar nggak nge-lag
+            setTimeout(startValidasiProses, 300); 
         }
     } catch (err) {
         logKeLayar("‼️ OCR ERROR: " + err.message);
         isProcessing = false;
-        setTimeout(startValidasiProses, 1200);
+        setTimeout(startValidasiProses, 1000);
     }
 }
 
