@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
             openScanner();
         });
     }
-
     initSatpam();
 });
 
@@ -99,7 +98,6 @@ async function startValidasiProses() {
     if (isProcessing || container.style.display === 'none' || isLocked) return;
     isProcessing = true;
 
-    // 1. Ambil area di dalam kotak tipis (tengah layar)
     const scanBox = document.getElementById('scan-box');
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
@@ -112,7 +110,6 @@ async function startValidasiProses() {
     const scanWidth = rect.width * scaleX;
     const scanHeight = rect.height * scaleY;
 
-    // Canvas kecil khusus OCR Anchor
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
     processingContext.filter = 'grayscale(1) contrast(1.5)';
@@ -120,45 +117,54 @@ async function startValidasiProses() {
 
     try {
         const result = await worker.recognize(processingCanvas);
-        // Normalisasi teks (O jadi 0, dll) dan bersihkan whitespace
         const rawText = result.data.text.toUpperCase().replace(/O/g, '0').replace(/\s+/g, ' ');
         
-        logKeLayar("👁️ Anchor Check: " + rawText.substring(0, 30));
+        logKeLayar("👁️ Anchor: " + rawText.substring(0, 30));
 
-        // 2. LOGIKA VALIDASI ANCHOR
-        // Kita cari variasi tulisan TOYOTA ASTRA MOTOR
-        const hasToyota = /TOYOTA|T0YOTA||TOY0TA|T0Y0TA/.test(rawText);
+        const hasToyota = /TOYOTA|T0YOTA|TOY0TA|T0Y0TA/.test(rawText);
         const hasAstra  = /ASTRA/.test(rawText);
         const hasMotor  = /M0T0R|MOTOR|M0TOR|MOT0R/.test(rawText);
 
         if (hasToyota && hasAstra && hasMotor) {
-        isLocked = true;
-            document.getElementById('scan-status').innerText = "🎯 ANCHOR FOUND! CAPTURING...";
-            document.getElementById('capture-indicator').style.borderColor = "#00ff00";
-            
-            if (navigator.vibrate) navigator.vibrate(200);
+            isLocked = true;
+            document.getElementById('scan-status').innerText = "🎯 MATCH! CAPTURING...";
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-            // Jeda sebentar agar kamera stabil
             setTimeout(() => {
-                // 🔥 JEPRET FULL FRAME (Tanpa Filter) untuk Gemini
                 const fullCanvas = document.createElement('canvas');
                 fullCanvas.width = video.videoWidth;
                 fullCanvas.height = video.videoHeight;
                 const fullCtx = fullCanvas.getContext('2d');
                 
-                // Ambil seluruh layar video asli
                 fullCtx.drawImage(video, 0, 0, fullCanvas.width, fullCanvas.height);
+                const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.95);
                 
-                const finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
+                const previewImg = document.getElementById('img-preview-final');
+                const previewContainer = document.getElementById('preview-gemini-container');
                 
-                // Kirim ke fungsi kirimKeGemini (pastikan fungsi ini sudah siap)
-                prosesKirimKeGemini(finalBlob); 
+                if (previewImg && previewContainer) {
+                    previewImg.src = finalBlob;
+                    previewContainer.style.display = 'flex';
+                    logKeLayar("📸 Debug Preview (2s)...");
+
+                    setTimeout(() => {
+                        previewContainer.style.display = 'none';
+                        logKeLayar("🚀 Mengirim ke Gemini...");
+                        closeCamera();
+                        uploadKeGemini(finalBlob);
+                    }, 2000); 
+                } else {
+                    closeCamera();
+                    uploadKeGemini(finalBlob);
+                }
             }, 500);
         } else {
+            // --- PERBAIKAN 1: Else ini harus sejajar dengan IF Anchor ---
             isProcessing = false;
             setTimeout(startValidasiProses, 300);
         }
     } catch (err) {
+        // --- PERBAIKAN 2: Catch ini untuk menangkap error Tesseract ---
         isProcessing = false;
         setTimeout(startValidasiProses, 1000);
     }
