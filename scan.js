@@ -1,9 +1,12 @@
 // --- Inisialisasi Variabel Global ---
 let worker;
 let isProcessing = false;
-const debugLog = true; // Set false jika ingin mematikan log di layar nanti
+const debugLog = true;
 
-// --- Gabungkan DOMContentLoaded ---
+// Satu canvas permanen untuk proses OCR
+const processingCanvas = document.createElement('canvas');
+const processingContext = processingCanvas.getContext('2d');
+
 document.addEventListener('DOMContentLoaded', () => {
     const loader = document.getElementById('loading-satpam');
     if (loader) {
@@ -11,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
         logKeLayar("Sistem dimulai...");
     }
 
-    // Listener Tombol Scan
     const btnScan = document.getElementById('btnScanAction');
     if (btnScan) {
         btnScan.addEventListener('click', (e) => {
@@ -21,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Jalankan Inisialisasi Tesseract
     initSatpam();
 });
 
@@ -31,7 +32,6 @@ async function initSatpam() {
 
     try {
         logKeLayar("Menyiapkan Tesseract...");
-
         worker = await Tesseract.createWorker('eng', 1, {
             logger: m => {
                 if (m.status.includes('loading')) {
@@ -43,19 +43,14 @@ async function initSatpam() {
             corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core.wasm.js',
         });
 
-        // Pemanasan & Whitelist (Hanya Huruf, Angka, dan simbol SJKB)
         await worker.setParameters({
             tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/- ',
         });
 
         logKeLayar("Satpam Siap!");
-
-        // Efek transisi tutup loading
         setTimeout(() => {
             loadingOverlay.style.opacity = '0';
-            setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-            }, 500);
+            setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
         }, 1000);
 
     } catch (e) {
@@ -85,108 +80,70 @@ async function openScanner() {
         });
 
         video.srcObject = stream;
-        video.muted = true;
-        
         video.oncanplay = async () => {
             await video.play();
             logKeLayar("Mencari Target...");
-            startValidasiProses(); // Mulai loop pendeteksian
+            startValidasiProses();
         };
     } catch (err) {
         alert("Kamera Error: " + err.message);
     }
 }
 
-    // Gunakan satu canvas permanen untuk menghemat memori
-    const processingCanvas = document.createElement('canvas');
-    const processingContext = processingCanvas.getContext('2d');
-
 async function startValidasiProses() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     
-    // Cegah proses ganda atau jika kamera ditutup
     if (isProcessing || container.style.display === 'none') return;
-    
     isProcessing = true;
 
-    // Tunggu sampai video siap
     if (!video.videoWidth) {
         setTimeout(startValidasiProses, 500);
         isProcessing = false;
         return;
     }
 
-    // --- 1. SETTING AREA CROP (SANGAT PENTING) ---
-    // Kita perkecil area baca agar Tesseract tidak bingung baca teks di luar kotak
-    const scanWidth = video.videoWidth * 0.7;   // 70% lebar kamera
-    const scanHeight = video.videoHeight * 0.2; // 20% tinggi kamera (fokus ke baris teks)
-    
-    // Titik tengah (Center Crop)
+    const scanWidth = video.videoWidth * 0.7;
+    const scanHeight = video.videoHeight * 0.2;
     const startX = (video.videoWidth - scanWidth) / 2;
     const startY = (video.videoHeight - scanHeight) / 2;
 
     processingCanvas.width = scanWidth;
     processingCanvas.height = scanHeight;
 
-    // --- 2. FITUR DEBUG VIEW (MATA KETIGA) ---
-    // Menampilkan apa yang dilihat OCR di pojok kiri atas layar
-    let debugCanvas = document.getElementById('debug-canvas-view');
-    if (!debugCanvas) {
+    // --- DEBUG VIEW ---
+    let debugView = document.getElementById('debug-canvas-view');
+    if (!debugView) {
         processingCanvas.id = 'debug-canvas-view';
-        processingCanvas.style.cssText = `
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 9999;
-            border: 2px solid #ff0000;
-            width: 150px;
-            background: black;
-            pointer-events: none;
-        `;
+        processingCanvas.style.cssText = `position:fixed;top:10px;left:10px;z-index:9999;border:2px solid red;width:150px;background:black;pointer-events:none;`;
         document.body.appendChild(processingCanvas);
     }
 
-    // --- 3. PROSES GAMBAR (FILTER) ---
-    // Mengubah ke hitam putih & kontras tinggi agar teks lebih tajam
     processingContext.filter = 'grayscale(1) contrast(2) brightness(1.1)';
-    processingContext.drawImage(
-        video, 
-        startX, startY, scanWidth, scanHeight, // Sumber (Crop dari video)
-        0, 0, scanWidth, scanHeight            // Hasil (Ke canvas)
-    );
+    processingContext.drawImage(video, startX, startY, scanWidth, scanHeight, 0, 0, scanWidth, scanHeight);
 
     try {
-        // --- 4. JALANKAN OCR (TESSERACT) ---
         const result = await worker.recognize(processingCanvas);
         const text = result.data.text.toUpperCase();
-        
-        // Bersihkan teks: Hanya ambil huruf dan angka
         const cleanText = text.replace(/[^A-Z0-9]/g, '');
         
         logKeLayar("Bidikan: " + text.substring(0, 15).trim()); 
 
-        // --- 5. LOGIKA VALIDASI KEYWORD ---
-        const isMatch = cleanText.includes("NVDC") || 
-                        cleanText.includes("SJKB") || 
-                        cleanText.includes("TUJUAN") ||
-                        cleanText.includes("TOYOTA");
+        const isMatch = cleanText.includes("NVDC") || cleanText.includes("SJKB") || 
+                        cleanText.includes("TUJUAN") || cleanText.includes("TOYOTA");
 
         if (isMatch) {
             logKeLayar("✅ TARGET TERKUNCI!");
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Getar HP
-            
-            // Beri jeda dikit biar fokus stabil, lalu jepret foto Full HD
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             setTimeout(() => ambilFotoFinal(video), 200);
         } else {
-            // Jika tidak ketemu, ulangi lagi setelah 800ms
             isProcessing = false;
             setTimeout(startValidasiProses, 800); 
         }
     } catch (err) {
         logKeLayar("‼️ OCR ERROR: " + err.message);
         isProcessing = false;
-        setTimeout(startValidasiProses, 2000); // Jeda lebih lama jika error
+        setTimeout(startValidasiProses, 2000);
     }
 }
 
@@ -200,9 +157,54 @@ function ambilFotoFinal(videoElement) {
     logKeLayar("📸 Foto Disimpan!");
     
     closeCamera();
-    
-    // PANGGIL FUNGSI KIRIM KE AI
     uploadKeGemini(base64Image); 
+}
+
+async function uploadKeGemini(base64Data) {
+    logKeLayar("🤖 AI sedang menganalisis...");
+    const btnScan = document.getElementById('btnScanAction');
+    if(btnScan) btnScan.disabled = true;
+
+    const pureBase64 = base64Data.split(',')[1];
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
+        const response = await fetch('https://api.anda.com/v1/analyze-sjkb', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({ image: pureBase64, timestamp: new Date().toISOString() })
+        });
+
+        clearTimeout(timeoutId);
+        const result = await response.json();
+
+        if (result.success) {
+            logKeLayar("✅ AI Valid: " + result.no_sjkb);
+            alert("Berhasil Verifikasi: " + result.no_sjkb);
+        } else {
+            logKeLayar("❌ AI Gagal: " + result.message);
+            alert("Gagal: " + result.message);
+        }
+    } catch (err) {
+        logKeLayar(err.name === 'AbortError' ? "‼️ Timeout" : "‼️ API Error: " + err.message);
+    } finally {
+        // Reset sistem setelah jeda 2 detik agar siap scan dokumen berikutnya
+        setTimeout(resetSistemScan, 2000);
+    }
+}
+
+function resetSistemScan() {
+    logKeLayar("🔄 Sistem Standby...");
+    isProcessing = false; 
+    const btnScan = document.getElementById('btnScanAction');
+    if (btnScan) btnScan.disabled = false;
+    
+    const debugView = document.getElementById('debug-canvas-view');
+    if (debugView) {
+        debugView.getContext('2d').clearRect(0, 0, debugView.width, debugView.height);
+    }
 }
 
 function closeCamera() {
@@ -224,55 +226,5 @@ function logKeLayar(msg) {
         newLog.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
         logBox.appendChild(newLog);
         logBox.scrollTop = logBox.scrollHeight;
-    }
-}
-
-// 7. Fungsi Kirim ke Gemini (AI Analysis)
-async function uploadKeGemini(base64Data) {
-    const statusBox = document.getElementById('scan-status'); // Jika ada element status
-    logKeLayar("🤖 AI sedang menganalisis foto...");
-    
-    // 1. Matikan tombol agar tidak double-click
-    const btnScan = document.getElementById('btnScanAction');
-    if(btnScan) btnScan.disabled = true;
-
-    const pureBase64 = base64Data.split(',')[1];
-
-    // 2. Setup Timeout (Batal otomatis jika > 15 detik tidak ada respon)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    try {
-        const response = await fetch('https://api.anda.com/v1/analyze-sjkb', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: controller.signal, // Pasang signal timeout
-            body: JSON.stringify({
-                image: pureBase64,
-                timestamp: new Date().toISOString()
-            })
-        });
-
-        clearTimeout(timeoutId); // Hapus timer jika respon datang tepat waktu
-        const result = await response.json();
-
-        if (result.success) {
-            logKeLayar("✅ AI: SJKB " + (result.no_sjkb || "") + " Valid!");
-            // Panggil fungsi sukses (misal: refresh dashboard atau tutup modal)
-            alert("Berhasil Verifikasi: " + result.no_sjkb);
-        } else {
-            logKeLayar("❌ AI: " + (result.message || "Data tidak valid"));
-            alert("Gagal: " + result.message);
-        }
-    } catch (err) {
-        if (err.name === 'AbortError') {
-            logKeLayar("‼️ ERROR: Koneksi Lemot (Timeout)");
-        } else {
-            logKeLayar("‼️ API ERROR: " + err.message);
-        }
-    } finally {
-        // 3. Nyalakan kembali tombol setelah selesai (baik sukses/gagal)
-        if(btnScan) btnScan.disabled = false;
-        isProcessing = false; // Reset flag agar bisa scan lagi jika gagal
     }
 }
