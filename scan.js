@@ -165,6 +165,7 @@ async function startValidasiProses() {
 
         if (hasToyota && hasAstra && hasMotor) {
             isLocked = true;
+            showLoading("Mengambil gambar...");
             document.getElementById('scan-status').innerText = "🎯 MATCH! CAPTURING...";
 
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
@@ -196,6 +197,7 @@ async function startValidasiProses() {
 }
 
 async function uploadKeGemini(base64Data) {
+    showLoading(" membaca data...");
     logKeLayar("🚀 Mengirim ke Gemini via GAS...");
     
     document.getElementById('no_sjkb').value = "Loading...";
@@ -232,7 +234,7 @@ async function uploadKeGemini(base64Data) {
         isProcessing = false;
         isLocked = false;
         logKeLayar("✅ Selesai. Siap scan lagi.");
-
+        hideLoading();
     }, 1000);
 }
 }
@@ -278,4 +280,18 @@ function logKeLayar(msg) {
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
     });
+}
+function showLoading(text = "Memproses data...") {
+    const el = document.getElementById('loading-proses');
+    if (!el) return;
+
+    el.style.display = 'flex';
+    el.querySelector('.loading-text').innerText = text;
+}
+
+function hideLoading() {
+    const el = document.getElementById('loading-proses');
+    if (!el) return;
+
+    el.style.display = 'none';
 }
