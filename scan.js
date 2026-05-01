@@ -64,13 +64,13 @@ async function initSatpam() {
 async function openScanner() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
-    const btnScan = document.getElementById('btnScanAction');
-    btnScan.disabled = true;
     
     if (isCameraActive) {
         logKeLayar("⚠️ Kamera masih aktif");
         return;
     }
+    const btnScan = document.getElementById('btnScanAction');
+    btnScan.disabled = true;
     document.getElementById('scan-status').innerText = "🔍 Scanning...";
     
     // 🔥 RESET TOTAL
@@ -121,7 +121,7 @@ async function startValidasiProses() {
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
 
-    if (!video.videoWidth || !video.videoHeight) {
+    if (!video.videoWidth || !video.videoHeight || !videoRect.width) {
     isProcessing = false;
     requestAnimationFrame(startValidasiProses);
     return;
@@ -232,7 +232,7 @@ function isiHasilScan(data) {
 
 function closeCamera() {
     const btnScan = document.getElementById('btnScanAction');
-    btnScan.disabled = false;
+    if (btnScan) btnScan.disabled = false;
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
 
