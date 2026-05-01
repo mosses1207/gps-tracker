@@ -17,9 +17,9 @@
 <div id="loading-satpam" style="position:fixed !important; top:0; left:0; width:100%; height:100%; background:white !important; z-index:100000 !important; display:flex; flex-direction:column; align-items:center; justify-content:center;">
     <div class="spinner"></div> 
     <h3 style="margin-top:20px; color:#ff0000; font-family: 'Inter', sans-serif;">Menyiapkan Sistem...</h3>
-    <p id="load-progress" style="font-size:14px; color:#555;">Menghubungi Satpam (0%)</p>
+    <p id="load-progress" style="font-size:14px; color:#555;">Mohon Tunggu... (0%)</p>
     <small style="margin-top:10px; color:#999; text-align:center; padding:0 20px;">
-        Hanya download di awal, selanjutnya akan otomatis offline.
+        sedang Memuat Data.
     </small>
 </div>
   
@@ -194,7 +194,12 @@
     <div>-- System Log Ready --</div>
   </div>
   
-
+<div id="loading-proses" style="display:none;">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div class="loading-text">Memproses data...</div>
+  </div>
+</div>
   <!-- 🔷 FILE INPUT (HIDDEN) -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
