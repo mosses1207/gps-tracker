@@ -169,50 +169,35 @@ async function startValidasiProses() {
 }
 
 async function uploadKeGemini(base64Data) {
-    logKeLayar("🤖 AI sedang menganalisis SJKB...");
+    logKeLayar("🚀 Mengirim ke Gemini via GAS...");
     
-    // Pastikan tombol scan dimatikan biar gak double klik
-    const btnScan = document.getElementById('btnScanAction');
-    if(btnScan) btnScan.disabled = true;
-
     const pureBase64 = base64Data.split(',')[1];
+    
+    // PASTIKAN URL INI SAMA DENGAN YANG DI SCREENSHOT ABANG
     const gasUrl = "https://script.google.com/macros/s/AKfycbxYY2VDSk1zx8FRfk4dpkyPOZLNjNa4Qx1czvFl5XMNE9MgeMcOZ-oTPisXQzgtOAA/exec";
 
     try {
         const response = await fetch(gasUrl, {
             method: "POST",
+            mode: "no-cors", // <--- TAMBAHKAN INI JIKA MASIH CONNECTION ERROR
             headers: {
                 "Content-Type": "text/plain;charset=utf-8",
             },
             body: JSON.stringify({ image: pureBase64 })
         });
 
-        // Ambil data JSON dari Google Script
-        const result = await response.json();
-
-        if (result.success) {
-            logKeLayar("✅ Data Berhasil Diekstrak!");
-            
-            // DISINI PROSES MASUKIN KE TEXTBOX NYA BANG
-            document.getElementById('no_sjkb').value = result.no_sjkb;
-            document.getElementById('tujuan_dealer').value = result.tujuan;
-            
-            // Kasih feedback visual dikit biar driver seneng
-            if (navigator.vibrate) navigator.vibrate([200]); 
-            alert("Data SJKB & Tujuan Otomatis Terisi!");
-            
-        } else {
-            logKeLayar("❌ AI Gagal: " + result.message);
-            alert("AI gagal membaca gambar. Coba posisikan lebih tegak.");
-        }
+        // CATATAN: Kalau pakai "no-cors", kita nggak bisa baca 'response.json()' 
+        // karena diblokir browser. Tapi data TETAP masuk ke Spreadsheet.
+        
+        logKeLayar("📡 Request terkirim! Cek Spreadsheet Log...");
+        
+        // Tunggu bentar terus kasih alert manual buat ngetes
+        setTimeout(() => {
+            alert("Cek Spreadsheet! Kalau log muncul, berarti koneksi Vercel-GAS aman.");
+        }, 2000);
 
     } catch (err) {
-        logKeLayar("‼️ Connection Error: Cek Deployment GAS");
-        console.error(err);
-    } finally {
-        // Balikin tombol ke kondisi semula
-        if(btnScan) btnScan.disabled = false;
-        selesaiProses();
+        logKeLayar("‼️ Error: " + err.message);
     }
 }
 
