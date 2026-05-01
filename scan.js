@@ -64,6 +64,7 @@ async function initSatpam() {
 async function openScanner() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
+    const btnScan = document.getElementById('btnScanAction');
     btnScan.disabled = true;
     
     if (isCameraActive) {
@@ -99,11 +100,17 @@ async function openScanner() {
         };
 
     } catch (err) {
-        alert("Kamera Error: " + err.message);
-    }
+    const btnScan = document.getElementById('btnScanAction');
+    btnScan.disabled = false;
+
+    isCameraActive = false;
+
+    alert("Kamera Error: " + err.message);
+}
 }
 
 async function startValidasiProses() {
+    if (!worker) return;
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     
@@ -224,6 +231,7 @@ function isiHasilScan(data) {
 }
 
 function closeCamera() {
+    const btnScan = document.getElementById('btnScanAction');
     btnScan.disabled = false;
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
