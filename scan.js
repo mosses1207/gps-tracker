@@ -129,8 +129,7 @@ async function startValidasiProses() {
         
         logKeLayar("Bidikan: " + text.substring(0, 15).trim()); 
 
-        const isMatch = cleanText.includes("NVDC") || cleanText.includes("SJKB") || 
-                        cleanText.includes("TUJUAN") || cleanText.includes("TOYOTA");
+        const isMatch = cleanText.includes("TUJUAN") && cleanText.includes("MOTOR");
 
         if (isMatch) {
             logKeLayar("✅ TARGET TERKUNCI!");
