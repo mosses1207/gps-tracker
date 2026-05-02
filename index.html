@@ -138,26 +138,21 @@
     <!-- 🔷 END INPUT CARD -->
     
     <!-- 🔷 GPS STATUS -->
-   <div id="gpsStatus">
-  <!-- Baris Atas: Status -->
-  <div class="gps-row status-line">
-    <span>📡 <b>Status GPS:</b></span>
-    <span id="gpsText" class="status-value">Mencari Lokasi...</span>
+  <div id="gpsStatus">
+  <!-- Baris Status -->
+  <div class="gps-info-line">
+    <span>📡 <b>Status GPS:</b> <span id="gpsText" class="status-value">Manual Mode</span></span>
   </div>
 
-  <!-- Baris Bawah: Data (Lat, Lng, Speed) -->
-  <div class="gps-data-grid">
-    <div class="data-item">
-      <span>📍 Lat:</span>
-      <b id="lat">-</b>
+  <!-- Baris Koordinat & Speed -->
+  <div class="gps-stats-row">
+    <div class="stat-group">
+      <span>📍 Lat: <b id="lat">-6.449585</b></span>
+      <span class="separator">|</span>
+      <span>📍 Lng: <b id="lng">107.005443</b></span>
     </div>
-    <div class="data-item border-left">
-      <span>📍 Lng:</span>
-      <b id="lng">-</b>
-    </div>
-    <div class="data-item border-left">
-      <span>Speed:</span>
-      <b id="spdDisplay">0</b><small>km/h</small>
+    <div class="stat-group">
+      <span>🏎️ Speed: <b id="spdDisplay">0</b> km/h</span>
     </div>
   </div>
 </div>
