@@ -1,3 +1,7 @@
+let map;
+let result;
+let userMarker;
+
 const geoOptions = {
     enableHighAccuracy: true,
     timeout: 10000,
