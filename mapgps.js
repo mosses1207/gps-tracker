@@ -136,6 +136,42 @@ function updateLocationError(error) {
     logKeLayar("⚠️ " + msg);
 }
 
+async function updateStreetName(lat, lng) {
+    const streetElement = document.getElementById('street-name');
+    
+    // 1. Kita bulatkan koordinat (presisi 4 desimal = sekitar 11 meter)
+    // Supaya kalau geser dikit banget, masih dianggap di jalan yang sama (hemat cache)
+    const cacheKey = `addr_${lat.toFixed(4)}_${lng.toFixed(3)}`;
+    
+    // 2. Cek apakah sudah pernah simpan alamat ini di HP
+    const cachedAddress = localStorage.getItem(cacheKey);
+    
+    if (cachedAddress) {
+        console.log("Ambil dari cache HP...");
+        streetElement.innerText = cachedAddress;
+        return;
+    }
+
+    // 3. Kalau belum ada di cache, baru tanya ke Nominatim
+    try {
+        console.log("Tanya ke internet (Nominatim)...");
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+        const response = await fetch(url, { headers: { 'Accept-Language': 'id' } });
+        const data = await response.json();
+        
+        const address = data.address;
+        const street = address.road || address.residential || address.suburb || "Area tidak teridentifikasi";
+        
+        // 4. SIMPAN ke cache HP biar besok-besok nggak download lagi
+        localStorage.setItem(cacheKey, street);
+        
+        streetElement.innerText = street;
+        
+    } catch (error) {
+        console.error("Gagal ambil alamat:", error);
+    }
+}
+
 // OTOMATIS JALAN PAS LOAD
 window.addEventListener('load', () => {
     initMap();
