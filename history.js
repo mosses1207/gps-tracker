@@ -66,7 +66,7 @@ async function handleBerangkat() {
     
     isAutoCenter = true;
     map.flyTo([currentPos.lat, currentPos.lng], 18);
-    
+    document.querySelector('.target').classList.remove('hidden');
     if (typeof requestWakeLock === 'function') requestWakeLock();
     
     logKeLayar("🚀 Perjalanan DIMULAI!");
@@ -113,7 +113,7 @@ function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
     const sessionData = localStorage.getItem('active_session');
     if (sessionData) {
         const session = JSON.parse(sessionData);
-        
+        if (targetEl) targetEl.classList.remove('hidden');
         logKeLayar("🔄 Sesi aktif ditemukan...");
         logKeLayar(`🔹 SJKB: ${session.no_sjkb || '-'}`);
         logKeLayar(`🔹 Tujuan: ${session.tujuan || '-'}`);
@@ -170,6 +170,7 @@ function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
                     logKeLayar("❌ Gagal gambar rute dari cache");
                 }
             } else {
+                if (targetEl) targetEl.classList.remove('hidden');
                 logKeLayar("⚠️ Rute_dipilih tidak ditemukan di cache");
             }
         }, 1500);
@@ -199,7 +200,7 @@ async function handleSampai() {
         if(document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = "";
         if(document.getElementById('lt_input')) document.getElementById('lt_input').value = "";
         if(document.getElementById('target-text')) document.getElementById('target-text').innerText = "--:--";
-
+        document.querySelector('.target').classList.add('hidden');
         // 4. Reset Variabel Global
         window.currentPolylineString = "";
         window.deliveryData = null;
@@ -215,15 +216,12 @@ async function handleSampai() {
         // 6. Bersihkan Map
         if (window.currentPolyline) map.removeLayer(window.currentPolyline);
         if (window.finishMarker) map.removeLayer(window.finishMarker);
-
         if (typeof releaseWakeLock === 'function') releaseWakeLock();
-
         // LOG AKHIR (Pake data yang tadi disimpan bentar)
         logKeLayar(`-------------------------`);
         logKeLayar(`✅ FINISH: ${session.no_sjkb || '-'}`);
         logKeLayar(`📍 Titik Terakhir: ${session.path_history ? session.path_history.length : 0} titik dicatat`);
         logKeLayar("✅ Cache dibersihkan & Form dikosongkan.");
-        
         alert("🏁 Sampai Tujuan! Data perjalanan telah ditutup.");
 
     } catch (e) {
