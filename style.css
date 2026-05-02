@@ -41,61 +41,10 @@ body {margin: 0;padding: 0;}
 #no_sjkb, #tujuan_dealer {flex: 2;}
 .mobile-input-row {flex: 1.5;}}
 @media (max-width: 599px) {.btn-scan {width: auto; order: unset !important; }gap: 10px; }}
-
-/* Container Utama dari Leaflet */
-.leaflet-marker-icon.custom-pin {
-    background: none !important;
-    border: none !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    overflow: visible !important; /* CRITICAL: Biar glow ngga kepotong */
-}
-
-/* Titik Biru Utama (Diam) */
-.custom-pin::before {
-    content: '';
-    display: block;
-    width: 12px;
-    height: 12px;
-    background-color: #007bff;
-    border: 2px solid white;
-    border-radius: 50%;
-    z-index: 5;
-    box-shadow: 0 0 5px rgba(0,0,0,0.3);
-    position: absolute; /* Pakai absolute biar beneran di tengah */
-}
-
-/* Efek Glow Kedip (Bergerak) */
-.custom-pin::after {
-    content: '';
-    display: block;
-    width: 12px;
-    height: 12px;
-    background-color: #007bff;
-    border-radius: 50%;
-    position: absolute;
-    z-index: 1;
-    animation: gps-pulse 2s infinite ease-out !important;
-    pointer-events: none;
-}
-
-/* Keyframes Animasi */
-@keyframes gps-pulse {
-    0% {
-        transform: scale(1);
-        opacity: 0.8;
-    }
-    70% {
-        transform: scale(4); /* Membesar */
-        opacity: 0;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 0;
-    }
-}
-
+.leaflet-marker-icon.custom-pin {background: none !important;border: none !important;display: flex !important;justify-content: center !important;align-items: center !important;overflow: visible !important;}
+.custom-pin::before {content: '';display: block;width: 12px;height: 12px;background-color: #007bff;border: 2px solid white;border-radius: 50%;z-index: 5;box-shadow: 0 0 5px rgba(0,0,0,0.3);position: absolute;}
+.custom-pin::after {content: '';display: block;width: 12px;height: 12px;background-color: #007bff;border-radius: 50%;position: absolute;z-index: 1;animation: gps-pulse 2s infinite ease-out !important;pointer-events: none;}
+@keyframes gps-pulse {0% {transform: scale(1);opacity: 0.8;}70% {transform: scale(4);opacity: 0;}100% {transform: scale(1);opacity: 0;}}
 .mobile-input-row {display: flex;gap: 10px;align-items: center;}
 #lt_input {max-width: 100px;flex: none;}
 .mobile-input-row .btn-scan {flex: 1; height: 48px;display: flex;align-items: center;justify-content: center;}
