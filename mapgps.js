@@ -2,9 +2,9 @@ let watchId = null;
 let map;
 let userMarker;
 let isFirstLocation = true;
+let isAutoCenter = true;
 let currentPos = { lat: 0, lng: 0 };
 
-// Konfigurasi Geolocation
 const geoOptions = {
     enableHighAccuracy: true,
     timeout: 10000,
@@ -24,11 +24,8 @@ function initMap() {
         crossOrigin: true
     }).addTo(map);
 
-    L.control.zoom({
-        position: 'bottomright'
-    }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Marker Titik Biru (CircleMarker lebih smooth)
     userMarker = L.circleMarker([0, 0], {
         radius: 10,
         fillColor: "#007bff",
@@ -37,6 +34,13 @@ function initMap() {
         opacity: 1,
         fillOpacity: 0.9
     }).addTo(map);
+
+    // Event Listener dipindah ke dalam sini biar 'map' sudah siap
+    map.on('movestart', (e) => {
+        if (e.hard) return; 
+        isAutoCenter = false;
+        // logKeLayar("🖐️ Manual scroll: Auto-center Off");
+    });
 
     logKeLayar("🗺️ Map Ready & Live GPS Active");
 }
@@ -53,65 +57,66 @@ function initGPS() {
         );
         logKeLayar("📡 GPS: Memulai pelacakan live...");
     } else {
-        alert("Maaf, Browser abang tidak mendukung GPS.");
-        document.getElementById('gpsText').innerText = "GPS Tidak Didukung";
+        alert("GPS Tidak Didukung Browser");
     }
 }
 
 /**
- * 3. CALLBACK SUKSES GPS
- */
-function updateLocationSuccess(position) {
-    const { latitude, longitude, speed } = position.coords;
-    const speedKmH = speed ? Math.round(speed * 3.6) : 0;
-    
-    // Simpan posisi saat ini
-    currentPos.lat = latitude;
-    currentPos.lng = longitude;
-
-    // Update UI Teks
-    document.getElementById('lat').innerText = latitude.toFixed(6);
-    document.getElementById('lng').innerText = longitude.toFixed(6);
-    document.getElementById('spdDisplay').innerText = speedKmH;
-    document.getElementById('gpsText').innerText = "Live Tracking...";
-    document.getElementById('gpsText').style.color = "#22c55e";
-
-    // Update Visual di Peta
-    updateMapDisplay(latitude, longitude);
-}
-
-/**
- * 4. UPDATE VISUAL PETA (SMOOTH)
+ * 3. UPDATE VISUAL PETA (SMOOTH)
  */
 function updateMapDisplay(lat, lng) {
     if (!map || !userMarker) return;
     const newPos = [lat, lng];
 
+    // Selalu update posisi marker titik biru
     userMarker.setLatLng(newPos);
 
+    // Kalau pertama kali dapet lokasi, langsung arahin kamera
     if (isFirstLocation) {
         map.setView(newPos, 17);
         isFirstLocation = false;
         return;
     }
 
-    // Geser peta halus mengikuti driver
-    map.flyTo(newPos, map.getZoom(), {
-        animate: true,
-        duration: 1.5 
-    });
+    // Hanya geser peta otomatis kalau isAutoCenter aktif
+    if (isAutoCenter) {
+        map.flyTo(newPos, map.getZoom(), {
+            animate: true,
+            duration: 1.5 
+        });
+    }
+}
+
+/**
+ * 4. CALLBACK SUKSES GPS
+ */
+function updateLocationSuccess(position) {
+    const { latitude, longitude, speed } = position.coords;
+    const speedKmH = speed ? Math.round(speed * 3.6) : 0;
+    
+    currentPos.lat = latitude;
+    currentPos.lng = longitude;
+
+    document.getElementById('lat').innerText = latitude.toFixed(6);
+    document.getElementById('lng').innerText = longitude.toFixed(6);
+    document.getElementById('spdDisplay').innerText = speedKmH;
+    document.getElementById('gpsText').innerText = isAutoCenter ? "Tracking Aktif" : "Manual Mode";
+    document.getElementById('gpsText').style.color = "#22c55e";
+
+    updateMapDisplay(latitude, longitude);
 }
 
 /**
  * 5. TOMBOL RECENTER
  */
 function recenterMap() {
+    isAutoCenter = true;
     if (currentPos.lat !== 0) {
         map.flyTo([currentPos.lat, currentPos.lng], 17, {
             animate: true,
             duration: 1
         });
-        logKeLayar("🎯 Fokus kembali ke lokasi");
+        logKeLayar("🎯 Fokus ke Lokasi (Auto-center On)");
     } else {
         logKeLayar("❌ Lokasi belum ditemukan");
     }
@@ -133,7 +138,6 @@ function updateLocationError(error) {
     logKeLayar("⚠️ " + msg);
 }
 
-// Jalankan saat load
 window.addEventListener('load', () => {
     initMap();
     initGPS();
