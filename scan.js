@@ -455,45 +455,64 @@ async function fetchSpreadsheetData(tujuanGemini) {
 
 // Tambahkan parameter 'data' di sini
 function updateRuteUI(data) {
-    logKeLayar("DEBUG: " + JSON.stringify(deliveryData).substring(0, 50));
     const container = document.getElementById('ruteButtons');
     const area = document.getElementById('ruteSelectionArea');
     
     if (!container || !area) return;
 
+    // Bersihkan container tombol sebelum render ulang
     container.innerHTML = ''; 
 
-    // Gunakan data dari parameter, kalau gak ada baru cek window
+    // Ambil data dari parameter 'data' (hasil fetch) atau fallback ke window
     const targetData = data || window.deliveryData;
+    
     if (!targetData) {
-        logKeLayar("⚠️ Error: Tidak ada data untuk UI");
+        logKeLayar("⚠️ Error: Data rute tidak ditemukan");
         return;
     }
 
-    // Ambil rute (Cek polylines karena di RAW abang namanya itu)
-    const ruteList = targetData.polylines || targetData.rute;
+    // 🔥 PERBAIKAN LOG: Pastikan variabelnya benar 'targetData'
+    logKeLayar("DEBUG Data: " + JSON.stringify(targetData).substring(0, 50));
 
-    if (Array.isArray(ruteList) && ruteList.length > 0) {
-        logKeLayar(`✨ Menampilkan ${ruteList.length} opsi rute`);
+    // Ambil polylines dari object data
+    const polyList = targetData.polylines;
+
+    // Cek apakah polyList ada dan merupakan array
+    if (Array.isArray(polyList) && polyList.length > 0) {
+        logKeLayar(`✨ Ditemukan ${polyList.length} rute`);
         area.style.display = 'block'; 
 
-        ruteList.forEach((poly, index) => {
+        // Buat tombol berdasarkan JUMLAH object/string di dalam array polylines
+        polyList.forEach((poly, index) => {
+            if (!poly) return; // Skip kalau isinya kosong
+
             const btn = document.createElement('button');
             btn.innerText = `Rute ${index + 1}`;
             btn.className = "btn-rute"; 
 
             btn.onclick = () => {
+                // Beri tanda aktif pada tombol yang diklik
                 document.querySelectorAll('.btn-rute').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                if (typeof drawRouteOnMap === "function") drawRouteOnMap(poly);
+
+                // Gambar rute ke map menggunakan polyline string ini
+                if (typeof drawRouteOnMap === "function") {
+                    drawRouteOnMap(poly);
+                } else {
+                    logKeLayar("⚠️ Fungsi drawRouteOnMap tidak ditemukan");
+                }
             };
             container.appendChild(btn);
         });
 
-        if(container.firstChild) container.firstChild.click();
+        // Otomatis pilih rute pertama setelah tombol dibuat
+        if (container.firstChild) {
+            container.firstChild.click();
+        }
+
     } else {
-        logKeLayar("⚠️ Data rute (polylines) tidak ditemukan di object");
-        console.log("Struktur Data:", targetData); // Cek di console log asli
+        // Jika polylines bukan array atau kosong
+        logKeLayar("⚠️ Array polylines kosong atau tidak ditemukan");
         area.style.display = 'none';
     }
 }
