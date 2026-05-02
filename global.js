@@ -13,3 +13,4 @@ let lastAddressLat = 0;
 let lastAddressLng = 0;
 let msg = "";
 let result; // Untuk menampung hasil fetch
+let currentPolyline = null;
