@@ -90,6 +90,12 @@ function updateMapDisplay(lat, lng) {
 /**
  * 4. CALLBACK SUKSES GPS
  */
+/**
+ * 4. CALLBACK SUKSES GPS
+ */
+let lastAddressLat = 0;
+let lastAddressLng = 0;
+
 function updateLocationSuccess(position) {
     const { latitude, longitude, speed } = position.coords;
     const speedKmH = speed ? Math.round(speed * 3.6) : 0;
@@ -97,11 +103,24 @@ function updateLocationSuccess(position) {
     currentPos.lat = latitude;
     currentPos.lng = longitude;
 
+    // Update tampilan teks koordinat
     document.getElementById('lat').innerText = latitude.toFixed(6);
     document.getElementById('lng').innerText = longitude.toFixed(6);
     document.getElementById('spdDisplay').innerText = speedKmH;
     document.getElementById('gpsText').innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
     document.getElementById('gpsText').style.color = "#22c55e";
+
+    // --- BAGIAN UPDATE NAMA JALAN ---
+    // Kita panggil hanya jika driver pindah sekitar 50-100 meter (pake trik pembulatan tadi)
+    const checkLat = latitude.toFixed(3);
+    const checkLng = longitude.toFixed(3);
+
+    if (checkLat !== lastAddressLat || checkLng !== lastAddressLng) {
+        updateStreetName(latitude, longitude); // NAH, DIPANGGIL DISINI BANG!
+        lastAddressLat = checkLat;
+        lastAddressLng = checkLng;
+    }
+    // --------------------------------
 
     updateMapDisplay(latitude, longitude);
 }
@@ -141,7 +160,7 @@ async function updateStreetName(lat, lng) {
     
     // 1. Kita bulatkan koordinat (presisi 4 desimal = sekitar 11 meter)
     // Supaya kalau geser dikit banget, masih dianggap di jalan yang sama (hemat cache)
-    const cacheKey = `addr_${lat.toFixed(4)}_${lng.toFixed(3)}`;
+    const cacheKey = `addr_${lat.toFixed(3)}_${lng.toFixed(3)}`;
     
     // 2. Cek apakah sudah pernah simpan alamat ini di HP
     const cachedAddress = localStorage.getItem(cacheKey);
