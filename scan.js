@@ -417,7 +417,7 @@ async function fetchSpreadsheetData(tujuanGemini) {
         const text = await response.text();
 
         // 🔥 potong biar ga kepanjangan di UI
-        const shortText = text.length > 100 ? text.substring(0, 100) + "..." : text;
+        const shortText = text.length > 100 ? text.substring(0, 500) + "..." : text;
         logKeLayar(`📦 RAW: ${shortText}`);
 
         let result;
