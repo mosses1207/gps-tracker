@@ -28,10 +28,20 @@ async function handleBerangkat() {
     const durasiMenit = window.deliveryData ? parseInt(window.deliveryData.durasi) : 0;
     const targetSampai = new Date(waktuBerangkat.getTime() + durasiMenit * 60000);
     if(document.getElementById('target-text')) {
-        const jamTarget = targetSampai.toLocaleTimeString('id-ID', {
-            hour: '2-digit', minute: '2-digit'
-        });
-        document.getElementById('target-text').innerText = jamTarget;
+        const opsi = { 
+            day: '2-digit', 
+            month: 'long', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false // Pakai format 24 jam
+        };
+        
+        // Format ke: 03 Mei 2026 04:00
+        const formatter = new Intl.DateTimeFormat('id-ID', opsi).format(targetSampai);
+        
+        // Tambahin "WIB" di belakangnya
+        document.getElementById('target-text').innerText = `${formatter.replace('.', ':')} WIB`;
     }
     const travelSession = {
         no_sjkb: noSJKB,
