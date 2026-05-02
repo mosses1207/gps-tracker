@@ -455,30 +455,30 @@ async function fetchSpreadsheetData(tujuanGemini) {
     }
 }
 
-function updateRuteUI() {
+// Tambahkan parameter 'data' di sini
+function updateRuteUI(data) {
     const container = document.getElementById('ruteButtons');
     const area = document.getElementById('ruteSelectionArea');
     
-    if (!container || !area || !window.deliveryData) return;
+    if (!container || !area) return;
 
     container.innerHTML = ''; 
 
-    // Ambil data rute dari properti yang ada di log gambar
-    let ruteList = window.deliveryData.polylines || window.deliveryData.rute;
-
-    // Pastikan ruteList adalah array. Jika string tunggal, bungkus jadi array.
-    if (typeof ruteList === 'string') {
-        ruteList = [ruteList];
+    // Gunakan data dari parameter, kalau gak ada baru cek window
+    const targetData = data || window.deliveryData;
+    if (!targetData) {
+        logKeLayar("⚠️ Error: Tidak ada data untuk UI");
+        return;
     }
+
+    // Ambil rute (Cek polylines karena di RAW abang namanya itu)
+    const ruteList = targetData.polylines || targetData.rute;
 
     if (Array.isArray(ruteList) && ruteList.length > 0) {
         logKeLayar(`✨ Menampilkan ${ruteList.length} opsi rute`);
         area.style.display = 'block'; 
 
         ruteList.forEach((poly, index) => {
-            // Pastikan data poly tidak kosong/null
-            if (!poly) return;
-
             const btn = document.createElement('button');
             btn.innerText = `Rute ${index + 1}`;
             btn.className = "btn-rute"; 
@@ -486,21 +486,15 @@ function updateRuteUI() {
             btn.onclick = () => {
                 document.querySelectorAll('.btn-rute').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-
-                if (typeof drawRouteOnMap === "function") {
-                    drawRouteOnMap(poly);
-                } else {
-                    logKeLayar("⚠️ Fungsi drawRouteOnMap belum ada");
-                }
+                if (typeof drawRouteOnMap === "function") drawRouteOnMap(poly);
             };
             container.appendChild(btn);
         });
 
-        // Klik otomatis rute pertama
-        if (container.firstChild) container.firstChild.click();
-
+        if(container.firstChild) container.firstChild.click();
     } else {
-        logKeLayar("⚠️ Data rute tidak ditemukan atau kosong");
+        logKeLayar("⚠️ Data rute (polylines) tidak ditemukan di object");
+        console.log("Struktur Data:", targetData); // Cek di console log asli
         area.style.display = 'none';
     }
 }
