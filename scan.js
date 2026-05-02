@@ -430,6 +430,11 @@ async function fetchSpreadsheetData(tujuanGemini) {
 
         if (result.success) {
             logKeLayar(`✅ SUCCESS | ${result.data.nama}`);
+            logKeLayar(` ${result.data.nama}`);
+            logKeLayar(` ${result.data.durasi}`);
+            logKeLayar(` ${result.data.koordinat}`);
+            logKeLayar(` ${result.data.jarak}`);
+            logKeLayar(` ${result.data.rute}`);
 
             window.deliveryData = result.data;
             return result.data;
