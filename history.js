@@ -40,11 +40,18 @@ async function handleBerangkat() {
 
     btnBerangkat.style.display = 'none';
     btnSampai.style.display = 'block';
+    if(document.getElementById('ruteSelectionArea')) {
+        document.getElementById('ruteSelectionArea').style.display = 'none';
+    }
     
     isAutoCenter = true;
     map.flyTo([currentPos.lat, currentPos.lng], 18);
-
+    
+    if (typeof requestWakeLock === 'function') requestWakeLock();
+    
     logKeLayar("🚀 Perjalanan DIMULAI!");
+    logKeLayar(`📋 SJKB: ${noSJKB}`);
+    logKeLayar(`💾 Cache: Rute ${travelSession.rute_dipilih ? "✅ Tersimpan" : "❌ Kosong"}`);
 }
 
 // 2. FUNGSI NYATET PERJALANAN (Update Cache)
@@ -58,12 +65,12 @@ function catatPerjalanan(lat, lng, speed) {
     const history = session.path_history;
     const lastPoint = history[history.length - 1];
 
-    // Filter jarak 30 meter
     const dist = calculateDistanceperjalanan(lastPoint.lat, lastPoint.lng, lat, lng);
 
     if (dist > 0.03) { 
         history.push({ lat, lng, spd: speed });
-        console.log(`📍 Titik dicatat (${history.length} pts)`);
+        // Log cache tiap ada titik baru
+        logKeLayar(`📍 Titik ke-${history.length} masuk cache (${(dist*1000).toFixed(0)}m)`);
     }
 
     localStorage.setItem('active_session', JSON.stringify(session));
@@ -86,13 +93,28 @@ function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
     const sessionData = localStorage.getItem('active_session');
     if (sessionData) {
         const session = JSON.parse(sessionData);
-        isTrackingActive = true; 
         
+        logKeLayar("🔄 Sesi aktif ditemukan...");
+        logKeLayar(`🔹 SJKB: ${session.no_sjkb || '-'}`);
+        logKeLayar(`🔹 Tujuan: ${session.tujuan || '-'}`);
+        logKeLayar(`🔹 Waktu Berangkat: ${session.waktu_berangkat ? 'OK' : '❌'}`);
+        logKeLayar(`🔹 Tujuan: ${session.target_sampai || '-'}`);
+        logKeLayar(`🔹 Koordinat Awal: ${session.lat_awal}, ${session.lng_awal}`);
+        logKeLayar(`🔹 History: ${session.path_history ? session.path_history.length : 0} titik`);
+        logKeLayar(`🔹 Rute Terpilih: ${session.rute_dipilih ? '✅ Tersedia (Encoded)' : '❌ Kosong!'}`);
+        logKeLayar(`-------------------------`);
+        
+        isTrackingActive = true; 
+        if (typeof requestWakeLock === 'function') requestWakeLock();
+
         document.getElementById('btnBerangkat').style.display = 'none';
         document.getElementById('btnSampai').style.display = 'block';
         
         if(document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = session.no_sjkb;
         if(document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = session.tujuan;
+
+        // Log detail isi cache pas restore
+        logKeLayar(`📦 Cache Restore: ${session.path_history.length} titik tersimpan`);
 
         if(document.getElementById('lt_input')) {
             const berangkat = new Date(session.waktu_berangkat);
@@ -108,17 +130,69 @@ function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
             document.getElementById('target-text').innerText = jamTarget;
         }
 
-        if (session.rute_dipilih && typeof decodePolyline === 'function') {
-            if (currentPolyline) map.removeLayer(currentPolyline);
-            const coordinates = decodePolyline(session.rute_dipilih);
-            currentPolyline = L.polyline(coordinates, { color: '#2563eb', weight: 5 }).addTo(map);
-            
-            // Opsional: Pasang lagi marker finish-nya di titik terakhir polyline
-            const finishPoint = coordinates[coordinates.length - 1];
-            L.marker(finishPoint, { icon: iconFinish }).addTo(map);
-            
-            map.fitBounds(currentPolyline.getBounds());
-        }
-        console.log("🔄 Session Restored");
+        setTimeout(() => {
+            if (session.rute_dipilih && typeof decodePolyline === 'function') {
+                logKeLayar("🎨 Re-drawing rute...");
+                try {
+                    if (window.currentPolyline) map.removeLayer(window.currentPolyline);
+                    const coordinates = decodePolyline(session.rute_dipilih);
+                    window.currentPolyline = L.polyline(coordinates, { color: '#2563eb', weight: 5 }).addTo(map);
+                    
+                    const finishPoint = coordinates[coordinates.length - 1];
+                    const iconFin = (typeof iconFinish !== 'undefined') ? iconFinish : new L.Icon.Default();
+                    L.marker(finishPoint, { icon: iconFin }).addTo(map);
+                    
+                    map.fitBounds(window.currentPolyline.getBounds());
+                    logKeLayar("✅ Rute dipulihkan ke peta");
+                } catch (e) {
+                    logKeLayar("❌ Gagal gambar rute dari cache");
+                }
+            } else {
+                logKeLayar("⚠️ Rute_dipilih tidak ditemukan di cache");
+            }
+        }, 1500);
     }
 })();
+
+// 5. FUNGSI SAMPAI (Reset & Finish)
+async function handleSampai() {
+    if (!confirm("Apakah Anda sudah sampai di lokasi tujuan?")) return;
+
+    logKeLayar("🏁 Mengakhiri perjalanan...");
+
+    try {
+        // Hapus Cache
+        localStorage.removeItem('active_session');
+        
+        // Reset Status
+        isTrackingActive = false;
+        isAutoCenter = false;
+
+        // Reset UI
+        document.getElementById('btnBerangkat').style.display = 'block';
+        document.getElementById('btnSampai').style.display = 'none';
+        if (document.getElementById('ruteSelectionArea')) {
+            document.getElementById('ruteSelectionArea').style.display = 'block';
+        }
+
+        // Bersihkan Peta
+        if (window.currentPolyline) {
+            map.removeLayer(window.currentPolyline);
+        }
+
+        if (typeof releaseWakeLock === 'function') releaseWakeLock();
+                logKeLayar("🔄 Sesi aktif ditemukan...");
+        logKeLayar(`🔹 SJKB: ${session.no_sjkb || '-'}`);
+        logKeLayar(`🔹 Tujuan: ${session.tujuan || '-'}`);
+        logKeLayar(`🔹 Waktu Berangkat: ${session.waktu_berangkat ? 'OK' : '❌'}`);
+        logKeLayar(`🔹 Tujuan: ${session.target_sampai || '-'}`);
+        logKeLayar(`🔹 Koordinat Awal: ${session.lat_awal}, ${session.lng_awal}`);
+        logKeLayar(`🔹 History: ${session.path_history ? session.path_history.length : 0} titik`);
+        logKeLayar(`🔹 Rute Terpilih: ${session.rute_dipilih ? '✅ Tersedia (Encoded)' : '❌ Kosong!'}`);
+        logKeLayar(`-------------------------`);
+        logKeLayar("✅ Perjalanan Selesai & Cache Bersih.");
+        alert("🏁 Sampai Tujuan!");
+    } catch (e) {
+        logKeLayar("❌ Gagal mereset sesi.");
+    }
+}
