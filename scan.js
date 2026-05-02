@@ -302,6 +302,7 @@ async function uploadKeGemini(base64Data) {
             console.log("FINAL DATA:", deliveryData);
             logKeLayar("🚚 Data siap dipakai");
             updateRuteUI();
+            logKeLayar(window.deliveryData);
         }
 
     } else {
@@ -455,36 +456,44 @@ function updateRuteUI() {
     const container = document.getElementById('ruteButtons');
     const area = document.getElementById('ruteSelectionArea');
     
+    if (!container || !area) {
+        console.error("Elemen ruteButtons atau ruteSelectionArea tidak ditemukan di HTML");
+        return;
+    }
+
     container.innerHTML = ''; 
 
-    if (window.deliveryData && window.deliveryData.polylines && window.deliveryData.polylines.length > 0) {
+    // Ambil data rute (Cek apakah namanya 'rute' atau 'polylines')
+    const ruteList = window.deliveryData.rute || window.deliveryData.polylines;
+
+    if (window.deliveryData && Array.isArray(ruteList) && ruteList.length > 0) {
+        logKeLayar(`✨ Menampilkan ${ruteList.length} opsi rute`);
         area.style.display = 'block'; 
 
-        window.deliveryData.polylines.forEach((poly, index) => {
+        ruteList.forEach((poly, index) => {
             const btn = document.createElement('button');
             btn.innerText = `Rute ${index + 1}`;
-            btn.className = "btn-rute"; // Pakai class CSS di atas
+            btn.className = "btn-rute"; 
 
             btn.onclick = () => {
-                // Hapus class active dari semua tombol
                 document.querySelectorAll('.btn-rute').forEach(b => b.classList.remove('active'));
-                
-                // Tambah class active ke tombol ini
                 btn.classList.add('active');
 
-                // Panggil fungsi gambar rute
                 if (typeof drawRouteOnMap === "function") {
                     drawRouteOnMap(poly);
+                } else {
+                    logKeLayar("⚠️ Fungsi drawRouteOnMap belum ada");
                 }
             };
 
             container.appendChild(btn);
         });
 
-        // Auto-klik rute pertama
+        // Klik otomatis rute pertama
         if(container.firstChild) container.firstChild.click();
 
     } else {
+        logKeLayar("⚠️ Data rute tidak ditemukan atau kosong");
         area.style.display = 'none';
     }
 }
