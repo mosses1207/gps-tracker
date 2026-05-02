@@ -308,16 +308,19 @@ function closeCamera() {
 }
 
 function logKeLayar(msg) {
-    if (!debugLog) return;
-    const logBoxes = document.querySelectorAll('#debug-log');
-    logBoxes.forEach(box => {
-        const div = document.createElement('div');
-        div.style.borderBottom = "1px solid #333";
-        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-    });
+    const logDiv = document.getElementById('debug-log');
+    if (!logDiv) return;
+
+    const entry = document.createElement('div');
+    const waktu = new Date().toLocaleTimeString('id-ID', { hour12: false });
+    entry.innerText = `> [${waktu}] ${msg}`;
+    
+    logDiv.appendChild(entry);
+
+    // AUTO SCROLL: Otomatis geser ke baris paling baru
+    logDiv.scrollTop = logDiv.scrollHeight;
 }
+
 function showLoading(text = "Memproses...") {
     const overlay = document.getElementById('loading-overlay');
     const textEl = document.getElementById('loading-text');
