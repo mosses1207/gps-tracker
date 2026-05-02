@@ -239,7 +239,7 @@ setTimeout(() => {
         finalBlob = fullCanvas.toDataURL('image/png');
         logKeLayar("⚠️ Burik Terdeteksi! Force PNG (Detail Maksimal)");
     } 
-    else if (currentLength > 500000) {
+    else if (currentLength > 300000) {
         // KONDISI: Gambar terlalu raksasa (bisa bikin GAS timeout)
         // KEPUTUSAN: Kompres dikit ke 0.7
         finalBlob = fullCanvas.toDataURL('image/jpeg', 0.7);
