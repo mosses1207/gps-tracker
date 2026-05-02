@@ -138,16 +138,29 @@
     <!-- 🔷 END INPUT CARD -->
     
     <!-- 🔷 GPS STATUS -->
-    <div id="gpsStatus">
-      <div id="targetInfo" style="margin-top:10px; font-size:14px; display:none;">
-        ⏱ Target Sampai: <b id="targetTime">-</b>
-      </div>
+   <div id="gpsStatus">
+  <!-- Baris Atas: Status -->
+  <div class="gps-row status-line">
+    <span>📡 <b>Status GPS:</b></span>
+    <span id="gpsText" class="status-value">Mencari Lokasi...</span>
+  </div>
 
-      📡 <b>Status GPS:</b> <span id="gpsText">Mencari Lokasi...</span><br>
-      📍 Lat: <span id="lat">-</span> |
-      📍 Lng: <span id="lng">-</span> |
-      ⚡ Speed: <span id="spdDisplay">0</span> km/h
+  <!-- Baris Bawah: Data (Lat, Lng, Speed) -->
+  <div class="gps-data-grid">
+    <div class="data-item">
+      <span>📍 Lat:</span>
+      <b id="lat">-</b>
     </div>
+    <div class="data-item border-left">
+      <span>📍 Lng:</span>
+      <b id="lng">-</b>
+    </div>
+    <div class="data-item border-left">
+      <span>Speed:</span>
+      <b id="spdDisplay">0</b><small>km/h</small>
+    </div>
+  </div>
+</div>
     <!-- 🔷 END GPS -->
 
 
