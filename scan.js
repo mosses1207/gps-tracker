@@ -1,3 +1,9 @@
+let currentLength = finalBlob.length;
+let finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
+let height = video.videoHeight;
+let width = video.videoWidth;
+let worker;
+
 const debugLog = true;
 const processingCanvas = document.createElement('canvas');
 const processingContext = processingCanvas.getContext('2d');
