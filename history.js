@@ -1,4 +1,3 @@
-// Deklarasi global
 let isTrackingActive = false; 
 
 // 1. FUNGSI UTAMA BERANGKAT
