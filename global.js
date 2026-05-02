@@ -1,6 +1,5 @@
 let currentLength = finalBlob.length;
 let currentPos = { lat: 0, lng: 0 };
-let currentPos = { lat: 0, lng: 0 };
 let finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
 let height = video.videoHeight;
 let isAutoCenter = true;
