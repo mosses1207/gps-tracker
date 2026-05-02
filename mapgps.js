@@ -142,15 +142,25 @@ function drawRouteOnMap(encodedPolyline) {
         return;
     }
 
-    // hapus polyline lama
+    if (!encodedPolyline || typeof encodedPolyline !== "string") {
+        logKeLayar("❌ Polyline tidak valid");
+        return;
+    }
+
+    // 🔥 stop auto center biar fokus ke route
+    isAutoCenter = false;
+
     if (currentPolyline) {
         map.removeLayer(currentPolyline);
     }
 
-    // decode polyline
     const coords = decodePolyline(encodedPolyline);
 
-    // gambar ke map
+    if (!coords || coords.length === 0) {
+        logKeLayar("❌ Gagal decode polyline");
+        return;
+    }
+
     currentPolyline = L.polyline(coords, {
         color: '#2563eb',
         weight: 5,
@@ -158,7 +168,6 @@ function drawRouteOnMap(encodedPolyline) {
         lineJoin: 'round'
     }).addTo(map);
 
-    // auto zoom ke route
     map.fitBounds(currentPolyline.getBounds(), {
         padding: [20, 20]
     });
