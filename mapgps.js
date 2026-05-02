@@ -1,8 +1,10 @@
+let currentPos = { lat: 0, lng: 0 };
 let watchId = null;
 let map;
 let userMarker;
 let isFirstLocation = true;
 let isAutoCenter = true;
+
 
 const geoOptions = {
     enableHighAccuracy: true,
