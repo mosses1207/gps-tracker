@@ -308,6 +308,10 @@ async function uploadKeGemini(base64Data) {
         isProcessing = false;
         isLocked = false;
         logKeLayar("✅ Selesai. Siap scan lagi.");
+        const deliveryData = await fetchSpreadsheetData(result.tujuan);
+        if (deliveryData) {
+        logKeLayar("FINAL DATA:", + deliveryData);
+        }
         hideLoading();
     }, 1000);
 }
@@ -375,4 +379,52 @@ function hideLoading() {
 
     // 🔥 BALIKIN SCROLL
     document.body.style.overflow = '';
+}
+
+async function fetchSpreadsheetData(tujuanGemini) {
+    // 🔥 Ambil lokasi dari GPS
+    const zone = isDriverInZone(currentPos.lat, currentPos.lng);
+    const lokasiSheet = zone ? zone.name.replace("Lokasi ", "") : "1";
+
+    const tujuanClean = (tujuanGemini || "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9\s]/g, "")
+        .trim();
+
+    logKeLayar("📡 Fetch Sheet: " + tujuanClean + " | Lokasi: " + lokasiSheet);
+
+    try {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbxwMg2ne9r7ViTTppPhV5qPrb-S35kQf_xEH_R7VZllP_uuTiwV6TM-p7vyw8gME1zn/exec", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                tujuan: tujuanClean,
+                lokasi: lokasiSheet
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const deliveryData = result.data;
+
+            console.log("🔥 DELIVERY DATA:", deliveryData);
+            logKeLayar("✅ Route ketemu: " + deliveryData.nama);
+
+            // 🔥 simpan global (biar gampang akses)
+            window.deliveryData = deliveryData;
+
+            return deliveryData;
+
+        } else {
+            logKeLayar("❌ Sheet error: " + result.error);
+            return null;
+        }
+
+    } catch (err) {
+        logKeLayar("‼️ Fetch Sheet Error: " + err.message);
+        return null;
+    }
 }
