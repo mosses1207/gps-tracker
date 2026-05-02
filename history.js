@@ -111,6 +111,7 @@ function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
 // 4. AUTO-RESTORE (ANTI REFRESH)
 (function checkActiveSession() {
     const sessionData = localStorage.getItem('active_session');
+    const targetEl = document.querySelector('.target');
     if (sessionData) {
         const session = JSON.parse(sessionData);
         if (targetEl) targetEl.classList.remove('hidden');
@@ -143,11 +144,14 @@ function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
             document.getElementById('lt_input').value = durasiMenit;
         }
 
-        if(document.getElementById('target-text')) {
-            const jamTarget = new Date(session.target_sampai).toLocaleTimeString('id-ID', {
-                hour: '2-digit', minute: '2-digit'
-            });
-            document.getElementById('target-text').innerText = jamTarget;
+        if(document.getElementById('target-text') && session.target_sampai) {
+            const targetDate = new Date(session.target_sampai);
+            const opsi = { 
+                day: '2-digit', month: 'long', year: 'numeric', 
+                hour: '2-digit', minute: '2-digit', hour12: false 
+            };
+            const formatter = new Intl.DateTimeFormat('id-ID', opsi).format(targetDate);
+            document.getElementById('target-text').innerText = `${formatter.replace('.', ':')} WIB`;
         }
 
         setTimeout(() => {
@@ -160,9 +164,14 @@ function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
                     
                     const finishPoint = coordinates[coordinates.length - 1];
                     const iconFin = (typeof iconFinish !== 'undefined') ? iconFinish : new L.Icon.Default();
-                    L.marker(finishPoint, { icon: iconFin }).addTo(map);
-                    
-                    map.fitBounds(window.currentPolyline.getBounds());
+                    if (window.finishMarker) map.removeLayer(window.finishMarker);
+                    window.finishMarker = L.marker(finishPoint, { icon: iconFin }).addTo(map);
+                    if (currentPos && currentPos.lat !== 0) {
+                        isAutoCenter = true; // Aktifkan auto center lagi
+                        map.flyTo([currentPos.lat, currentPos.lng], 18);
+                    } else {
+                        map.fitBounds(window.currentPolyline.getBounds());
+                    }
                     logKeLayar("✅ Rute dipulihkan ke peta");
                     isAutoCenter = true;
                     map.flyTo([currentPos.lat, currentPos.lng], 18);
@@ -173,8 +182,10 @@ function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
                 if (targetEl) targetEl.classList.remove('hidden');
                 logKeLayar("⚠️ Rute_dipilih tidak ditemukan di cache");
             }
-        }, 1500);
-    }
+    }, 1500);
+    } else { 
+        if (targetEl) targetEl.classList.add('hidden');
+    } 
 })();
 
 // 5. FUNGSI SAMPAI (Reset & Finish)
@@ -194,7 +205,9 @@ async function handleSampai() {
         // 2. Matikan Status Tracking
         isTrackingActive = false;
         isAutoCenter = true;
-        map.flyTo([currentPos.lat, currentPos.lng], 18);
+        if (currentPos && currentPos.lat !== 0) {
+            map.flyTo([currentPos.lat, currentPos.lng], 18);
+        }
         // 3. RESET FORM UI
         if(document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = "";
         if(document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = "";
