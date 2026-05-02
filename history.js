@@ -27,7 +27,12 @@ async function handleBerangkat() {
     const waktuBerangkat = new Date();
     const durasiMenit = window.deliveryData ? parseInt(window.deliveryData.durasi) : 0;
     const targetSampai = new Date(waktuBerangkat.getTime() + durasiMenit * 60000);
-
+    if(document.getElementById('target-text')) {
+        const jamTarget = targetSampai.toLocaleTimeString('id-ID', {
+            hour: '2-digit', minute: '2-digit'
+        });
+        document.getElementById('target-text').innerText = jamTarget;
+    }
     const travelSession = {
         no_sjkb: noSJKB,
         tujuan: tujuan,
@@ -149,6 +154,8 @@ function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
                     
                     map.fitBounds(window.currentPolyline.getBounds());
                     logKeLayar("✅ Rute dipulihkan ke peta");
+                    isAutoCenter = true;
+                    map.flyTo([currentPos.lat, currentPos.lng], 18);
                 } catch (e) {
                     logKeLayar("❌ Gagal gambar rute dari cache");
                 }
@@ -175,8 +182,8 @@ async function handleSampai() {
         
         // 2. Matikan Status Tracking
         isTrackingActive = false;
-        isAutoCenter = false;
-
+        isAutoCenter = true;
+        map.flyTo([currentPos.lat, currentPos.lng], 18);
         // 3. RESET FORM UI
         if(document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = "";
         if(document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = "";
