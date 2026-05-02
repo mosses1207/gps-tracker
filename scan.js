@@ -1,9 +1,3 @@
-let currentLength = finalBlob.length;
-let finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
-let height = video.videoHeight;
-let width = video.videoWidth;
-let worker;
-
 const debugLog = true;
 const processingCanvas = document.createElement('canvas');
 const processingContext = processingCanvas.getContext('2d');
@@ -213,7 +207,10 @@ async function startValidasiProses() {
 setTimeout(() => {
     const fullCanvas = document.createElement('canvas');
     const MAX_WIDTH = 1280; 
-
+    
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+    
     if (width > MAX_WIDTH) {
         height *= MAX_WIDTH / width;
         width = MAX_WIDTH;
@@ -227,6 +224,9 @@ setTimeout(() => {
     fullCtx.filter = 'contrast(1.4) brightness(1.1)';
     fullCtx.drawImage(video, 0, 0, width, height);
 
+    let finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9); 
+    let currentLength = finalBlob.length;
+    
     logKeLayar(`Cek awal: ${currentLength} karakter`);
 
     // 🔥 STEP 3: Logika Keputusan (Anti-Burik)
