@@ -449,3 +449,41 @@ async function fetchSpreadsheetData(tujuanGemini) {
         return null;
     }
 }
+
+function updateRuteUI() {
+    const container = document.getElementById('ruteButtons');
+    const area = document.getElementById('ruteSelectionArea');
+    
+    container.innerHTML = ''; 
+
+    if (window.deliveryData && window.deliveryData.polylines && window.deliveryData.polylines.length > 0) {
+        area.style.display = 'block'; 
+
+        window.deliveryData.polylines.forEach((poly, index) => {
+            const btn = document.createElement('button');
+            btn.innerText = `Rute ${index + 1}`;
+            btn.className = "btn-rute"; // Pakai class CSS di atas
+
+            btn.onclick = () => {
+                // Hapus class active dari semua tombol
+                document.querySelectorAll('.btn-rute').forEach(b => b.classList.remove('active'));
+                
+                // Tambah class active ke tombol ini
+                btn.classList.add('active');
+
+                // Panggil fungsi gambar rute
+                if (typeof drawRouteOnMap === "function") {
+                    drawRouteOnMap(poly);
+                }
+            };
+
+            container.appendChild(btn);
+        });
+
+        // Auto-klik rute pertama
+        if(container.firstChild) container.firstChild.click();
+
+    } else {
+        area.style.display = 'none';
+    }
+}
