@@ -1,6 +1,6 @@
 // --- Inisialisasi Variabel Global ---
 let worker;
-let currentPos = { lat: 0, lng: 0 };d
+let currentPos = { lat: 0, lng: 0 };
 let isProcessing = false;
 let isLocked = false; // Flag biar nggak jepret berkali-kali dalam satu sesi
 let isCameraActive = false;
