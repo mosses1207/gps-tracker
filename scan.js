@@ -305,7 +305,7 @@ async function uploadKeGemini(base64Data) {
             console.log("FINAL DATA:", deliveryData);
             logKeLayar("🚚 Data siap dipakai");
             updateRuteUI();
-            logKeLayar(window.deliveryData);
+            logKeLayar(JSON.stringify(window.deliveryData));
         }
 
     } else {
@@ -459,21 +459,26 @@ function updateRuteUI() {
     const container = document.getElementById('ruteButtons');
     const area = document.getElementById('ruteSelectionArea');
     
-    if (!container || !area) {
-        console.error("Elemen ruteButtons atau ruteSelectionArea tidak ditemukan di HTML");
-        return;
-    }
+    if (!container || !area || !window.deliveryData) return;
 
     container.innerHTML = ''; 
 
-    // Ambil data rute (Cek apakah namanya 'rute' atau 'polylines')
-    const ruteList = window.deliveryData.rute || window.deliveryData.polylines;
+    // Ambil data rute dari properti yang ada di log gambar
+    let ruteList = window.deliveryData.polylines || window.deliveryData.rute;
 
-    if (window.deliveryData && Array.isArray(ruteList) && ruteList.length > 0) {
+    // Pastikan ruteList adalah array. Jika string tunggal, bungkus jadi array.
+    if (typeof ruteList === 'string') {
+        ruteList = [ruteList];
+    }
+
+    if (Array.isArray(ruteList) && ruteList.length > 0) {
         logKeLayar(`✨ Menampilkan ${ruteList.length} opsi rute`);
         area.style.display = 'block'; 
 
         ruteList.forEach((poly, index) => {
+            // Pastikan data poly tidak kosong/null
+            if (!poly) return;
+
             const btn = document.createElement('button');
             btn.innerText = `Rute ${index + 1}`;
             btn.className = "btn-rute"; 
@@ -488,12 +493,11 @@ function updateRuteUI() {
                     logKeLayar("⚠️ Fungsi drawRouteOnMap belum ada");
                 }
             };
-
             container.appendChild(btn);
         });
 
         // Klik otomatis rute pertama
-        if(container.firstChild) container.firstChild.click();
+        if (container.firstChild) container.firstChild.click();
 
     } else {
         logKeLayar("⚠️ Data rute tidak ditemukan atau kosong");
