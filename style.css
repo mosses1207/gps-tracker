@@ -93,3 +93,8 @@ input[readonly]:focus {outline: none;border-color: #e2e8f0;}
 #street-name {font-size: 13px;font-weight: 700;color: #1e293b;text-align: center;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 250px;}
 .btn-rute {flex: 1;min-width: 80px;padding: 10px;border: 1px solid #e2e8f0;border-radius: 10px;background: #f8fafc;color: #64748b;font-size: 12px;font-weight: 600;cursor: pointer;transition: all 0.2s ease;}
 .btn-rute.active {background: #6366f1;color: white;border-color: #6366f1;box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);}
+.target {position: absolute;top: 20px; left: 20px;z-index: 1000;background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px);-webkit-backdrop-filter: blur(8px);padding: 12px 18px;border-radius: 12px;box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);border: 1px solid rgba(255, 255, 255, 0.3);font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;min-width: 220px;pointer-events: none; transition: all 0.3s ease-in-out;opacity: 1;transform: translateY(0);}
+.target span b {display: block;font-size: 11px;text-transform: uppercase;letter-spacing: 1px;color: #64748b; margin-bottom: 4px;}
+#target-text {font-size: 15px;font-weight: 700;color: #1e293b;display: inline-block;}
+.status-value {color: #2563eb !important;}
+.target.hidden {opacity: 0;transform: translateY(-20px); pointer-events: none;}
