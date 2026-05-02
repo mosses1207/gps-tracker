@@ -1,4 +1,3 @@
-// --- Inisialisasi Variabel Global ---
 let worker;
 let currentPos = { lat: 0, lng: 0 };
 let isProcessing = false;
