@@ -82,7 +82,9 @@ function updateLocationSuccess(position) {
     document.getElementById('spdDisplay').innerText = speedKmH;
     document.getElementById('gpsText').innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
     document.getElementById('gpsText').style.color = "#22c55e";
-    
+    if (isTrackingActive) {
+        catatPerjalanan(latitude, longitude, speedKmH);
+    }
     const checkLat = latitude.toFixed(3);
     const checkLng = longitude.toFixed(3);
 
