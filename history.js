@@ -6,6 +6,11 @@ async function handleBerangkat() {
     const btnBerangkat = document.getElementById('btnBerangkat');
     const btnSampai = document.getElementById('btnSampai');
 
+    if (!window.currentPolylineString) {
+        alert("⚠️ Pilih rutenya dulu, klik tombol Rute 1 atau Rute 2!");
+        return;
+    }
+    
     if (!currentPos || currentPos.lat === 0) {
         alert("⚠️ Tunggu sampai GPS mendapatkan lokasi Anda!");
         return;
@@ -161,38 +166,50 @@ async function handleSampai() {
     logKeLayar("🏁 Mengakhiri perjalanan...");
 
     try {
-        // Hapus Cache
+        // Ambil data bentar buat log terakhir sebelum dihapus
+        const sessionData = localStorage.getItem('active_session');
+        const session = sessionData ? JSON.parse(sessionData) : {};
+
+        // 1. Hapus Cache Session
         localStorage.removeItem('active_session');
         
-        // Reset Status
+        // 2. Matikan Status Tracking
         isTrackingActive = false;
         isAutoCenter = false;
 
-        // Reset UI
+        // 3. RESET FORM UI
+        if(document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = "";
+        if(document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = "";
+        if(document.getElementById('lt_input')) document.getElementById('lt_input').value = "";
+        if(document.getElementById('target-text')) document.getElementById('target-text').innerText = "--:--";
+
+        // 4. Reset Variabel Global
+        window.currentPolylineString = "";
+        window.deliveryData = null;
+
+        // 5. Kembalikan Tombol & Area Rute
         document.getElementById('btnBerangkat').style.display = 'block';
         document.getElementById('btnSampai').style.display = 'none';
         if (document.getElementById('ruteSelectionArea')) {
             document.getElementById('ruteSelectionArea').style.display = 'block';
+            document.getElementById('ruteSelectionArea').innerHTML = ""; 
         }
 
-        // Bersihkan Peta
-        if (window.currentPolyline) {
-            map.removeLayer(window.currentPolyline);
-        }
+        // 6. Bersihkan Map
+        if (window.currentPolyline) map.removeLayer(window.currentPolyline);
+        if (window.finishMarker) map.removeLayer(window.finishMarker);
 
         if (typeof releaseWakeLock === 'function') releaseWakeLock();
-                logKeLayar("🔄 Sesi aktif ditemukan...");
-        logKeLayar(`🔹 SJKB: ${session.no_sjkb || '-'}`);
-        logKeLayar(`🔹 Tujuan: ${session.tujuan || '-'}`);
-        logKeLayar(`🔹 Waktu Berangkat: ${session.waktu_berangkat ? 'OK' : '❌'}`);
-        logKeLayar(`🔹 Tujuan: ${session.target_sampai || '-'}`);
-        logKeLayar(`🔹 Koordinat Awal: ${session.lat_awal}, ${session.lng_awal}`);
-        logKeLayar(`🔹 History: ${session.path_history ? session.path_history.length : 0} titik`);
-        logKeLayar(`🔹 Rute Terpilih: ${session.rute_dipilih ? '✅ Tersedia (Encoded)' : '❌ Kosong!'}`);
+
+        // LOG AKHIR (Pake data yang tadi disimpan bentar)
         logKeLayar(`-------------------------`);
-        logKeLayar("✅ Perjalanan Selesai & Cache Bersih.");
-        alert("🏁 Sampai Tujuan!");
+        logKeLayar(`✅ FINISH: ${session.no_sjkb || '-'}`);
+        logKeLayar(`📍 Titik Terakhir: ${session.path_history ? session.path_history.length : 0} titik dicatat`);
+        logKeLayar("✅ Cache dibersihkan & Form dikosongkan.");
+        
+        alert("🏁 Sampai Tujuan! Data perjalanan telah ditutup.");
+
     } catch (e) {
-        logKeLayar("❌ Gagal mereset sesi.");
+        logKeLayar("❌ Gagal mereset form: " + e.message);
     }
 }
