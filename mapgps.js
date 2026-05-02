@@ -21,7 +21,10 @@ function initMap() {
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap',
-        crossOrigin: true
+        useCache: true,        
+        crossOrigin: true,
+        cacheMaxAge: 2592000000, 
+        useOnlyCache: false      
     }).addTo(map);
 
     // Zoom ditaruh di kanan bawah
