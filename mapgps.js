@@ -1,11 +1,3 @@
-let currentPos = { lat: 0, lng: 0 };
-let watchId = null;
-let map;
-let userMarker;
-let isFirstLocation = true;
-let isAutoCenter = true;
-
-
 const geoOptions = {
     enableHighAccuracy: true,
     timeout: 10000,
@@ -70,9 +62,6 @@ function updateMapDisplay(lat, lng) {
     }
 }
 
-let lastAddressLat = 0;
-let lastAddressLng = 0;
-
 function updateLocationSuccess(position) {
     const { latitude, longitude, speed } = position.coords;
     const speedKmH = speed ? Math.round(speed * 3.6) : 0;
@@ -107,7 +96,6 @@ function recenterMap() {
 }
 
 function updateLocationError(error) {
-    let msg = "";
     switch(error.code) {
         case error.PERMISSION_DENIED: msg = "Izin GPS ditolak supir."; break;
         case error.POSITION_UNAVAILABLE: msg = "Sinyal GPS hilang."; break;
