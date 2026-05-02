@@ -14,3 +14,5 @@ let lastAddressLng = 0;
 let msg = "";
 let result;
 let currentPolyline = null;
+let startMarker = null;
+let endMarker = null;
