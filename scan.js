@@ -85,6 +85,7 @@ async function initSatpam() {
 }
 
 async function openScanner() {
+    await requestWakeLock();
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     const btnScan = document.getElementById('btnScanAction');
