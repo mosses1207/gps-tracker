@@ -1,9 +1,20 @@
+let currentLength = finalBlob.length;
 let currentPos = { lat: 0, lng: 0 };
-let watchId = null;
-let map;
-let userMarker;
-let isFirstLocation = true;
+let currentPos = { lat: 0, lng: 0 };
+let finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
+let height = video.videoHeight;
 let isAutoCenter = true;
+let isCameraActive = false;
+let isFirstLocation = true;
+let isLocked = false; // Flag biar nggak jepret berkali-kali dalam satu sesi
+let isProcessing = false;
 let lastAddressLat = 0;
 let lastAddressLng = 0;
+let map;
 let msg = "";
+let result;
+let userMarker;
+let watchId = null;
+let width = video.videoWidth;
+let worker;
+
