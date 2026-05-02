@@ -1,3 +1,15 @@
+const startIcon = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/5425/5425869.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32]
+});
+
+const endIcon = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/5425/5425869.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32]
+});
+
 const geoOptions = {
     enableHighAccuracy: true,
     timeout: 10000,
@@ -147,12 +159,16 @@ function drawRouteOnMap(encodedPolyline) {
         return;
     }
 
-    // 🔥 stop auto center biar fokus ke route
     isAutoCenter = false;
 
+    // hapus polyline lama
     if (currentPolyline) {
         map.removeLayer(currentPolyline);
     }
+
+    // hapus marker lama
+    if (startMarker) map.removeLayer(startMarker);
+    if (endMarker) map.removeLayer(endMarker);
 
     const coords = decodePolyline(encodedPolyline);
 
@@ -161,6 +177,7 @@ function drawRouteOnMap(encodedPolyline) {
         return;
     }
 
+    // 🔥 gambar polyline
     currentPolyline = L.polyline(coords, {
         color: '#2563eb',
         weight: 5,
@@ -168,11 +185,21 @@ function drawRouteOnMap(encodedPolyline) {
         lineJoin: 'round'
     }).addTo(map);
 
+    // 🔥 ambil titik awal & akhir
+    const start = coords[0];
+    const end = coords[coords.length - 1];
+
+    // 🔥 pasang marker
+    startMarker = L.marker(start, { icon: startIcon }).addTo(map);
+        startMarker.bindTooltip("Start", { permanent: false });
+    endMarker = L.marker(end, { icon: endIcon }).addTo(map)
+        .bindPopup("🏁 Tujuan");
+        endMarker.bindTooltip("Tujuan", { permanent: false });
     map.fitBounds(currentPolyline.getBounds(), {
         padding: [20, 20]
     });
 
-    logKeLayar("🗺️ Rute digambar");
+    logKeLayar("🗺️ Rute + Marker ditampilkan");
 }
 
 function decodePolyline(encoded) {
