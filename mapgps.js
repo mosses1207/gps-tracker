@@ -3,13 +3,11 @@ const startIcon = L.icon({
     iconSize: [32, 32],
     iconAnchor: [16, 32]
 });
-
 const endIcon = L.icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/5425/5425869.png',
     iconSize: [32, 32],
     iconAnchor: [16, 32]
 });
-
 const geoOptions = {
     enableHighAccuracy: true,
     timeout: 10000,
