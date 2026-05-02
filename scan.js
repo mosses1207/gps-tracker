@@ -7,7 +7,7 @@ const ALLOWED_LOCATIONS = [
     { name: "Lokasi 3", lat: -6.35781170272672, lng: 107.25441893645797 },
     { name: "Lokasi 4", lat: -6.13823075256515, lng: 106.88354566724894 }
 ];
-const MAX_RADIUS_KM = 1; // Radius 1 KM
+const MAX_RADIUS_KM = 1;
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Jari-jari bumi dalam KM
