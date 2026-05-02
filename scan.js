@@ -85,7 +85,9 @@ async function initSatpam() {
 }
 
 async function openScanner() {
-    await requestWakeLock();
+    requestWakeLock().catch(err => console.error("WakeLock Error:", err)); 
+    logKeLayar("Mengecek GPS..."); // Cek apakah log ini muncul?
+    const video = document.getElementById('video');
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     const btnScan = document.getElementById('btnScanAction');
