@@ -23,7 +23,7 @@ td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
 #loader-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white; }
 .spinner { border: 6px solid #f3f3f3; border-top: 6px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 10px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-e-wrapper { max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 12px; }
+.e-wrapper { max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 12px; }
 .main-header {position: sticky;top: 0;left: 0;width: 100%; z-index: 2000; background: linear-gradient(to right, #ffffff, #f8fafc); display: flex; align-items: center; justify-content: space-between; padding: 12px 25px; border-bottom: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); box-sizing: border-box; }
 .brand-section {display: flex;align-items: center;gap: 18px;}
 .brand-logo img {height: 38px; width: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));}
@@ -40,7 +40,7 @@ body {margin: 0;padding: 0;}
 @media (min-width: 600px) {.input-group-wrapper {flex-direction: row; flex-wrap: wrap;}
 #no_sjkb, #tujuan_dealer {flex: 2;}
 .mobile-input-row {flex: 1.5;}}
-@media (max-width: 599px) {.btn-scan {width: auto; order: unset !important; }gap: 10px;}}
+@media (max-width: 599px) {.btn-scan {width: auto; order: unset !important; }gap: 10px; }}
 .custom-pin {display: flex;justify-content: center;align-items: center;}
 .custom-pin::after {content: '';display: block;width: 24px; height: 24px;background-color: #0095FF; border-radius: 50% 50% 50% 0; border: 2px solid white; box-shadow: 0 0 10px rgba(50, 205, 50, 0.7); transform: rotate(-45deg); position: absolute;top: -30px; left: -12px;}
 .custom-pin::before {content: '';display: block;width: 10px;height: 10px;background-color: #000; border-radius: 50%;position: absolute;top: -21px; left: -3px;z-index: 2; }
@@ -82,7 +82,7 @@ input[readonly]:focus {outline: none;border-color: #e2e8f0;}
 .gps-info-line {font-size: 14px;}
 .gps-stats-row {display: flex;flex-wrap: wrap;gap: 10px;font-size: 13px;color: #475569;}
 .stat-group {display: flex;align-items: center;gap: 8px;}
-.stat-group b {color: #1e293b;font-family: monospace;
+.stat-group b {color: #1e293b;font-family: monospace; }
 .separator {color: #cbd5e1;font-weight: 300;}
 .btn-center-map:hover {background-color: #f4f4f4;}
 .btn-center-map {position: absolute; bottom: 100px !important;right: 12px !important;z-index: 1000 !important;width: 34px !important;height: 34px !important;background-color: white !important;border: 2px solid rgba(0,0,0,0.2) !important;border-radius: 4px !important;box-shadow: none !important;display: flex !important;justify-content: center;align-items: center;cursor: pointer;padding: 0;}
