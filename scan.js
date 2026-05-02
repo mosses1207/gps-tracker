@@ -291,30 +291,33 @@ async function uploadKeGemini(base64Data) {
 
         const result = await response.json();
 
-        if (result.success) {
-            logKeLayar("✅ Data diterima dari GAS");
+    if (result.success) {
+        logKeLayar("✅ Data diterima dari GAS");
 
-            document.getElementById('no_sjkb').value = result.no_sjkb || "-";
-            document.getElementById('tujuan_dealer').value = result.tujuan || "-";
-        } else {
-            logKeLayar("❌ Gagal: " + result.error);
+        document.getElementById('no_sjkb').value = result.no_sjkb || "-";
+        document.getElementById('tujuan_dealer').value = result.tujuan || "-";
+        const deliveryData = await fetchSpreadsheetData(result.tujuan);
+
+        if (deliveryData) {
+            console.log("FINAL DATA:", deliveryData);
+            logKeLayar("🚚 Data siap dipakai");
         }
 
-    } catch (err) {
-        logKeLayar("‼️ Fetch Error: " + err.message);
-        console.error(err);
-    } finally {
+    } else {
+        logKeLayar("❌ Gagal: " + result.error);
+    }
+
+        } catch (err) {
+            logKeLayar("‼️ Fetch Error: " + err.message);
+            console.error(err);
+    }finally {
     setTimeout(() => {
         isProcessing = false;
         isLocked = false;
         logKeLayar("✅ Selesai. Siap scan lagi.");
-        const deliveryData = await fetchSpreadsheetData(result.tujuan);
-        if (deliveryData) {
-        logKeLayar("FINAL DATA:", + deliveryData);
-        }
         hideLoading();
-    }, 1000);
-}
+        }, 1000);
+    }
 }
 
 function isiHasilScan(data) {
@@ -382,6 +385,10 @@ function hideLoading() {
 }
 
 async function fetchSpreadsheetData(tujuanGemini) {
+    if (!currentPos || !currentPos.lat || !currentPos.lng) {
+    logKeLayar("⚠️ GPS belum tersedia");
+    return null;
+    }
     // 🔥 Ambil lokasi dari GPS
     const zone = isDriverInZone(currentPos.lat, currentPos.lng);
     const lokasiSheet = zone ? zone.name.replace("Lokasi ", "") : "1";
@@ -415,7 +422,7 @@ async function fetchSpreadsheetData(tujuanGemini) {
 
             // 🔥 simpan global (biar gampang akses)
             window.deliveryData = deliveryData;
-
+            
             return deliveryData;
 
         } else {
