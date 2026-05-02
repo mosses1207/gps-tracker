@@ -301,6 +301,7 @@ async function uploadKeGemini(base64Data) {
         if (deliveryData) {
             console.log("FINAL DATA:", deliveryData);
             logKeLayar("🚚 Data siap dipakai");
+            updateRuteUI();
         }
 
     } else {
