@@ -390,7 +390,6 @@ async function fetchSpreadsheetData(tujuanGemini) {
         return null;
     }
 
-    // 🔥 Ambil lokasi dari GPS
     const zone = isDriverInZone(currentPos.lat, currentPos.lng);
     const lokasiSheet = zone ? zone.name.replace("Lokasi ", "") : "1";
 
@@ -399,13 +398,13 @@ async function fetchSpreadsheetData(tujuanGemini) {
         .replace(/[^A-Z0-9\s]/g, "")
         .trim();
 
-    logKeLayar("📡 Fetch Sheet: " + tujuanClean + " | Lokasi: " + lokasiSheet);
+    logKeLayar(`🚀 REQ | tujuan: ${tujuanClean} | lokasi: ${lokasiSheet}`);
 
     try {
         const response = await fetch("https://script.google.com/macros/s/AKfycbxwMg2ne9r7ViTTppPhV5qPrb-S35kQf_xEH_R7VZllP_uuTiwV6TM-p7vyw8gME1zn/exec", {
             method: "POST",
             headers: {
-                "Content-Type": "text/plain" // 🔥 FIX UTAMA (anti CORS)
+                "Content-Type": "text/plain"
             },
             body: JSON.stringify({
                 tujuan: tujuanClean,
@@ -413,37 +412,35 @@ async function fetchSpreadsheetData(tujuanGemini) {
             })
         });
 
-        // 🔥 HANDLE RESPONSE AMAN
+        logKeLayar(`📡 STATUS: ${response.status}`);
+
         const text = await response.text();
+
+        // 🔥 potong biar ga kepanjangan di UI
+        const shortText = text.length > 100 ? text.substring(0, 100) + "..." : text;
+        logKeLayar(`📦 RAW: ${shortText}`);
 
         let result;
         try {
             result = JSON.parse(text);
         } catch (e) {
-            logKeLayar("❌ Response bukan JSON");
-            console.error("RAW RESPONSE:", text);
+            logKeLayar("❌ JSON PARSE ERROR");
             return null;
         }
 
         if (result.success) {
-            const deliveryData = result.data;
+            logKeLayar(`✅ SUCCESS | ${result.data.nama}`);
 
-            console.log("🔥 DELIVERY DATA:", deliveryData);
-            logKeLayar("✅ Route ketemu: " + deliveryData.nama);
-
-            // 🔥 simpan global
-            window.deliveryData = deliveryData;
-            
-            return deliveryData;
+            window.deliveryData = result.data;
+            return result.data;
 
         } else {
-            logKeLayar("❌ Sheet error: " + result.error);
+            logKeLayar(`❌ GAS ERROR: ${result.error}`);
             return null;
         }
 
     } catch (err) {
-        console.error("FULL ERROR:", err);
-        logKeLayar("‼️ Fetch Sheet Error: " + err.message);
+        logKeLayar(`‼️ FETCH ERROR: ${err.message}`);
         return null;
     }
 }
