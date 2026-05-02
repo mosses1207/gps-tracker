@@ -3,7 +3,6 @@ let map;
 let userMarker;
 let isFirstLocation = true;
 let isAutoCenter = true;
-let currentPos = { lat: 0, lng: 0 };
 
 const geoOptions = {
     enableHighAccuracy: true,
