@@ -24,6 +24,7 @@ function initMap() {
         crossOrigin: true
     }).addTo(map);
 
+    // Zoom ditaruh di kanan bawah
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     userMarker = L.circleMarker([0, 0], {
@@ -35,50 +36,46 @@ function initMap() {
         fillOpacity: 0.9
     }).addTo(map);
 
-    // Event Listener dipindah ke dalam sini biar 'map' sudah siap
     map.on('movestart', (e) => {
         if (e.hard) return; 
         isAutoCenter = false;
-        // logKeLayar("🖐️ Manual scroll: Auto-center Off");
+        document.getElementById('gpsText').innerText = "Manual Mode (Auto-Off)";
     });
 
-    logKeLayar("🗺️ Map Ready & Live GPS Active");
+    logKeLayar("🗺️ Map Ready");
 }
 
 /**
- * 2. INISIALISASI GPS
+ * 2. INISIALISASI GPS (Langsung panggil popup izin)
  */
 function initGPS() {
     if ("geolocation" in navigator) {
+        logKeLayar("📡 Meminta akses GPS...");
         watchId = navigator.geolocation.watchPosition(
             updateLocationSuccess,
             updateLocationError,
             geoOptions
         );
-        logKeLayar("📡 GPS: Memulai pelacakan live...");
     } else {
-        alert("GPS Tidak Didukung Browser");
+        logKeLayar("❌ Browser tidak support GPS");
     }
 }
 
 /**
- * 3. UPDATE VISUAL PETA (SMOOTH)
+ * 3. UPDATE VISUAL PETA
  */
 function updateMapDisplay(lat, lng) {
     if (!map || !userMarker) return;
     const newPos = [lat, lng];
 
-    // Selalu update posisi marker titik biru
     userMarker.setLatLng(newPos);
 
-    // Kalau pertama kali dapet lokasi, langsung arahin kamera
     if (isFirstLocation) {
         map.setView(newPos, 17);
         isFirstLocation = false;
         return;
     }
 
-    // Hanya geser peta otomatis kalau isAutoCenter aktif
     if (isAutoCenter) {
         map.flyTo(newPos, map.getZoom(), {
             animate: true,
@@ -100,7 +97,7 @@ function updateLocationSuccess(position) {
     document.getElementById('lat').innerText = latitude.toFixed(6);
     document.getElementById('lng').innerText = longitude.toFixed(6);
     document.getElementById('spdDisplay').innerText = speedKmH;
-    document.getElementById('gpsText').innerText = isAutoCenter ? "Tracking Aktif" : "Manual Mode";
+    document.getElementById('gpsText').innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
     document.getElementById('gpsText').style.color = "#22c55e";
 
     updateMapDisplay(latitude, longitude);
@@ -116,9 +113,7 @@ function recenterMap() {
             animate: true,
             duration: 1
         });
-        logKeLayar("🎯 Fokus ke Lokasi (Auto-center On)");
-    } else {
-        logKeLayar("❌ Lokasi belum ditemukan");
+        logKeLayar("🎯 Fokus ke Lokasi");
     }
 }
 
@@ -128,7 +123,7 @@ function recenterMap() {
 function updateLocationError(error) {
     let msg = "";
     switch(error.code) {
-        case error.PERMISSION_DENIED: msg = "Izin GPS ditolak."; break;
+        case error.PERMISSION_DENIED: msg = "Izin GPS ditolak supir."; break;
         case error.POSITION_UNAVAILABLE: msg = "Sinyal GPS hilang."; break;
         case error.TIMEOUT: msg = "GPS Timeout."; break;
         default: msg = "GPS Error.";
@@ -138,6 +133,7 @@ function updateLocationError(error) {
     logKeLayar("⚠️ " + msg);
 }
 
+// OTOMATIS JALAN PAS LOAD
 window.addEventListener('load', () => {
     initMap();
     initGPS();
