@@ -4,9 +4,37 @@ let isProcessing = false;
 let isLocked = false; // Flag biar nggak jepret berkali-kali dalam satu sesi
 let isCameraActive = false;
 const debugLog = true;
-
 const processingCanvas = document.createElement('canvas');
 const processingContext = processingCanvas.getContext('2d');
+const ALLOWED_LOCATIONS = [
+    { name: "Lokasi 1", lat: -6.449595660933786, lng: 107.00540022618232 },
+    { name: "Lokasi 2", lat: -6.314941380764999, lng: 107.08465396420782 },
+    { name: "Lokasi 3", lat: -6.35781170272672, lng: 107.25441893645797 },
+    { name: "Lokasi 4", lat: -6.13823075256515, lng: 106.88354566724894 }
+];
+const MAX_RADIUS_KM = 1; // Radius 1 KM
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Jari-jari bumi dalam KM
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Hasilnya dalam KM
+}
+
+function isDriverInZone(userLat, userLng) {
+    // Cari apakah ada salah satu lokasi di array yang jaraknya < 1 KM
+    const nearbyLocation = ALLOWED_LOCATIONS.find(loc => {
+        const distance = calculateDistance(userLat, userLng, loc.lat, loc.lng);
+        return distance <= MAX_RADIUS_KM;
+    });
+
+    return nearbyLocation || null; // Balikin data lokasi kalau ketemu, atau null kalau jauh
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const loader = document.getElementById('loading-satpam');
@@ -59,16 +87,28 @@ async function initSatpam() {
 async function openScanner() {
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
-    
+    const btnScan = document.getElementById('btnScanAction');
+
+    if (currentPos.lat === 0 || currentPos.lng === 0) {
+        alert("⚠️ GPS belum siap atau koordinat belum terbaca.");
+        return;
+    }
+    const zone = isDriverInZone(currentPos.lat, currentPos.lng);
+    if (!zone) {
+        logKeLayar("❌ Akses Ditolak: Anda di luar radius 1 KM");
+        alert("Harap mulai perjalanan dari lokasi tempat anda bekerja.");
+        return;
+    }
+
     if (isCameraActive) {
         logKeLayar("⚠️ Kamera masih aktif");
         return;
     }
-    const btnScan = document.getElementById('btnScanAction');
+
     btnScan.disabled = true;
     document.getElementById('scan-status').innerText = "🔍 Scanning...";
+    logKeLayar(`✅ Lokasi Terverifikasi: ${zone.name}`);
     
-    // 🔥 RESET TOTAL
     isLocked = false;
     isProcessing = false;
     isCameraActive = true;
@@ -88,7 +128,6 @@ async function openScanner() {
         });
 
         video.srcObject = stream;
-
         video.onloadeddata = null;
         video.onloadeddata = async () => {
             await video.play();
@@ -99,11 +138,9 @@ async function openScanner() {
     } catch (err) {
     const btnScan = document.getElementById('btnScanAction');
     btnScan.disabled = false;
-
     isCameraActive = false;
-
     alert("Kamera Error: " + err.message);
-}
+    }
 }
 
 async function startValidasiProses() {
