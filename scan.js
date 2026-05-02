@@ -453,66 +453,63 @@ async function fetchSpreadsheetData(tujuanGemini) {
     }
 }
 
-// Tambahkan parameter 'data' di sini
+// --- Perbaikan Fungsi updateRuteUI ---
 function updateRuteUI(data) {
     const container = document.getElementById('ruteButtons');
     const area = document.getElementById('ruteSelectionArea');
     
     if (!container || !area) return;
 
-    // Bersihkan container tombol sebelum render ulang
+    // Bersihkan container agar tidak double saat scan ulang
     container.innerHTML = ''; 
 
     // Ambil data dari parameter 'data' (hasil fetch) atau fallback ke window
     const targetData = data || window.deliveryData;
     
     if (!targetData) {
-        logKeLayar("⚠️ Error: Data rute tidak ditemukan");
+        logKeLayar("⚠️ Error: Tidak ada data untuk UI");
         return;
     }
 
-    // 🔥 PERBAIKAN LOG: Pastikan variabelnya benar 'targetData'
-    logKeLayar("DEBUG Data: " + JSON.stringify(targetData).substring(0, 50));
+    // 🔥 FIX: Gunakan targetData agar tidak ReferenceError
+    logKeLayar("DEBUG: " + JSON.stringify(targetData).substring(0, 50));
 
-    // Ambil polylines dari object data
+    // Ambil array polylines dari object data
     const polyList = targetData.polylines;
 
-    // Cek apakah polyList ada dan merupakan array
+    // Pastikan polyList adalah Array dan punya isi
     if (Array.isArray(polyList) && polyList.length > 0) {
-        logKeLayar(`✨ Ditemukan ${polyList.length} rute`);
+        logKeLayar(`✨ Ditemukan ${polyList.length} objek rute`);
         area.style.display = 'block'; 
 
-        // Buat tombol berdasarkan JUMLAH object/string di dalam array polylines
+        // Buat tombol sebanyak jumlah item di dalam array polylines
         polyList.forEach((poly, index) => {
-            if (!poly) return; // Skip kalau isinya kosong
+            if (!poly) return; // Lewati jika data polyline kosong
 
             const btn = document.createElement('button');
             btn.innerText = `Rute ${index + 1}`;
             btn.className = "btn-rute"; 
 
             btn.onclick = () => {
-                // Beri tanda aktif pada tombol yang diklik
+                // Highlight tombol yang aktif
                 document.querySelectorAll('.btn-rute').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
 
-                // Gambar rute ke map menggunakan polyline string ini
+                // Kirim koordinat polyline ke fungsi map
                 if (typeof drawRouteOnMap === "function") {
                     drawRouteOnMap(poly);
                 } else {
-                    logKeLayar("⚠️ Fungsi drawRouteOnMap tidak ditemukan");
+                    logKeLayar("⚠️ Fungsi drawRouteOnMap belum siap");
                 }
             };
             container.appendChild(btn);
         });
 
-        // Otomatis pilih rute pertama setelah tombol dibuat
-        if (container.firstChild) {
-            container.firstChild.click();
-        }
+        // Klik otomatis rute pertama biar langsung tampil di map
+        if (container.firstChild) container.firstChild.click();
 
     } else {
-        // Jika polylines bukan array atau kosong
-        logKeLayar("⚠️ Array polylines kosong atau tidak ditemukan");
+        logKeLayar("⚠️ Array polylines tidak ditemukan atau kosong");
         area.style.display = 'none';
     }
 }
