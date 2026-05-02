@@ -136,6 +136,66 @@ async function updateStreetName(lat, lng) {
     }
 }
 
+function drawRouteOnMap(encodedPolyline) {
+    if (!map) {
+        logKeLayar("❌ Map belum siap");
+        return;
+    }
+
+    // hapus polyline lama
+    if (currentPolyline) {
+        map.removeLayer(currentPolyline);
+    }
+
+    // decode polyline
+    const coords = decodePolyline(encodedPolyline);
+
+    // gambar ke map
+    currentPolyline = L.polyline(coords, {
+        color: '#2563eb',
+        weight: 5,
+        opacity: 0.8,
+        lineJoin: 'round'
+    }).addTo(map);
+
+    // auto zoom ke route
+    map.fitBounds(currentPolyline.getBounds(), {
+        padding: [20, 20]
+    });
+
+    logKeLayar("🗺️ Rute digambar");
+}
+
+function decodePolyline(encoded) {
+    let points = [];
+    let index = 0, lat = 0, lng = 0;
+
+    while (index < encoded.length) {
+        let b, shift = 0, result = 0;
+        do {
+            b = encoded.charCodeAt(index++) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+        } while (b >= 0x20);
+        let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lat += dlat;
+
+        shift = 0;
+        result = 0;
+        do {
+            b = encoded.charCodeAt(index++) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+        } while (b >= 0x20);
+        let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lng += dlng;
+
+        points.push([lat / 1e5, lng / 1e5]);
+    }
+
+    return points;
+}
+
 window.addEventListener('load', () => {
     initMap();
     initGPS();
