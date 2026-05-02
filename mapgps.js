@@ -72,8 +72,44 @@ function updateMapDisplay(lat, lng) {
     }
 }
 
+// Filter GPS dengan pengecekan akurasi (meter)
+function isGpsValid(newLat, newLng, accuracy) {
+    // 1. CEK AKURASI DULU (Filter utama buat titik pertama & semua titik)
+    // Kalau akurasi lebih dari 100 meter, anggap tidak valid
+    if (accuracy > 100) {
+        logKeLayar(`⚠️ Sinyal Lemah: Akurasi buruk (${accuracy.toFixed(0)}m). Mencoba mencari sinyal...`);
+        return false;
+    }    
+    let sessionData = localStorage.getItem('active_session');
+    if (!sessionData) return true; // Titik pertama valid kalau akurasinya lolos < 100m
+
+    let session = JSON.parse(sessionData);
+    let lastPoint = session.last_update;
+
+    // 2. LOGIKA KECEPATAN (Buat titik kedua dan seterusnya)
+    const dist = calculateDistanceperjalanan(lastPoint.lat, lastPoint.lng, newLat, newLng);
+    const now = new Date();
+    const lastTime = new Date(session.last_update_time || session.waktu_berangkat);
+    const timeDiff = (now - lastTime) / (1000 * 60 * 60);
+
+    if (timeDiff > 0) {
+        const speed = dist / timeDiff;
+        if (speed > 150) {
+            logKeLayar(`⚠️ GPS Loncat: Kecepatan ${speed.toFixed(1)} km/jam ditolak.`);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function updateLocationSuccess(position) {
-    const { latitude, longitude, speed } = position.coords;
+    const { latitude, longitude, speed, accuracy } = position.coords; 
+    if (!isGpsValid(latitude, longitude, accuracy)) {
+        document.getElementById('gpsText').innerText = "⚠️ Sinyal GPS Lemah";
+        document.getElementById('gpsText').style.color = "#eab308";
+        return;
+    }
     const speedKmH = speed ? Math.round(speed * 3.6) : 0;
     currentPos.lat = latitude;
     currentPos.lng = longitude;
@@ -89,7 +125,7 @@ function updateLocationSuccess(position) {
     const checkLng = longitude.toFixed(3);
 
     if (checkLat !== lastAddressLat || checkLng !== lastAddressLng) {
-        updateStreetName(latitude, longitude); // NAH, DIPANGGIL DISINI BANG!
+        updateStreetName(latitude, longitude); 
         lastAddressLat = checkLat;
         lastAddressLng = checkLng;
     }
