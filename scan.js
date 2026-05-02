@@ -302,13 +302,11 @@ async function uploadKeGemini(base64Data) {
         const deliveryData = await fetchSpreadsheetData(result.tujuan);
 
         if (deliveryData) {
-            console.log("FINAL DATA:", deliveryData);
             logKeLayar("🚚 Data siap dipakai");
-            updateRuteUI();
-            logKeLayar(JSON.stringify(window.deliveryData));
+            // 🔥 KIRIM DATA LANGSUNG KE FUNGSI
+            updateRuteUI(deliveryData); 
         }
-
-    } else {
+        } else {
         logKeLayar("❌ Gagal: " + result.error);
     }
 
@@ -457,6 +455,7 @@ async function fetchSpreadsheetData(tujuanGemini) {
 
 // Tambahkan parameter 'data' di sini
 function updateRuteUI(data) {
+    logKeLayar("DEBUG: " + JSON.stringify(deliveryData).substring(0, 50));
     const container = document.getElementById('ruteButtons');
     const area = document.getElementById('ruteSelectionArea');
     
