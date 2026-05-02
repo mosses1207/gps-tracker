@@ -2,26 +2,21 @@
 // --- Fungsi Penunjang: Screen Wake Lock ---
 let wakeLock = null;
 
+// Di dalam run.js
 async function requestWakeLock() {
-    try {
-        // Cek apakah browser mendukung API ini
-        if ('wakeLock' in navigator) {
-            wakeLock = await navigator.wakeLock.request('screen');
-            
-            logKeLayar("💡 Screen Wake Lock Aktif (Layar Anti-Mati)");
-
-            // Kalau tab dipindah atau layar sempat mati manual, minta lagi saat balik
-            wakeLock.addEventListener('release', () => {
-                logKeLayar("⚠️ Wake Lock dilepas");
-            });
-
-        } else {
-            logKeLayar("❌ Browser tidak mendukung Wake Lock API");
+    console.log("Fungsi WakeLock terpicu!"); 
+    if ('wakeLock' in navigator) {
+        try {
+            window.wakeLock = await navigator.wakeLock.request('screen');
+            logKeLayar("💡 Wake Lock Aktif");
+        } catch (err) {
+            logKeLayar(`❌ Gagal: ${err.message}`);
         }
-    } catch (err) {
-        logKeLayar(`‼️ Wake Lock Error: ${err.name}, ${err.message}`);
     }
 }
+
+// Tempel ke window biar bisa dipanggil dari file scan.js/mapgps.js
+window.requestWakeLock = requestWakeLock;
 
 // Fungsi untuk mematikan Wake Lock (biar hemat baterai kalau sudah sampai)
 function releaseWakeLock() {
