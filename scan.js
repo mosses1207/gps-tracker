@@ -433,6 +433,14 @@ async function fetchSpreadsheetData(tujuanGemini) {
             logKeLayar(` ${result.data.rute}`);
 
             window.deliveryData = result.data;
+            if (result.data.rute && result.data.rute.length > 0) {
+                // Set rute pertama sebagai default secara otomatis
+                window.currentPolylineString = result.data.rute[0].polyline;
+                logKeLayar("💡 Rute 1 otomatis diset sebagai default");
+            } else {
+                window.currentPolylineString = ""; // Reset jika tidak ada rute
+                logKeLayar("⚠️ Data rute kosong dari server!");
+            }
             return result.data;
 
         } else {
@@ -485,7 +493,8 @@ function updateRuteUI(data) {
             btn.onclick = () => {
                 document.querySelectorAll('.btn-rute').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-
+                window.currentPolylineString = poly; 
+                logKeLayar(`📍 Rute dipilih (Size: ${poly.length} chars)`);
                 if (typeof drawRouteOnMap === "function") {
                     drawRouteOnMap(poly);
                 }
