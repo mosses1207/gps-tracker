@@ -11,14 +11,10 @@ const geoOptions = {
     maximumAge: 0
 };
 
-/**
- * 1. INISIALISASI PETA
- */
 function initMap() {
     map = L.map('map', {
         zoomControl: false 
     }).setView([-6.2847, 107.1006], 15); 
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap',
         useCache: true,        
@@ -26,10 +22,7 @@ function initMap() {
         cacheMaxAge: 2592000000, 
         useOnlyCache: false      
     }).addTo(map);
-
-    // Zoom ditaruh di kanan bawah
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-
     userMarker = L.circleMarker([0, 0], {
         radius: 10,
         fillColor: "#007bff",
@@ -38,19 +31,14 @@ function initMap() {
         opacity: 1,
         fillOpacity: 0.9
     }).addTo(map);
-
     map.on('movestart', (e) => {
         if (e.hard) return; 
         isAutoCenter = false;
         document.getElementById('gpsText').innerText = "Manual Mode (Auto-Off)";
     });
-
     logKeLayar("🗺️ Map Ready");
 }
 
-/**
- * 2. INISIALISASI GPS (Langsung panggil popup izin)
- */
 function initGPS() {
     if ("geolocation" in navigator) {
         logKeLayar("📡 Meminta akses GPS...");
@@ -64,21 +52,15 @@ function initGPS() {
     }
 }
 
-/**
- * 3. UPDATE VISUAL PETA
- */
 function updateMapDisplay(lat, lng) {
     if (!map || !userMarker) return;
     const newPos = [lat, lng];
-
     userMarker.setLatLng(newPos);
-
     if (isFirstLocation) {
         map.setView(newPos, 17);
         isFirstLocation = false;
         return;
     }
-
     if (isAutoCenter) {
         map.flyTo(newPos, map.getZoom(), {
             animate: true,
@@ -87,31 +69,20 @@ function updateMapDisplay(lat, lng) {
     }
 }
 
-/**
- * 4. CALLBACK SUKSES GPS
- */
-/**
- * 4. CALLBACK SUKSES GPS
- */
 let lastAddressLat = 0;
 let lastAddressLng = 0;
 
 function updateLocationSuccess(position) {
     const { latitude, longitude, speed } = position.coords;
     const speedKmH = speed ? Math.round(speed * 3.6) : 0;
-    
     currentPos.lat = latitude;
     currentPos.lng = longitude;
-
-    // Update tampilan teks koordinat
     document.getElementById('lat').innerText = latitude.toFixed(6);
     document.getElementById('lng').innerText = longitude.toFixed(6);
     document.getElementById('spdDisplay').innerText = speedKmH;
     document.getElementById('gpsText').innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
     document.getElementById('gpsText').style.color = "#22c55e";
-
-    // --- BAGIAN UPDATE NAMA JALAN ---
-    // Kita panggil hanya jika driver pindah sekitar 50-100 meter (pake trik pembulatan tadi)
+    
     const checkLat = latitude.toFixed(3);
     const checkLng = longitude.toFixed(3);
 
@@ -120,14 +91,9 @@ function updateLocationSuccess(position) {
         lastAddressLat = checkLat;
         lastAddressLng = checkLng;
     }
-    // --------------------------------
-
     updateMapDisplay(latitude, longitude);
 }
 
-/**
- * 5. TOMBOL RECENTER
- */
 function recenterMap() {
     isAutoCenter = true;
     if (currentPos.lat !== 0) {
@@ -139,9 +105,6 @@ function recenterMap() {
     }
 }
 
-/**
- * 6. HANDLE ERROR GPS
- */
 function updateLocationError(error) {
     let msg = "";
     switch(error.code) {
@@ -157,12 +120,7 @@ function updateLocationError(error) {
 
 async function updateStreetName(lat, lng) {
     const streetElement = document.getElementById('street-name');
-    
-    // 1. Kita bulatkan koordinat (presisi 4 desimal = sekitar 11 meter)
-    // Supaya kalau geser dikit banget, masih dianggap di jalan yang sama (hemat cache)
     const cacheKey = `addr_${lat.toFixed(3)}_${lng.toFixed(3)}`;
-    
-    // 2. Cek apakah sudah pernah simpan alamat ini di HP
     const cachedAddress = localStorage.getItem(cacheKey);
     
     if (cachedAddress) {
@@ -171,27 +129,24 @@ async function updateStreetName(lat, lng) {
         return;
     }
 
-    // 3. Kalau belum ada di cache, baru tanya ke Nominatim
     try {
+        if (localStorage.length > 500) {
+            console.log("🧹 Membersihkan cache lama...");
+            localStorage.clear(); 
+        }
         console.log("Tanya ke internet (Nominatim)...");
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
         const response = await fetch(url, { headers: { 'Accept-Language': 'id' } });
         const data = await response.json();
-        
         const address = data.address;
         const street = address.road || address.residential || address.suburb || "Area tidak teridentifikasi";
-        
-        // 4. SIMPAN ke cache HP biar besok-besok nggak download lagi
         localStorage.setItem(cacheKey, street);
-        
         streetElement.innerText = street;
-        
     } catch (error) {
         console.error("Gagal ambil alamat:", error);
     }
 }
 
-// OTOMATIS JALAN PAS LOAD
 window.addEventListener('load', () => {
     initMap();
     initGPS();
