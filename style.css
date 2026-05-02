@@ -85,5 +85,5 @@ input[readonly]:focus {outline: none;border-color: #e2e8f0;}
 .stat-group b {color: #1e293b;font-family: monospace; }
 .separator {color: #cbd5e1;font-weight: 300;}
 .btn-center-map:hover {background-color: #f4f4f4;}
-.btn-center-map {position: absolute; bottom: 120px !important;right: 20px !important;z-index: 1000 !important;width: 34px !important;height: 34px !important;background-color: white !important;border: 2px solid rgba(0,0,0,0.2) !important;border-radius: 4px !important;box-shadow: none !important;display: flex !important;justify-content: center;align-items: center;cursor: pointer;padding: 0;}
+.btn-center-map {position: absolute; bottom: 120px !important;right: 21px !important;z-index: 1000 !important;width: 34px !important;height: 34px !important;background-color: white !important;border: 2px solid rgba(0,0,0,0.2) !important;border-radius: 4px !important;box-shadow: none !important;display: flex !important;justify-content: center;align-items: center;cursor: pointer;padding: 0;}
 .btn-center-map span, .btn-center-map i {font-size: 19px;display: block;}
