@@ -386,9 +386,10 @@ function hideLoading() {
 
 async function fetchSpreadsheetData(tujuanGemini) {
     if (!currentPos || !currentPos.lat || !currentPos.lng) {
-    logKeLayar("⚠️ GPS belum tersedia");
-    return null;
+        logKeLayar("⚠️ GPS belum tersedia");
+        return null;
     }
+
     // 🔥 Ambil lokasi dari GPS
     const zone = isDriverInZone(currentPos.lat, currentPos.lng);
     const lokasiSheet = zone ? zone.name.replace("Lokasi ", "") : "1";
@@ -404,7 +405,7 @@ async function fetchSpreadsheetData(tujuanGemini) {
         const response = await fetch("https://script.google.com/macros/s/AKfycbxwMg2ne9r7ViTTppPhV5qPrb-S35kQf_xEH_R7VZllP_uuTiwV6TM-p7vyw8gME1zn/exec", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "text/plain" // 🔥 FIX UTAMA (anti CORS)
             },
             body: JSON.stringify({
                 tujuan: tujuanClean,
@@ -412,7 +413,17 @@ async function fetchSpreadsheetData(tujuanGemini) {
             })
         });
 
-        const result = await response.json();
+        // 🔥 HANDLE RESPONSE AMAN
+        const text = await response.text();
+
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            logKeLayar("❌ Response bukan JSON");
+            console.error("RAW RESPONSE:", text);
+            return null;
+        }
 
         if (result.success) {
             const deliveryData = result.data;
@@ -420,7 +431,7 @@ async function fetchSpreadsheetData(tujuanGemini) {
             console.log("🔥 DELIVERY DATA:", deliveryData);
             logKeLayar("✅ Route ketemu: " + deliveryData.nama);
 
-            // 🔥 simpan global (biar gampang akses)
+            // 🔥 simpan global
             window.deliveryData = deliveryData;
             
             return deliveryData;
@@ -431,6 +442,7 @@ async function fetchSpreadsheetData(tujuanGemini) {
         }
 
     } catch (err) {
+        console.error("FULL ERROR:", err);
         logKeLayar("‼️ Fetch Sheet Error: " + err.message);
         return null;
     }
