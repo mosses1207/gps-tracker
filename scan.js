@@ -1,8 +1,3 @@
-let worker;
-let currentPos = { lat: 0, lng: 0 };
-let isProcessing = false;
-let isLocked = false; // Flag biar nggak jepret berkali-kali dalam satu sesi
-let isCameraActive = false;
 const debugLog = true;
 const processingCanvas = document.createElement('canvas');
 const processingContext = processingCanvas.getContext('2d');
@@ -212,8 +207,6 @@ async function startValidasiProses() {
 setTimeout(() => {
     const fullCanvas = document.createElement('canvas');
     const MAX_WIDTH = 1280; 
-    let width = video.videoWidth;
-    let height = video.videoHeight;
 
     if (width > MAX_WIDTH) {
         height *= MAX_WIDTH / width;
@@ -227,10 +220,6 @@ setTimeout(() => {
     // 🔥 STEP 1: Filter Standar (Tanpa Grayscale biar detail warna tetap ada)
     fullCtx.filter = 'contrast(1.4) brightness(1.1)';
     fullCtx.drawImage(video, 0, 0, width, height);
-
-    // 🔥 STEP 2: Cek Kondisi Awal (JPEG 0.9)
-    let finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
-    let currentLength = finalBlob.length;
 
     logKeLayar(`Cek awal: ${currentLength} karakter`);
 
@@ -422,7 +411,6 @@ async function fetchSpreadsheetData(tujuanGemini) {
         const shortText = text.length > 100 ? text.substring(0, 500) + "..." : text;
         logKeLayar(`📦 RAW: ${shortText}`);
 
-        let result;
         try {
             result = JSON.parse(text);
         } catch (e) {
