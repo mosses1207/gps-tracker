@@ -1,6 +1,5 @@
 let isTrackingActive = false; 
 
-// 1. FUNGSI UTAMA BERANGKAT
 async function handleBerangkat() {
     const btnBerangkat = document.getElementById('btnBerangkat');
     const btnSampai = document.getElementById('btnSampai');
