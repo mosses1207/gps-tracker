@@ -42,14 +42,14 @@ body {margin: 0;padding: 0;}
 .mobile-input-row {flex: 1.5;}}
 @media (max-width: 599px) {.btn-scan {width: auto; order: unset !important; }gap: 10px; }}
 
-/* Container Utama Pin */
-.custom-pin {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    width: 20px;
-    height: 20px;
+/* Container Utama dari Leaflet */
+.leaflet-marker-icon.custom-pin {
+    background: none !important;
+    border: none !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    overflow: visible !important; /* CRITICAL: Biar glow ngga kepotong */
 }
 
 /* Titik Biru Utama (Diam) */
@@ -61,9 +61,9 @@ body {margin: 0;padding: 0;}
     background-color: #007bff;
     border: 2px solid white;
     border-radius: 50%;
-    z-index: 5; /* Pastikan paling depan */
+    z-index: 5;
     box-shadow: 0 0 5px rgba(0,0,0,0.3);
-    position: relative;
+    position: absolute; /* Pakai absolute biar beneran di tengah */
 }
 
 /* Efek Glow Kedip (Bergerak) */
@@ -75,9 +75,9 @@ body {margin: 0;padding: 0;}
     background-color: #007bff;
     border-radius: 50%;
     position: absolute;
-    z-index: 1; /* Di belakang titik utama */
-    animation: gps-pulse 2s infinite ease-out;
-    pointer-events: none; /* Biar ngga ganggu klik */
+    z-index: 1;
+    animation: gps-pulse 2s infinite ease-out !important;
+    pointer-events: none;
 }
 
 /* Keyframes Animasi */
@@ -87,7 +87,7 @@ body {margin: 0;padding: 0;}
         opacity: 0.8;
     }
     70% {
-        transform: scale(4); /* Membesar sampai 4x ukuran asli */
+        transform: scale(4); /* Membesar */
         opacity: 0;
     }
     100% {
