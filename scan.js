@@ -1,5 +1,6 @@
 // --- Inisialisasi Variabel Global ---
 let worker;
+let currentPos = { lat: 0, lng: 0 };d
 let isProcessing = false;
 let isLocked = false; // Flag biar nggak jepret berkali-kali dalam satu sesi
 let isCameraActive = false;
@@ -87,7 +88,6 @@ async function initSatpam() {
 async function openScanner() {
     requestWakeLock().catch(err => console.error("WakeLock Error:", err)); 
     logKeLayar("Mengecek GPS..."); // Cek apakah log ini muncul?
-    const video = document.getElementById('video');
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     const btnScan = document.getElementById('btnScanAction');
