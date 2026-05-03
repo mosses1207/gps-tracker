@@ -1,6 +1,6 @@
 window.isTrackingActive = false; 
 
-function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
+window.calculateDistanceperjalanan = function(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -85,7 +85,7 @@ function catatPerjalanan(lat, lng, speed) {
     const history = session.path_history;
     if (!Array.isArray(history) || history.length === 0) return;
     const lastPoint = history[history.length - 1];
-    const dist = calculateDistanceperjalanan(lastPoint.lat, lastPoint.lng, lat, lng);
+    const dist = window.calculateDistanceperjalanan(lastPoint.lat, lastPoint.lng, lat, lng);
     if (dist > 0.05) { 
         history.push({ lat, lng, spd: speed });
         // Log cache tiap ada titik baru
