@@ -254,25 +254,5 @@
   <!-- 🔷 FILE INPUT (HIDDEN) -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js?v=4') // Samakan dengan versi di sw.js
-      .then(reg => {
-          console.log("SW Terdaftar!");
-          // Jika ada update, langsung paksa aktif
-          reg.onupdatefound = () => {
-            const installingWorker = reg.installing;
-            installingWorker.onstatechange = () => {
-              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                location.reload(); 
-              }
-            };
-          };
-      })
-      .catch(err => console.log("SW Error:", err));
-    });
-  }
-</script>
 <script type="module" src="/main.js"></script>
 </body>
