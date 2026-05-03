@@ -15,6 +15,10 @@ const geoOptions = {
 };
 
 function initMap() {
+    if (window.map) {
+        logKeLayar("⚠️ Map sudah ada, skip init");
+        return;
+    }
     map = L.map('map', {
         zoomControl: false 
     }).setView([-6.2847, 107.1006], 15); 
