@@ -63,8 +63,7 @@
   <!-- 🔷 NAV BUTTON -->
   <button class="btn-monitor-nav">🖥️ Dashboard</button>
 
-  <!-- 🔷 LOGIN OVERLAY -->
-  <!-- 🔷 LOGIN OVERLAY (Gunakan ID yang sudah ada di CSS Abang) -->
+    <!-- 🔷 LOGIN OVERLAY (Gunakan ID yang sudah ada di CSS Abang) -->
   <div id="login-overlay">
     <div class="login-card">
       <div class="brand-logo" style="margin-bottom: 10px;">
@@ -202,7 +201,6 @@
     </div>
     <!-- 🔷 END GPS -->
 
-
     <!-- 🔷 MAP -->
     <div class="card" style="padding: 0; overflow: hidden; height: 300px; position: relative;">
       <div id="map" style="width: 100%; height: 100%;"></div>
@@ -264,10 +262,11 @@
 
   <!-- 🔷 FILE INPUT (HIDDEN) -->
 
+ 
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=6') // Samakan dengan versi di sw.js
+        navigator.serviceWorker.register('/sw.js?v=7') // Samakan dengan versi di sw.js
           .then(reg => {
             console.log("SW Terdaftar!");
             reg.onupdatefound = () => {
