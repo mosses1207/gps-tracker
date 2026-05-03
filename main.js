@@ -1,5 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
+import './global.js'
+import './run.js'
+import './scan.js'
+import './mapgps.js'
+import './history.js'
+import './fake.js'
+
 // 1. Ambil Kunci Rahasia dari Vercel
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -54,6 +61,7 @@ window.prosesLoginAdmin = async () => {
     alert("Gagal Login Admin: " + error.message);
     updateLoading(100, "Gagal Masuk");
   } else {
+    // Sesi baru akan dihandle oleh initSystem setelah reload
     location.reload();
   }
 }
@@ -83,8 +91,30 @@ async function initSystem() {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (session) {
-    // JIKA SUDAH LOGIN: Hilangkan Overlay
-    console.log("User Aktif:", session.user.email);
+    const user = session.user;
+    console.log("User Aktif:", user.email);
+
+    // --- METODE REPLACE CACHE ---
+    const userPhoto = user.user_metadata.avatar_url || user.user_metadata.picture || "";
+    const userData = {
+      email: user.email,
+      uid: user.id,
+      name: user.user_metadata.full_name || "User",
+      photo: userPhoto,
+      lastLogin: new Date().toISOString()
+    };
+    
+    // Simpan ke LocalStorage (Otomatis Replace)
+    localStorage.setItem('user_session', JSON.stringify(userData));
+
+    // Tampilkan foto profil ke elemen jika ada
+    const imgProfile = document.getElementById('user-profile-img');
+    if (imgProfile && userPhoto) {
+      imgProfile.src = userPhoto;
+      imgProfile.style.display = 'block';
+    }
+
+    // Hilangkan Overlay
     document.getElementById('login-overlay').style.display = 'none';
     updateLoading(100, "Sistem Aktif");
     
@@ -93,15 +123,14 @@ async function initSystem() {
     if (typeof startTracking === "function") startTracking();
     
   } else {
-    // JIKA BELUM LOGIN: Siapkan Gerbang
+    // JIKA BELUM LOGIN: Bersihkan Cache & Siapkan Gerbang
+    localStorage.removeItem('user_session');
     updateLoading(60, "Menyiapkan Gerbang Login...");
     document.getElementById('login-overlay').style.display = 'flex';
 
-    // Cek apakah Google SDK sudah siap
     if (typeof google !== 'undefined' && google.accounts) {
       renderGoogleButton();
     } else {
-      // Jika belum siap, tunggu 1 detik lalu coba lagi sekali
       console.warn("Google SDK belum siap, mencoba memuat ulang...");
       setTimeout(() => {
         if (typeof google !== 'undefined' && google.accounts) {
@@ -115,7 +144,7 @@ async function initSystem() {
   }
 }
 
-// Fungsi bantu biar nggak nulis berulang
+// Fungsi bantu render tombol google
 function renderGoogleButton() {
   google.accounts.id.initialize({
     client_id: googleClientId,
@@ -137,6 +166,7 @@ window.logoutSistem = async () => {
   const yakin = confirm("Yakin mau keluar sistem?");
   if (yakin) {
     await supabase.auth.signOut();
+    localStorage.removeItem('user_session'); // Hapus cache saat logout
     location.reload();
   }
 }
