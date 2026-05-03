@@ -97,23 +97,39 @@ async function initSystem() {
     updateLoading(60, "Menyiapkan Gerbang Login...");
     document.getElementById('login-overlay').style.display = 'flex';
 
-    // Inisialisasi Google SDK
-    google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: handleCredentialResponse
-    });
-
-    // Render Tombol Google ke div yang sudah kita buat di HTML
-    const googleBtnDiv = document.getElementById("google-login-btn");
-    if (googleBtnDiv) {
-      google.accounts.id.renderButton(
-        googleBtnDiv,
-        { theme: "outline", size: "large", width: "100%", text: "signin_with" }
-      );
+    // Cek apakah Google SDK sudah siap
+    if (typeof google !== 'undefined' && google.accounts) {
+      renderGoogleButton();
+    } else {
+      // Jika belum siap, tunggu 1 detik lalu coba lagi sekali
+      console.warn("Google SDK belum siap, mencoba memuat ulang...");
+      setTimeout(() => {
+        if (typeof google !== 'undefined' && google.accounts) {
+          renderGoogleButton();
+        } else {
+          console.error("SDK Google gagal dimuat.");
+          updateLoading(100, "Gagal memuat Google SDK");
+        }
+      }, 1500);
     }
-    
-    updateLoading(100, "Silakan Login");
   }
+}
+
+// Fungsi bantu biar nggak nulis berulang
+function renderGoogleButton() {
+  google.accounts.id.initialize({
+    client_id: googleClientId,
+    callback: handleCredentialResponse
+  });
+
+  const googleBtnDiv = document.getElementById("google-login-btn");
+  if (googleBtnDiv) {
+    google.accounts.id.renderButton(
+      googleBtnDiv,
+      { theme: "outline", size: "large", width: "100%", text: "signin_with" }
+    );
+  }
+  updateLoading(100, "Silakan Login");
 }
 
 // 8. Fungsi Logout
