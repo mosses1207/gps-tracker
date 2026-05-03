@@ -38,10 +38,25 @@ self.addEventListener('activate', e => {
 
 // FETCH: Strategi Cache First, then Network Update
 self.addEventListener('fetch', e => {
-  // PENGAMAN: Hanya proses request GET dan protokol http/https
-  // Ini penting agar tidak error saat ketemu request chrome-extension atau POST data
   if (e.request.method !== 'GET' || !e.request.url.startsWith('http')) return;
 
+   if (e.request.url.includes('tile.openstreetmap.org')) {
+    e.respondWith(
+      caches.match(e.request).then(cachedRes => {
+        if (cachedRes) return cachedRes;
+
+        return fetch(e.request).then(networkRes => {
+          const cloned = networkRes.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(e.request, cloned);
+          });
+          return networkRes;
+        });
+      })
+    );
+    return;
+  }
+  
   e.respondWith(
     caches.match(e.request).then(cachedRes => {
       const fetchPromise = fetch(e.request).then(networkRes => {
