@@ -1,18 +1,17 @@
-// global.js
-let map;             // Objek Leaflet
-let userMarker;      // Marker lokasi supir
-let worker;          // Objek Tesseract
-let watchId = null;  // ID untuk GPS
-let currentPos = { lat: 0, lng: 0 };
-let isAutoCenter = true;
-let isCameraActive = false;
-let isFirstLocation = true;
-let isLocked = false;
-let isProcessing = false;
-let lastAddressLat = 0;
-let lastAddressLng = 0;
-let msg = "";
-let result;
-let currentPolyline = null;
-let startMarker = null;
-let endMarker = null;
+window.map = null;
+window.userMarker = null;
+window.worker = null;
+window.watchId = null;
+window.currentPos = { lat: 0, lng: 0 };
+window.isAutoCenter = true;
+window.isCameraActive = false;
+window.isFirstLocation = true;
+window.isLocked = false;
+window.isProcessing = false;
+window.lastAddressLat = 0;
+window.lastAddressLng = 0;
+window.msg = "";
+window.result = null;
+window.currentPolyline = null;
+window.startMarker = null;
+window.endMarker = null;
