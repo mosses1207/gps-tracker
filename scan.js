@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnScan) {
         btnScan.addEventListener('click', (e) => {
             e.preventDefault();
-            isLocked = false; // Reset lock setiap kali tombol scan ditekan
+            window.isLocked = false; // Reset lock setiap kali tombol scan ditekan
             logKeLayar("Membuka Kamera...");
             openScanner();
         });
@@ -57,11 +57,11 @@ async function initSatpam() {
     try {
         logKeLayar("Menyiapkan Tesseract...");
 
-        worker = await Tesseract.createWorker('eng');
+        window.worker = await Tesseract.createWorker('eng');
 
         progressText.innerText = "OCR Siap";
 
-        await worker.setParameters({
+        await window.worker.setParameters({
             tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
             tessedit_pageseg_mode: '3'
         });
@@ -80,24 +80,28 @@ async function initSatpam() {
 }
 
 async function openScanner() {
+    if (window.isProcessing || window.isLocked || window.isCameraActive) {
+        logKeLayar("⚠️ Sistem sedang sibuk, tunggu bentar Bang...");
+        return;
+    }
     requestWakeLock().catch(err => console.error("WakeLock Error:", err)); 
     logKeLayar("Mengecek GPS..."); // Cek apakah log ini muncul?
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     const btnScan = document.getElementById('btnScanAction');
 
-    if (currentPos.lat === 0 || currentPos.lng === 0) {
+    if (window.currentPos.lat === 0 || window.currentPos.lng === 0) {
         alert("⚠️ GPS belum siap atau koordinat belum terbaca.");
         return;
     }
-    const zone = isDriverInZone(currentPos.lat, currentPos.lng);
+    const zone = isDriverInZone(window.currentPos.lat, window.currentPos.lng);
     if (!zone) {
         logKeLayar("❌ Akses Ditolak: Anda di luar radius 1 KM");
         alert("Harap mulai perjalanan dari lokasi tempat anda bekerja.");
         return;
     }
 
-    if (isCameraActive) {
+    if (window.isCameraActive) {
         logKeLayar("⚠️ Kamera masih aktif");
         return;
     }
@@ -106,11 +110,11 @@ async function openScanner() {
     document.getElementById('scan-status').innerText = "🔍 Scanning...";
     logKeLayar(`✅ Lokasi Terverifikasi: ${zone.name}`);
     
-    isLocked = false;
-    isProcessing = false;
-    isCameraActive = true;
+    window.isLocked = false;
+    window.isProcessing = false;
+    window.isCameraActive = true;
 
-    if (!worker) {
+    if (!window.worker) {
         alert("Sistem belum siap.");
         const btnScan = document.getElementById('btnScanAction');
         if (btnScan) btnScan.disabled = false;
@@ -135,22 +139,22 @@ async function openScanner() {
     } catch (err) {
     const btnScan = document.getElementById('btnScanAction');
     btnScan.disabled = false;
-    isCameraActive = false;
+    window.isCameraActive = false;
     alert("Kamera Error: " + err.message);
     }
 }
 
 async function startValidasiProses() {
 
-    if (!worker) {
+    if (!window.worker) {
         logKeLayar("⚠️ Worker belum siap");
         return;
     }
 
     const video = document.getElementById('video');
 
-    if (isProcessing || !isCameraActive || isLocked) return;
-    isProcessing = true;
+    if (window.isProcessing || !window.isCameraActive || window.isLocked) return;
+    window.isProcessing = true;
 
     const scanBox = document.getElementById('scan-box');
     const rect = scanBox.getBoundingClientRect();
@@ -158,7 +162,7 @@ async function startValidasiProses() {
 
     // ✅ kalau video belum siap, jangan spam
     if (!video.videoWidth || !video.videoHeight || !videoRect.width || video.readyState < 2 ) {
-        isProcessing = false;
+        window.isProcessing = false;
         setTimeout(() => requestAnimationFrame(startValidasiProses), 300);
         return;
     }
@@ -185,7 +189,7 @@ async function startValidasiProses() {
     );
 
     try {
-        const result = await worker.recognize(processingCanvas);
+        const result = await window.worker.recognize(processingCanvas);
         const rawText = result.data.text
             .toUpperCase()
             .replace(/O/g, '0')
@@ -198,7 +202,7 @@ async function startValidasiProses() {
         const hasMotor  = /M0T0R|MOTOR|M0TOR|MOT0R/.test(rawText);
 
         if (hasToyota && hasAstra && hasMotor) {
-            isLocked = true;
+            window.isLocked = true;
             showLoading("Mengambil gambar...");
             document.getElementById('scan-status').innerText = "🎯 MATCH! CAPTURING...";
 
@@ -258,8 +262,8 @@ setTimeout(() => {
     } catch (err) {
         logKeLayar("OCR error: " + err.message);
     } finally {
-        if (!isLocked && isCameraActive) {
-            isProcessing = false;
+        if (!window.isLocked && window.isCameraActive) {
+            window.isProcessing = false;
 
             // 🔥 DELAY BALANCE (cepet tapi gak brutal)
             setTimeout(() => requestAnimationFrame(startValidasiProses), 800);
@@ -293,12 +297,12 @@ async function uploadKeGemini(base64Data) {
 
         document.getElementById('no_sjkb').value = result.no_sjkb || "-";
         document.getElementById('tujuan_dealer').value = result.tujuan || "-";
-        const deliveryData = await fetchSpreadsheetData(result.tujuan);
+        window.deliveryData = await fetchSpreadsheetData(result.tujuan);
 
-        if (deliveryData) {
+        if (window.deliveryData) {
             logKeLayar("🚚 Data siap dipakai");
             // 🔥 KIRIM DATA LANGSUNG KE FUNGSI
-            updateRuteUI(deliveryData); 
+            updateRuteUI(window.deliveryData); 
         }
         } else {
         logKeLayar("❌ Gagal: " + result.error);
@@ -309,11 +313,12 @@ async function uploadKeGemini(base64Data) {
             console.error(err);
     }finally {
     setTimeout(() => {
-        isProcessing = false;
-        isLocked = false;
+        window.isProcessing = false;
+        window.isLocked = false;
+        window.isCameraActive = false;
         logKeLayar("✅ Selesai. Siap scan lagi.");
         hideLoading();
-        }, 1000);
+        }, 1500);
     }
 }
 
@@ -339,9 +344,9 @@ function closeCamera() {
     }
 
     // 🔥 HARD RESET
-    isProcessing = false;
-    isLocked = false;
-    isCameraActive = false;
+    window.isProcessing = false;
+    window.isLocked = false;
+    window.isCameraActive = false;
 
     container.style.display = 'none';
 
@@ -382,12 +387,12 @@ function hideLoading() {
 }
 
 async function fetchSpreadsheetData(tujuanGemini) {
-    if (!currentPos || !currentPos.lat || !currentPos.lng) {
+    if (!window.currentPos || !window.currentPos.lat || !window.currentPos.lng) {
         logKeLayar("⚠️ GPS belum tersedia");
         return null;
     }
 
-    const zone = isDriverInZone(currentPos.lat, currentPos.lng);
+    const zone = isDriverInZone(window.currentPos.lat, window.currentPos.lng);
     const lokasiSheet = zone ? zone.name.replace("Lokasi ", "") : "1";
 
     const tujuanClean = (tujuanGemini || "")
@@ -416,9 +421,10 @@ async function fetchSpreadsheetData(tujuanGemini) {
         // 🔥 potong biar ga kepanjangan di UI
         const shortText = text.length > 100 ? text.substring(0, 500) + "..." : text;
         logKeLayar(`📦 RAW: ${shortText}`);
-
+        
+        let result; 
         try {
-            result = JSON.parse(text);
+        result = JSON.parse(text);
         } catch (e) {
             logKeLayar("❌ JSON PARSE ERROR");
             return null;
@@ -489,14 +495,14 @@ function updateRuteUI(data) {
             const btn = document.createElement('button');
             btn.innerText = `Rute ${index + 1}`;
             btn.className = "btn-rute";
-
+            const polyString = (typeof poly === 'object') ? poly.polyline : poly;
             btn.onclick = () => {
                 document.querySelectorAll('.btn-rute').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                window.currentPolylineString = poly; 
-                logKeLayar(`📍 Rute dipilih (Size: ${poly.length} chars)`);
-                if (typeof drawRouteOnMap === "function") {
-                    drawRouteOnMap(poly);
+                window.currentPolylineString = polyString; 
+                logKeLayar(`📍 Rute dipilih (Size: ${polyString.length} chars)`);
+                if (typeof window.drawRouteOnMap === "function") {
+                    window.drawRouteOnMap(polyString);
                 }
             };
 
@@ -510,3 +516,9 @@ function updateRuteUI(data) {
         area.style.display = 'none';
     }
 }
+
+window.openScanner = openScanner;
+window.logKeLayar = logKeLayar;
+window.closeCamera = closeCamera;
+window.updateRuteUI = updateRuteUI;
+window.fetchSpreadsheetData = fetchSpreadsheetData;
