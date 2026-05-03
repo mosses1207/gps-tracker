@@ -60,19 +60,46 @@
   <button class="btn-monitor-nav" onclick="toMonitor()">🖥️ Dashboard</button>
 
   <!-- 🔷 LOGIN OVERLAY -->
-  <div id="login-overlay">
-    <div class="login-card">
-      <h2>Admin Access</h2>
+  <!-- 🔷 LOGIN OVERLAY (Gunakan ID yang sudah ada di CSS Abang) -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="brand-logo" style="margin-bottom: 10px;">
+      <img src="https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png" alt="Toyota" style="width: 50px;">
+    </div>
+    <h2 id="title-login">Akses Sistem</h2>
 
-      <input type="text" id="userAdmin" placeholder="Username" >
-      <input type="password" id="passAdmin" placeholder="Password" >
+    <!-- CONTAINER 1: LOGIN GOOGLE (Muncul Pertama) -->
+    <div id="area-google">
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Gunakan akun Google untuk masuk</p>
+      
+      <!-- Tombol Google Login -->
+      <div id="google-login-btn" style="display: flex; justify-content: center;"></div>
 
-      <div class="login-footer">
-        <button class="btn-cancel" onclick="hideLogin()">Batal</button>
-        <button class="btn-blue" onclick="prosesLogin()">Masuk</button>
+      <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+        <button onclick="pindahKeAdmin(true)" style="background:none; border:none; color:#6366f1; font-size:12px; font-weight:600; cursor:pointer;">
+          Login Admin Manual
+        </button>
       </div>
     </div>
+
+    <!-- CONTAINER 2: LOGIN ADMIN (Hidden by Default) -->
+    <div id="area-admin" style="display: none;">
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Khusus Manajemen / Admin</p>
+      
+      <input type="text" id="userAdmin" placeholder="Username / Email">
+      <input type="password" id="passAdmin" placeholder="Password">
+      
+      <div class="login-footer">
+        <button class="btn-blue" onclick="prosesLoginAdmin()">Login Admin</button>
+      </div>
+      
+      <button onclick="pindahKeAdmin(false)" style="background:none; border:none; color:#64748b; font-size:12px; margin-top:15px; cursor:pointer;">
+        &larr; Kembali ke Login Google
+      </button>
+    </div>
+
   </div>
+</div>
   <!-- 🔷 END LOGIN -->
 
 <!-- 🔷 MAIN KAMERA -->
