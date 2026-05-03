@@ -15,3 +15,14 @@ window.result = null;
 window.currentPolyline = null;
 window.startMarker = null;
 window.endMarker = null;
+
+
+window.logKeLayar = function(msg) {
+    const logDiv = document.getElementById('debug-log');
+    if (!logDiv) return;
+    const entry = document.createElement('div');
+    const waktu = new Date().toLocaleTimeString('id-ID', { hour12: false });
+    entry.innerText = `> [${waktu}] ${msg}`;
+    logDiv.appendChild(entry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
