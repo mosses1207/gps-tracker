@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 const loaderSatpam = document.getElementById('loading-satpam');
 const loadProgress = document.getElementById('load-progress');
 
-// Fungsi Update Loading
+// Fungsi Update Loading Screen
 function updateLoading(percent, text) {
   if (loadProgress) loadProgress.innerText = `${text} (${percent}%)`;
   if (percent >= 100) {
@@ -22,7 +22,43 @@ function updateLoading(percent, text) {
   }
 }
 
-// 4. Handle Response dari Google
+// 4. Logic Perpindahan View (Google vs Admin)
+window.pindahKeAdmin = (isAdmin) => {
+  const areaGoogle = document.getElementById('area-google');
+  const areaAdmin = document.getElementById('area-admin');
+  const title = document.getElementById('title-login');
+
+  if (isAdmin) {
+    areaGoogle.style.display = 'none';
+    areaAdmin.style.display = 'block';
+    title.innerText = "Admin Login";
+  } else {
+    areaGoogle.style.display = 'block';
+    areaAdmin.style.display = 'none';
+    title.innerText = "Akses Sistem";
+  }
+}
+
+// 5. Handle Login Admin Manual
+window.prosesLoginAdmin = async () => {
+  const email = document.getElementById('userAdmin').value;
+  const password = document.getElementById('passAdmin').value;
+
+  if (!email || !password) return alert("Isi email & password admin!");
+
+  updateLoading(50, "Memverifikasi Admin...");
+  
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    alert("Gagal Login Admin: " + error.message);
+    updateLoading(100, "Gagal Masuk");
+  } else {
+    location.reload();
+  }
+}
+
+// 6. Handle Response dari Google Login
 async function handleCredentialResponse(response) {
   updateLoading(50, "Memverifikasi Token Google...");
   
@@ -32,57 +68,46 @@ async function handleCredentialResponse(response) {
   })
 
   if (error) {
-    alert("Gagal Login: " + error.message);
-    updateLoading(0, "Gagal Masuk");
+    alert("Gagal Login Google: " + error.message);
+    updateLoading(100, "Gagal Masuk");
   } else {
-    updateLoading(100, "Login Berhasil! Memuat Dashboard...");
+    updateLoading(100, "Login Berhasil!");
     location.reload(); 
   }
 }
 
-// 5. Cek Sesi User & Pasang Tombol
+// 7. Cek Sesi User & Inisialisasi Halaman
 async function initSystem() {
   updateLoading(30, "Mengecek Hak Akses...");
   
   const { data: { session } } = await supabase.auth.getSession();
 
   if (session) {
-    // JIKA SUDAH LOGIN
+    // JIKA SUDAH LOGIN: Hilangkan Overlay
     console.log("User Aktif:", session.user.email);
     document.getElementById('login-overlay').style.display = 'none';
     updateLoading(100, "Sistem Aktif");
     
-    // Panggil fungsi inisialisasi dari file lain (mapgps.js, dll)
+    // Panggil fungsi map/tracking jika ada
     if (typeof initMap === "function") initMap();
     if (typeof startTracking === "function") startTracking();
     
   } else {
-    // JIKA BELUM LOGIN
+    // JIKA BELUM LOGIN: Siapkan Gerbang
     updateLoading(60, "Menyiapkan Gerbang Login...");
-    
-    // Munculkan Overlay Login
     document.getElementById('login-overlay').style.display = 'flex';
 
-    // Inisialisasi Google One Tap / Button
+    // Inisialisasi Google SDK
     google.accounts.id.initialize({
       client_id: googleClientId,
       callback: handleCredentialResponse
     });
 
-    // Gambar Tombol Google di dalem .login-card
-    const loginCard = document.querySelector('.login-card');
-    if (loginCard) {
-      // Hapus isian username/password manual (karena kita pakai Google)
-      const inputManual = loginCard.querySelectorAll('input');
-      inputManual.forEach(el => el.style.display = 'none');
-      
-      const btnDiv = document.createElement('div');
-      btnDiv.id = "google-login-btn";
-      btnDiv.style.marginTop = "20px";
-      loginCard.appendChild(btnDiv);
-
+    // Render Tombol Google ke div yang sudah kita buat di HTML
+    const googleBtnDiv = document.getElementById("google-login-btn");
+    if (googleBtnDiv) {
       google.accounts.id.renderButton(
-        document.getElementById("google-login-btn"),
+        googleBtnDiv,
         { theme: "outline", size: "large", width: "100%", text: "signin_with" }
       );
     }
@@ -91,7 +116,7 @@ async function initSystem() {
   }
 }
 
-// 6. Fungsi Logout (Bisa dipanggil dari mana saja)
+// 8. Fungsi Logout
 window.logoutSistem = async () => {
   const yakin = confirm("Yakin mau keluar sistem?");
   if (yakin) {
@@ -100,5 +125,5 @@ window.logoutSistem = async () => {
   }
 }
 
-// Jalankan Satpam!
+// Jalankan sistem saat load
 initSystem();
