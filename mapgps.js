@@ -41,18 +41,6 @@ function initMap() {
     });
     logKeLayar("🗺️ Map Ready");
 }
-function calculateDistanceperjalanan(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(lat1 * Math.PI / 180) *
-              Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-}
-
 
 function initGPS() {
     if ("geolocation" in navigator) {
@@ -99,7 +87,7 @@ function isGpsValid(newLat, newLng, accuracy) {
     let lastPoint = session.last_update;
 
     // 2. LOGIKA KECEPATAN (Buat titik kedua dan seterusnya)
-    const dist = calculateDistanceperjalanan(lastPoint.lat, lastPoint.lng, newLat, newLng);
+    const dist = window.calculateDistanceperjalanan(lastPoint.lat, lastPoint.lng, newLat, newLng);
     const now = new Date();
     const lastTime = new Date(session.last_update_time || session.waktu_berangkat);
     const timeDiff = (now - lastTime) / (1000 * 60 * 60);
@@ -304,4 +292,6 @@ window.initMap = initMap;
 window.initGPS = initGPS;
 window.recenterMap = recenterMap;
 window.drawRouteOnMap = drawRouteOnMap;
-window.calculateDistanceperjalanan = calculateDistanceperjalanan;
+
+
+
