@@ -116,8 +116,12 @@ function updateLocationSuccess(position) {
     document.getElementById('lat').innerText = latitude.toFixed(6);
     document.getElementById('lng').innerText = longitude.toFixed(6);
     document.getElementById('spdDisplay').innerText = speedKmH;
-    document.getElementById('gpsText').innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
-    document.getElementById('gpsText').style.color = "#22c55e";
+    const gpsEl = document.getElementById('gpsText');
+    if (gpsEl) { 
+    gpsEl.innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
+    gpsEl.style.color = "#22c55e";
+    }
+    
     if (isTrackingActive) {
         catatPerjalanan(latitude, longitude, speedKmH);
     }
@@ -139,7 +143,13 @@ function recenterMap() {
             animate: true,
             duration: 1
         });
-        logKeLayar("🎯 Fokus ke Lokasi");
+       const gpsEl = document.getElementById('gpsText');
+            if (gpsEl) {
+                gpsEl.innerText = "📡 Live Tracking";
+                gpsEl.style.color = "#22c55e";
+            }
+            logKeLayar("🎯 Fokus ke Lokasi"); 
+
     }
 }
 
@@ -173,7 +183,12 @@ async function updateStreetName(lat, lng) {
         }
         console.log("Tanya ke internet (Nominatim)...");
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-        const response = await fetch(url, { headers: { 'Accept-Language': 'id' } });
+        const response = await fetch(url, { 
+        headers: { 
+            'Accept-Language': 'id',
+            'User-Agent': 'SatpamAsetApp/1.0' // WAJIB TAMBAH INI
+            } 
+        });
         const data = await response.json();
         const address = data.address;
         const street = address.road || address.residential || address.suburb || "Area tidak teridentifikasi";
@@ -272,3 +287,9 @@ window.addEventListener('load', () => {
     initMap();
     initGPS();
 });
+
+window.initMap = initMap;
+window.initGPS = initGPS;
+window.recenterMap = recenterMap;
+window.drawRouteOnMap = drawRouteOnMap;
+window.calculateDistanceperjalanan = calculateDistanceperjalanan;
