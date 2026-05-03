@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
+import './history.js'
 import './global.js'
 import './run.js'
 import './scan.js'
 import './mapgps.js'
-import './history.js'
 import './fake.js'
 
 // 1. Ambil Kunci Rahasia dari Vercel
