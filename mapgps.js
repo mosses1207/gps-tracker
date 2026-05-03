@@ -76,7 +76,7 @@ function updateMapDisplay(lat, lng) {
 function isGpsValid(newLat, newLng, accuracy) {
     // 1. CEK AKURASI DULU (Filter utama buat titik pertama & semua titik)
     // Kalau akurasi lebih dari 100 meter, anggap tidak valid
-    if (accuracy > 100) {
+    if (accuracy > 150) {
         logKeLayar(`⚠️ Sinyal Lemah: Akurasi buruk (${accuracy.toFixed(0)}m). Mencoba mencari sinyal...`);
         return false;
     }    
