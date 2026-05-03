@@ -1,6 +1,4 @@
 const CACHE_NAME = 'nvdc-cache-v6'; // 🔥 Gue naikin ke v6 biar refresh total
-
-// Daftar aset statis
 const assets = [
   '/',
   '/index.html',
