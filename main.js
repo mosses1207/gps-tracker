@@ -1,5 +1,60 @@
 import { createClient } from '@supabase/supabase-js'
 
+document.addEventListener('DOMContentLoaded', () => {
+    await initSystem();
+    await checkActiveSession();
+    
+    const btnBerangkat = document.getElementById('btnBerangkat');
+    const btnSampai = document.getElementById('btnSampai');
+
+    if (btnBerangkat) {
+        btnBerangkat.addEventListener('click', handleBerangkat);
+    }
+
+    if (btnSampai) {
+        btnSampai.addEventListener('click', handleSampai);
+    }
+});
+
+const AES_SECRET = import.meta.env.VITE_AES_KEY;
+function encryptData(data) {
+    if (!AES_SECRET) {
+        console.error("❌ VITE_AES_KEY nggak ketemu di .env");
+        return data;
+    }
+    try {
+        const stringData = typeof data === 'object' ? JSON.stringify(data) : String(data);
+        return CryptoJS.AES.encrypt(stringData, AES_SECRET).toString();
+    } catch (e) {
+        console.error("Gagal Enkripsi:", e);
+        return null;
+    }
+}
+
+function decryptData(ciphertext) {
+    if (!AES_SECRET) {
+        console.error("❌ VITE_AES_KEY nggak ketemu di .env");
+        return ciphertext;
+    }
+    try {
+        const bytes = CryptoJS.AES.decrypt(ciphertext, AES_SECRET);
+        const originalText = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!originalText) return null; // Jika hasil dekripsi kosong (key salah)
+
+        try {
+            return JSON.parse(originalText);
+        } catch {
+            return originalText;
+        }
+    } catch (e) {
+        console.error("Gagal Dekripsi:", e);
+        return null;
+    }
+}
+
+
+
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
@@ -49,7 +104,6 @@ window.prosesLoginAdmin = async () => {
         alert("Gagal Login Admin: " + error.message);
         updateLoading(100, "Gagal Masuk");
     } else {
-        // Sesi baru akan dihandle oleh initSystem setelah reload
         location.reload();
     }
 }
@@ -161,7 +215,6 @@ function releaseWakeLock() {
 }
 
 document.addEventListener('visibilitychange', async () => {
-    // Cukup satu kondisi: kalau layar jadi 'visible', langsung gas minta lock lagi
     if (document.visibilityState === 'visible') {
         console.log("Supir balik ke aplikasi, mengaktifkan kembali Wake Lock...");
         await requestWakeLock();
@@ -263,7 +316,7 @@ function updateMapDisplay(lat, lng) {
 }
 
 function isGpsValid(newLat, newLng, accuracy) {
-    if (accuracy > 150) {
+    if (accuracy > 500) {
         return false;
     }
     let sessionData = localStorage.getItem('active_session');
@@ -489,15 +542,19 @@ async function handleBerangkat() {
         document.getElementById('target-text').innerText = `${formatter.replace('.', ':')} WIB`;
     }
     const travelSession = {
-        no_sjkb: noSJKB,
-        tujuan: tujuan,
-        lat_awal: window.currentPos.lat,
-        lng_awal: window.currentPos.lng,
-        waktu_berangkat: waktuBerangkat.toISOString(),
-        target_sampai: targetSampai.toISOString(),
-        rute_dipilih: window.currentPolylineString,
-        path_history: [{ lat: window.currentPos.lat, lng: window.currentPos.lng, spd: 0 }],
-        last_update: { lat: window.currentPos.lat, lng: window.currentPos.lng, spd: 0 }
+        no_sjkb: encryptData(noSJKB),
+        tujuan: encryptData(tujuan),
+        lat_awal: encryptData(window.currentPos.lat),
+        lng_awal: encryptData(window.currentPos.lng),
+        waktu_berangkat: encryptData(waktuBerangkat.toISOString()),
+        target_sampai: encryptData(targetSampai.toISOString()),
+        rute_dipilih: encryptData(window.currentPolylineString),
+        path_history: [{
+            lat: window.currentPos.lat,
+            lng: window.currentPos.lng,
+            spd: 0
+        }],
+        last_update: encryptData({ lat: window.currentPos.lat, lng: window.currentPos.lng, spd: 0 })
     };
 
     localStorage.setItem('active_session', JSON.stringify(travelSession));
@@ -514,6 +571,12 @@ async function handleBerangkat() {
     const targetEl = document.querySelector('.target');
     if (targetEl) targetEl.classList.remove('hidden');
     if (typeof requestWakeLock === 'function') requestWakeLock();
+    const btnScan = document.getElementById('btnScanAction');
+    if (btnScan) {
+        btnScan.disabled = true;
+        btnScan.style.opacity = "0.5"; // Opsional: biar kelihatan redup/mati
+        btnScan.style.cursor = "not-allowed";
+    }
 }
 
 function catatPerjalanan(lat, lng, speed) {
@@ -531,7 +594,7 @@ function catatPerjalanan(lat, lng, speed) {
     localStorage.setItem('active_session', JSON.stringify(session));
 }
 
-(function checkActiveSession() {
+function checkActiveSession() {
     const sessionData = localStorage.getItem('active_session');
     const targetEl = document.querySelector('.target');
     if (sessionData) {
@@ -541,17 +604,22 @@ function catatPerjalanan(lat, lng, speed) {
         if (typeof requestWakeLock === 'function') requestWakeLock();
         document.getElementById('btnBerangkat').style.display = 'none';
         document.getElementById('btnSampai').style.display = 'block';
-        if (document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = session.no_sjkb;
-        if (document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = session.tujuan;
+        if (document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = decryptData(session.no_sjkb);
+        if (document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = decryptData(session.tujuan);
+        
         const historyCount = Array.isArray(session.path_history) ? session.path_history.length : 0;
+        const rawWaktuBerangkat = decryptData(session.waktu_berangkat);
+        const rawTargetSampai = decryptData(session.target_sampai);
         if (document.getElementById('lt_input')) {
-            const berangkat = new Date(session.waktu_berangkat);
-            const target = new Date(session.target_sampai);
+            const berangkat = new Date(rawWaktuBerangkat);
+            const target = new Date(rawTargetSampai);
             const durasiMenit = Math.round((target - berangkat) / 60000);
             document.getElementById('lt_input').value = durasiMenit;
         }
-        if (document.getElementById('target-text') && session.target_sampai) {
-            const targetDate = new Date(session.target_sampai);
+        
+        
+        if (document.getElementById('target-text') && rawTargetSampai) {
+            const targetDate = new Date(rawTargetSampai);
             const opsi = {
                 day: '2-digit', month: 'long', year: 'numeric',
                 hour: '2-digit', minute: '2-digit', hour12: false
@@ -560,12 +628,19 @@ function catatPerjalanan(lat, lng, speed) {
             document.getElementById('target-text').innerText = `${formatter.replace('.', ':')} WIB`;
         }
         setTimeout(() => {
-            if (session.rute_dipilih && typeof decodePolyline === 'function') {
+            const rawRute = decryptData(session.rute_dipilih);
+            if (rawRute && typeof decodePolyline === 'function') {
                 try {
+                    const btnScan = document.getElementById('btnScanAction');
+                    if (btnScan) {
+                        btnScan.disabled = true;
+                        btnScan.style.opacity = "0.5"; // Opsional: biar kelihatan redup/mati
+                        btnScan.style.cursor = "not-allowed";
+                    }
                     if (window.currentPolyline && map) {
                         map.removeLayer(window.currentPolyline);
                     }
-                    const coordinates = decodePolyline(session.rute_dipilih);
+                    const coordinates = decodePolyline(rawRute);
                     if (typeof map !== "undefined" && map) {
                         window.currentPolyline = L.polyline(coordinates, { color: '#2563eb', weight: 5 }).addTo(map);
                     }
@@ -594,7 +669,7 @@ function catatPerjalanan(lat, lng, speed) {
     } else {
         if (targetEl) targetEl.classList.add('hidden');
     }
-})();
+};
 
 async function handleSampai() {
     if (!confirm("Apakah Anda sudah sampai di lokasi tujuan?")) return;
@@ -635,6 +710,12 @@ async function handleSampai() {
         window.currentPolyline = null;
         window.finishMarker = null;
         alert("🏁 Sampai Tujuan! Data perjalanan telah ditutup.");
+        const btnScan = document.getElementById('btnScanAction');
+        if (btnScan) {
+            btnScan.disabled = false;
+            btnScan.style.opacity = "0.5"; // Opsional: biar kelihatan redup/mati
+            btnScan.style.cursor = "not-allowed";
+        }
     } catch (e) {
     }
 }

@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-  
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#ff0000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <title>Delivery Monitoring System</title>
-  <link rel="icon" type="image/png" href="https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png">
+  <link rel="icon" type="image/png"
+    href="https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -22,22 +24,23 @@
 
 <body>
 
-<div id="loading-satpam" style="position:fixed !important; top:0; left:0; width:100%; height:100%; background:white !important; z-index:100000 !important; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-    <div class="spinner"></div> 
+  <div id="loading-satpam"
+    style="position:fixed !important; top:0; left:0; width:100%; height:100%; background:white !important; z-index:100000 !important; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <div class="spinner"></div>
     <h3 style="margin-top:20px; color:#ff0000; font-family: 'Inter', sans-serif;">Menyiapkan Sistem...</h3>
     <p id="load-progress" style="font-size:14px; color:#555;">Mohon Tunggu... (0%)</p>
     <small style="margin-top:10px; color:#999; text-align:center; padding:0 20px;">
-        sedang Memuat Data.
+      sedang Memuat Data.
     </small>
-</div>
-  
+  </div>
+
   <!-- 🔷 HEADER -->
 
   <!-- Mini Logger (Debug Mode) 
   <div id="debug-log"> 
   <div>-- System Log Ready --</div> 
   </div> -->
-  
+
   <header class="main-header">
     <div class="brand-section">
       <div class="brand-logo">
@@ -45,7 +48,7 @@
       </div>
 
       <div class="brand-title">
-        <h1>NVDC CIBITUNG</h1>
+        <h1>NVDC CIBITUNG SYSTEM</h1>
         <p>Delivery Monitoring System</p>
       </div>
     </div>
@@ -58,78 +61,84 @@
   <!-- 🔷 END HEADER -->
 
   <!-- 🔷 NAV BUTTON -->
-  <button class="btn-monitor-nav" onclick="toMonitor()">🖥️ Dashboard</button>
+  <button class="btn-monitor-nav">🖥️ Dashboard</button>
 
   <!-- 🔷 LOGIN OVERLAY -->
   <!-- 🔷 LOGIN OVERLAY (Gunakan ID yang sudah ada di CSS Abang) -->
-<div id="login-overlay">
-  <div class="login-card">
-    <div class="brand-logo" style="margin-bottom: 10px;">
-      <img src="https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png" alt="Toyota" style="width: 50px;">
-    </div>
-    <h2 id="title-login">Akses Sistem</h2>
+  <div id="login-overlay">
+    <div class="login-card">
+      <div class="brand-logo" style="margin-bottom: 10px;">
+        <img src="https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png" alt="Toyota"
+          style="width: 50px;">
+      </div>
+      <h2 id="title-login">Akses Sistem</h2>
 
-    <!-- CONTAINER 1: LOGIN GOOGLE (Muncul Pertama) -->
-    <div id="area-google">
-      <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Gunakan akun Google untuk masuk</p>
-      
-      <!-- Tombol Google Login -->
-      <div id="google-login-btn" style="display: flex; justify-content: center;"></div>
+      <!-- CONTAINER 1: LOGIN GOOGLE (Muncul Pertama) -->
+      <div id="area-google">
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Gunakan akun Google untuk masuk</p>
 
-      <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-        <button onclick="pindahKeAdmin(true)" style="background:none; border:none; color:#6366f1; font-size:12px; font-weight:600; cursor:pointer;">
-          Login Admin Manual
+        <!-- Tombol Google Login -->
+        <div id="google-login-btn" style="display: flex; justify-content: center;"></div>
+
+        <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+          <button onclick="pindahKeAdmin(true)"
+            style="background:none; border:none; color:#6366f1; font-size:12px; font-weight:600; cursor:pointer;">
+            Login Admin Manual
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTAINER 2: LOGIN ADMIN (Hidden by Default) -->
+      <div id="area-admin" style="display: none;">
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Khusus Manajemen / Admin</p>
+
+        <input type="text" id="userAdmin" placeholder="Username / Email">
+        <input type="password" id="passAdmin" placeholder="Password">
+
+        <div class="login-footer">
+          <button class="btn-blue" onclick="prosesLoginAdmin()">Login Admin</button>
+        </div>
+        <button onclick="pindahKeAdmin(false)"
+          style="background:none; border:none; color:#64748b; font-size:12px; margin-top:15px; cursor:pointer;">
+          &larr; Kembali ke Login Google
         </button>
       </div>
-    </div>
 
-    <!-- CONTAINER 2: LOGIN ADMIN (Hidden by Default) -->
-    <div id="area-admin" style="display: none;">
-      <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Khusus Manajemen / Admin</p>
-      
-      <input type="text" id="userAdmin" placeholder="Username / Email">
-      <input type="password" id="passAdmin" placeholder="Password">
-      
-      <div class="login-footer">
-        <button class="btn-blue" onclick="prosesLoginAdmin()">Login Admin</button>
-      </div>
-      <button onclick="pindahKeAdmin(false)" style="background:none; border:none; color:#64748b; font-size:12px; margin-top:15px; cursor:pointer;">
-        &larr; Kembali ke Login Google
-      </button>
     </div>
-
   </div>
-</div>
   <!-- 🔷 END LOGIN -->
 
-<!-- 🔷 MAIN KAMERA -->
+  <!-- 🔷 MAIN KAMERA -->
 
-<div id="camera-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999;">
-<video id="video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
-  <div class="scan-container">
-    <div class="scan-label">Posisikan SJKB sesuai arahan</div>
-    <div id="scan-box">
+  <div id="camera-container"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999;">
+    <video id="video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+    <div class="scan-container">
+      <div class="scan-label">Posisikan SJKB sesuai arahan</div>
+      <div id="scan-box">
         <img src="https://lh3.googleusercontent.com/d/1m8WsVMjpzbvCXIMxA64xtDjqW631ZpGF" id="guide-overlay">
         <div class="corner tl"></div>
         <div class="corner tr"></div>
         <div class="corner bl"></div>
         <div class="corner br"></div>
+      </div>
     </div>
-</div>
-  <div style="position:absolute; bottom:40px; width:100%; text-align:center; z-index:10000;">
-    <div id="scan-status" style="background:rgba(0,0,0,0.7); color:white; padding:8px 15px; display:inline-block; border-radius:20px; margin-bottom:20px; font-size:13px; border:1px solid rgba(255,255,255,0.2);">
+    <div style="position:absolute; bottom:40px; width:100%; text-align:center; z-index:10000;">
+      <div id="scan-status"
+        style="background:rgba(0,0,0,0.7); color:white; padding:8px 15px; display:inline-block; border-radius:20px; margin-bottom:20px; font-size:13px; border:1px solid rgba(255,255,255,0.2);">
         Sedang Membaca....
-    </div>
-    <br>
-    <br><br>
-    <button onclick="closeCamera()" style="color:white; background:rgba(255,0,0,0.5); border:1px solid white; padding:8px 20px; border-radius:5px; font-size:14px;">
+      </div>
+      <br>
+      <br><br>
+      <button onclick="closeCamera()"
+        style="color:white; background:rgba(255,0,0,0.5); border:1px solid white; padding:8px 20px; border-radius:5px; font-size:14px;">
         Batal / Kembali
-    </button>
+      </button>
+    </div>
   </div>
-</div>
-  
-<!-- 🔷 END KAMERA -->
-  
+
+  <!-- 🔷 END KAMERA -->
+
   <!-- 🔷 MAIN CONTAINER -->
   <div class="container">
 
@@ -142,14 +151,15 @@
 
         <div class="mobile-input-row">
           <input type="text" id="lt_input" placeholder="LT" readonly>
-          <button type="button" id="btnScanAction" onclick="openScanner(event)" class="btn-scan">
-          📸 Foto
+          <button type="button" id="btnScanAction" class="btn-scan">
+            📸 Foto
           </button>
         </div>
       </div>
 
       <!-- 🔷 ROUTE SELECTION -->
-      <div id="ruteSelectionArea" style="margin-top: 15px; display: none; border-top: 1px solid #eee; padding-top: 15px;">
+      <div id="ruteSelectionArea"
+        style="margin-top: 15px; display: none; border-top: 1px solid #eee; padding-top: 15px;">
         <p style="font-size: 13px; margin-bottom: 8px; font-weight: bold;">
           📍 Pilih Jalur Rute:
         </p>
@@ -159,37 +169,37 @@
       <!-- 🔷 ACTION BUTTON -->
       <div id="actionArea">
         <br>
-        <button id="btnBerangkat" onclick="handleBerangkat()" class="btn-blue">
+        <button id="btnBerangkat" class="btn-blue">
           🚀 Mulai Perjalanan (Berangkat)
         </button>
 
-        <button id="btnSampai" onclick="handleSampai()" class="btn-green">
+        <button id="btnSampai" class="btn-green">
           ✅ Sampai di Tujuan
         </button>
       </div>
 
     </div>
     <!-- 🔷 END INPUT CARD -->
-    
-    <!-- 🔷 GPS STATUS -->
-  <div id="gpsStatus">
-  <!-- Baris Status -->
-  <div class="gps-info-line">
-    <span>📡 <b>Status GPS:</b> <span id="gpsText">Manual Mode</span></span>
-  </div>
 
-  <!-- Baris Koordinat & Speed -->
-  <div class="gps-stats-row">
-    <div class="stat-group">
-      <span>📍 Lat: <b id="lat">-6.449585</b></span>
-      <span class="separator">|</span>
-      <span>📍 Lng: <b id="lng">107.005443</b></span>
+    <!-- 🔷 GPS STATUS -->
+    <div id="gpsStatus">
+      <!-- Baris Status -->
+      <div class="gps-info-line">
+        <span>📡 <b>Status GPS:</b> <span id="gpsText">Manual Mode</span></span>
+      </div>
+
+      <!-- Baris Koordinat & Speed -->
+      <div class="gps-stats-row">
+        <div class="stat-group">
+          <span>📍 Lat: <b id="lat">-6.449585</b></span>
+          <span class="separator">|</span>
+          <span>📍 Lng: <b id="lng">107.005443</b></span>
+        </div>
+        <div class="stat-group">
+          <span>Speed: <b id="spdDisplay">0</b> km/h</span>
+        </div>
+      </div>
     </div>
-    <div class="stat-group">
-      <span>Speed: <b id="spdDisplay">0</b> km/h</span>
-    </div>
-  </div>
-</div>
     <!-- 🔷 END GPS -->
 
 
@@ -200,10 +210,10 @@
         <span><b>Target Sampai</b> <span id="target-text" class="status-value">-</span></span>
       </div>
       <div class="location-overlay">
-          <span class="location-icon">📍</span>
-          <span id="street-name">Mendeteksi Jalan...</span>
+        <span class="location-icon">📍</span>
+        <span id="street-name">Mendeteksi Jalan...</span>
       </div>
-      <button class="btn-center-map" onclick="recenterMap()" title="Kembali ke Lokasi Saya">
+      <button class="btn-center-map" title="Kembali ke Lokasi Saya">
         🎯
       </button>
     </div>
@@ -213,7 +223,8 @@
     <!-- 🔷 TABLE -->
     <div class="card" style="padding: 15px;">
 
-      <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari No SJKB atau Tujuan..." style="margin-bottom: 10px;">
+      <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari No SJKB atau Tujuan..."
+        style="margin-bottom: 10px;">
 
       <div class="table-wrapper">
         <table>
@@ -242,36 +253,38 @@
     <div class="spinner"></div>
     <div id="loader-text">Sedang memproses...</div>
   </div>
-  
-<!-- Overlay FULL SCREEN -->
-<div id="loading-overlay">
-  <div id="loading-box">
-    <div class="spinner"></div>
-    <p id="loading-text">Memproses...</p>
+
+  <!-- Overlay FULL SCREEN -->
+  <div id="loading-overlay">
+    <div id="loading-box">
+      <div class="spinner"></div>
+      <p id="loading-text">Memproses...</p>
+    </div>
   </div>
-</div>
-  
+
   <!-- 🔷 FILE INPUT (HIDDEN) -->
 
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js?v=6') // Samakan dengan versi di sw.js
-        .then(reg => {
-          console.log("SW Terdaftar!");
+          .then(reg => {
+            console.log("SW Terdaftar!");
             reg.onupdatefound = () => {
               const installingWorker = reg.installing;
-                installingWorker.onstatechange = () => {
-                  if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    location.reload(); 
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  location.reload();
                 }
               };
             };
-        })
-        .catch(err => console.log("SW Error:", err));
+          })
+          .catch(err => console.log("SW Error:", err));
       });
     }
-  </script>  
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script type="module" src="/main.js"></script>
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script type="module" src="/main.js" defer></script>
 </body>
