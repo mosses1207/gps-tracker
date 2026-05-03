@@ -252,7 +252,26 @@
 </div>
   
   <!-- 🔷 FILE INPUT (HIDDEN) -->
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js?v=6') // Samakan dengan versi di sw.js
+        .then(reg => {
+          console.log("SW Terdaftar!");
+            reg.onupdatefound = () => {
+              const installingWorker = reg.installing;
+                installingWorker.onstatechange = () => {
+                  if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    location.reload(); 
+                }
+              };
+            };
+        })
+        .catch(err => console.log("SW Error:", err));
+      });
+    }
+  </script>  
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="/sw.js"></script>
 <script type="module" src="/main.js"></script>
 </body>
