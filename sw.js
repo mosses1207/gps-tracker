@@ -47,7 +47,7 @@ self.addEventListener('fetch', e => {
       const fetchPromise = fetch(e.request).then(networkRes => {
         
         // Validasi respon sebelum disimpan ke cache
-        if (!networkRes || networkRes.status !== 200 || networkRes.type !== 'basic') {
+        if (!networkRes || networkRes.status !== 200) {
           return networkRes;
         }
 
