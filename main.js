@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-import './history.js'
 import './global.js'
 import './run.js'
+import './history.js'
 import './scan.js'
 import './mapgps.js'
 import './fake.js'
