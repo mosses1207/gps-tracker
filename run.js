@@ -7,16 +7,16 @@ async function requestWakeLock() {
     console.log("Fungsi WakeLock terpicu!"); 
     if ('wakeLock' in navigator) {
         try {
-            window.wakeLock = await navigator.wakeLock.request('screen');
+            wakeLock = await navigator.wakeLock.request('screen');
             logKeLayar("💡 Wake Lock Aktif");
+            wakeLock.addEventListener('release', () => {
+                logKeLayar("🔌 Wake Lock terlepas otomatis");
+            })
         } catch (err) {
             logKeLayar(`❌ Gagal: ${err.message}`);
         }
     }
 }
-
-// Tempel ke window biar bisa dipanggil dari file scan.js/mapgps.js
-window.requestWakeLock = requestWakeLock;
 
 // Fungsi untuk mematikan Wake Lock (biar hemat baterai kalau sudah sampai)
 function releaseWakeLock() {
@@ -31,7 +31,12 @@ function releaseWakeLock() {
 
 // Pantau kalau user balik lagi ke tab aplikasi (Visibility Change)
 document.addEventListener('visibilitychange', async () => {
-    if (wakeLock !== null && document.visibilityState === 'visible') {
+    // Cukup satu kondisi: kalau layar jadi 'visible', langsung gas minta lock lagi
+    if (document.visibilityState === 'visible') {
+        console.log("Supir balik ke aplikasi, mengaktifkan kembali Wake Lock...");
         await requestWakeLock();
     }
 });
+
+window.requestWakeLock = requestWakeLock;
+window.releaseWakeLock = releaseWakeLock;
