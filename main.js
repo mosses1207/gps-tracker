@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async() => {
     await initSystem();
     await checkActiveSession();
-    
+
     const btnBerangkat = document.getElementById('btnBerangkat');
     const btnSampai = document.getElementById('btnSampai');
 
