@@ -1,9 +1,9 @@
-const CACHE_NAME = 'nvdc-cache-v9';
+const CACHE_NAME = 'nvdc-cache-v7';
 
 const assets = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
   '/style.css'
 ];
 
