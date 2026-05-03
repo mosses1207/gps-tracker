@@ -353,20 +353,6 @@ function closeCamera() {
     logKeLayar("🔴 Kamera Mati Total.");
 }
 
-function logKeLayar(msg) {
-    const logDiv = document.getElementById('debug-log');
-    if (!logDiv) return;
-
-    const entry = document.createElement('div');
-    const waktu = new Date().toLocaleTimeString('id-ID', { hour12: false });
-    entry.innerText = `> [${waktu}] ${msg}`;
-    
-    logDiv.appendChild(entry);
-
-    // AUTO SCROLL: Otomatis geser ke baris paling baru
-    logDiv.scrollTop = logDiv.scrollHeight;
-}
-
 function showLoading(text = "Memproses...") {
     const overlay = document.getElementById('loading-overlay');
     const textEl = document.getElementById('loading-text');
