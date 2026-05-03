@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('SW Registered!', reg))
-      .catch(err => console.error('SW Failed!', err));
-  });
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW Registered!', reg))
+            .catch(err => console.error('SW Failed!', err));
+    });
 }
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -16,140 +16,137 @@ const loaderSatpam = document.getElementById('loading-satpam');
 const loadProgress = document.getElementById('load-progress');
 
 function updateLoading(percent, text) {
-  if (loadProgress) loadProgress.innerText = `${text} (${percent}%)`;
-  if (percent >= 100) {
-    setTimeout(() => {
-      if (loaderSatpam) loaderSatpam.style.display = 'none';
-    }, 800);
-  }
+    if (loadProgress) loadProgress.innerText = `${text} (${percent}%)`;
+    if (percent >= 100) {
+        setTimeout(() => {
+            if (loaderSatpam) loaderSatpam.style.display = 'none';
+        }, 800);
+    }
 }
 
 window.pindahKeAdmin = (isAdmin) => {
-  const areaGoogle = document.getElementById('area-google');
-  const areaAdmin = document.getElementById('area-admin');
-  const title = document.getElementById('title-login');
-  if (isAdmin) {
-    areaGoogle.style.display = 'none';
-    areaAdmin.style.display = 'block';
-    title.innerText = "Admin Login";
-  } else {
-    areaGoogle.style.display = 'block';
-    areaAdmin.style.display = 'none';
-    title.innerText = "Akses Sistem";
-  }
+    const areaGoogle = document.getElementById('area-google');
+    const areaAdmin = document.getElementById('area-admin');
+    const title = document.getElementById('title-login');
+    if (isAdmin) {
+        areaGoogle.style.display = 'none';
+        areaAdmin.style.display = 'block';
+        title.innerText = "Admin Login";
+    } else {
+        areaGoogle.style.display = 'block';
+        areaAdmin.style.display = 'none';
+        title.innerText = "Akses Sistem";
+    }
 }
 
 window.prosesLoginAdmin = async () => {
-  const email = document.getElementById('userAdmin').value;
-  const password = document.getElementById('passAdmin').value;
-  if (!email || !password) return alert("Isi email & password admin!");
-  updateLoading(50, "Memverifikasi Admin...");
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    alert("Gagal Login Admin: " + error.message);
-    updateLoading(100, "Gagal Masuk");
-  } else {
-    // Sesi baru akan dihandle oleh initSystem setelah reload
-    location.reload();
-  }
+    const email = document.getElementById('userAdmin').value;
+    const password = document.getElementById('passAdmin').value;
+    if (!email || !password) return alert("Isi email & password admin!");
+    updateLoading(50, "Memverifikasi Admin...");
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+        alert("Gagal Login Admin: " + error.message);
+        updateLoading(100, "Gagal Masuk");
+    } else {
+        // Sesi baru akan dihandle oleh initSystem setelah reload
+        location.reload();
+    }
 }
 
 async function handleCredentialResponse(response) {
-  updateLoading(50, "Memverifikasi Token Google...");
-  const { data, error } = await supabase.auth.signInWithIdToken({
-    provider: 'google',
-    token: response.credential,
-  })
-  if (error) {
-    alert("Gagal Login Google: " + error.message);
-    updateLoading(100, "Gagal Masuk");
-  } else {
-    updateLoading(100, "Login Berhasil!");
-    location.reload(); 
-  }
+    updateLoading(50, "Memverifikasi Token Google...");
+    const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+    })
+    if (error) {
+        alert("Gagal Login Google: " + error.message);
+        updateLoading(100, "Gagal Masuk");
+    } else {
+        updateLoading(100, "Login Berhasil!");
+        location.reload();
+    }
 }
 
 async function initSystem() {
-  updateLoading(30, "Mengecek Hak Akses...");
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    const user = session.user;
-    console.log("User Aktif:", user.email);
-    const userPhoto = user.user_metadata.avatar_url || user.user_metadata.picture || "";
-    const userData = {
-      email: user.email,
-      uid: user.id,
-      name: user.user_metadata.full_name || "User",
-      photo: userPhoto,
-      lastLogin: new Date().toISOString()
-    };
-    localStorage.setItem('user_session', JSON.stringify(userData));
-    const imgProfile = document.getElementById('user-profile-img');
-    if (imgProfile && userPhoto) {
-      imgProfile.src = userPhoto;
-      imgProfile.style.display = 'block';
-    }
-    document.getElementById('login-overlay').style.display = 'none';
-    updateLoading(100, "Sistem Aktif");
-    if (typeof initMap === "function") initMap();
-    if (typeof startTracking === "function") startTracking();
-  } else {
-    localStorage.removeItem('user_session');
-    updateLoading(60, "Menyiapkan Gerbang Login...");
-    document.getElementById('login-overlay').style.display = 'flex';
-    if (typeof google !== 'undefined' && google.accounts) {
-      renderGoogleButton();
-    } else {
-      console.warn("Google SDK belum siap, mencoba memuat ulang...");
-      setTimeout(() => {
-        if (typeof google !== 'undefined' && google.accounts) {
-          renderGoogleButton();
-        } else {
-          console.error("SDK Google gagal dimuat.");
-          updateLoading(100, "Gagal memuat Google SDK");
+    updateLoading(30, "Mengecek Hak Akses...");
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        const user = session.user;
+        console.log("User Aktif:", user.email);
+        const userPhoto = user.user_metadata.avatar_url || user.user_metadata.picture || "";
+        const userData = {
+            email: user.email,
+            uid: user.id,
+            name: user.user_metadata.full_name || "User",
+            photo: userPhoto,
+            lastLogin: new Date().toISOString()
+        };
+        localStorage.setItem('user_session', JSON.stringify(userData));
+        const imgProfile = document.getElementById('user-profile-img');
+        if (imgProfile && userPhoto) {
+            imgProfile.src = userPhoto;
+            imgProfile.style.display = 'block';
         }
-      }, 1500);
+        document.getElementById('login-overlay').style.display = 'none';
+        updateLoading(100, "Sistem Aktif");
+        if (typeof initMap === "function") initMap();
+        if (typeof startTracking === "function") startTracking();
+    } else {
+        localStorage.removeItem('user_session');
+        updateLoading(60, "Menyiapkan Gerbang Login...");
+        document.getElementById('login-overlay').style.display = 'flex';
+        if (typeof google !== 'undefined' && google.accounts) {
+            renderGoogleButton();
+        } else {
+            console.warn("Google SDK belum siap, mencoba memuat ulang...");
+            setTimeout(() => {
+                if (typeof google !== 'undefined' && google.accounts) {
+                    renderGoogleButton();
+                } else {
+                    console.error("SDK Google gagal dimuat.");
+                    updateLoading(100, "Gagal memuat Google SDK");
+                }
+            }, 1500);
+        }
     }
-  }
 }
 
 function renderGoogleButton() {
-  google.accounts.id.initialize({
-    client_id: googleClientId,
-    callback: handleCredentialResponse
-  });
-  const googleBtnDiv = document.getElementById("google-login-btn");
-  if (googleBtnDiv) {
-    google.accounts.id.renderButton(
-      googleBtnDiv,
-      { theme: "outline", size: "large", width: "100%", text: "signin_with" }
-    );
-  }
-  updateLoading(100, "Silakan Login");
+    google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleCredentialResponse
+    });
+    const googleBtnDiv = document.getElementById("google-login-btn");
+    if (googleBtnDiv) {
+        google.accounts.id.renderButton(
+            googleBtnDiv,
+            { theme: "outline", size: "large", width: "100%", text: "signin_with" }
+        );
+    }
+    updateLoading(100, "Silakan Login");
 }
 
 window.logoutSistem = async () => {
-  const yakin = confirm("Yakin mau keluar sistem?");
-  if (yakin) {
-    await supabase.auth.signOut();
-    localStorage.removeItem('user_session'); // Hapus cache saat logout
-    location.reload();
-  }
+    const yakin = confirm("Yakin mau keluar sistem?");
+    if (yakin) {
+        await supabase.auth.signOut();
+        localStorage.removeItem('user_session'); // Hapus cache saat logout
+        location.reload();
+    }
 }
 
 let wakeLock = null;
 
 async function requestWakeLock() {
-    console.log("Fungsi WakeLock terpicu!"); 
+    console.log("Fungsi WakeLock terpicu!");
     if ('wakeLock' in navigator) {
         try {
             wakeLock = await navigator.wakeLock.request('screen');
-            logKeLayar("💡 Wake Lock Aktif");
             wakeLock.addEventListener('release', () => {
-                logKeLayar("🔌 Wake Lock terlepas otomatis");
             })
         } catch (err) {
-            logKeLayar(`❌ Gagal: ${err.message}`);
         }
     }
 }
@@ -159,7 +156,6 @@ function releaseWakeLock() {
         wakeLock.release()
             .then(() => {
                 wakeLock = null;
-                logKeLayar("🔋 Wake Lock dilepas (Hemat Baterai)");
             });
     }
 }
@@ -191,15 +187,6 @@ window.result = null;
 window.currentPolyline = null;
 window.startMarker = null;
 window.endMarker = null;
-window.logKeLayar = function(msg) {
-    const logDiv = document.getElementById('debug-log');
-    if (!logDiv) return;
-    const entry = document.createElement('div');
-    const waktu = new Date().toLocaleTimeString('id-ID', { hour12: false });
-    entry.innerText = `> [${waktu}] ${msg}`;
-    logDiv.appendChild(entry);
-    logDiv.scrollTop = logDiv.scrollHeight;
-}
 
 const startIcon = L.icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/5425/5425869.png',
@@ -219,18 +206,17 @@ const geoOptions = {
 
 function initMap() {
     if (window.map) {
-        logKeLayar("⚠️ Map sudah ada, skip init");
         return;
     }
     map = L.map('map', {
-        zoomControl: false 
-    }).setView([-6.2847, 107.1006], 15); 
+        zoomControl: false
+    }).setView([-6.2847, 107.1006], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap',
-        useCache: true,        
+        useCache: true,
         crossOrigin: true,
-        cacheMaxAge: 2592000000, 
-        useOnlyCache: false      
+        cacheMaxAge: 2592000000,
+        useOnlyCache: false
     }).addTo(map);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     userMarker = L.circleMarker([0, 0], {
@@ -242,23 +228,20 @@ function initMap() {
         fillOpacity: 0.9
     }).addTo(map);
     map.on('movestart', (e) => {
-        if (e.hard) return; 
+        if (e.hard) return;
         isAutoCenter = false;
         document.getElementById('gpsText').innerText = "Manual Mode (Auto-Off)";
     });
-    logKeLayar("🗺️ Map Ready");
 }
 
 function initGPS() {
     if ("geolocation" in navigator) {
-        logKeLayar("📡 Meminta akses GPS...");
         watchId = navigator.geolocation.watchPosition(
             updateLocationSuccess,
             updateLocationError,
             geoOptions
         );
     } else {
-        logKeLayar("❌ Browser tidak support GPS");
     }
 }
 
@@ -274,16 +257,15 @@ function updateMapDisplay(lat, lng) {
     if (isAutoCenter) {
         map.flyTo(newPos, map.getZoom(), {
             animate: true,
-            duration: 1.5 
+            duration: 1.5
         });
     }
 }
 
 function isGpsValid(newLat, newLng, accuracy) {
     if (accuracy > 150) {
-        logKeLayar(`⚠️ Sinyal Lemah: Akurasi buruk (${accuracy.toFixed(0)}m). Mencoba mencari sinyal...`);
         return false;
-    }    
+    }
     let sessionData = localStorage.getItem('active_session');
     if (!sessionData) return true; // Titik pertama valid kalau akurasinya lolos < 100m
     let session = JSON.parse(sessionData);
@@ -295,7 +277,6 @@ function isGpsValid(newLat, newLng, accuracy) {
     if (timeDiff > 0) {
         const speed = dist / timeDiff;
         if (speed > 150) {
-            logKeLayar(`⚠️ GPS Loncat: Kecepatan ${speed.toFixed(1)} km/jam ditolak.`);
             return false;
         }
     }
@@ -303,7 +284,7 @@ function isGpsValid(newLat, newLng, accuracy) {
 }
 
 function updateLocationSuccess(position) {
-    const { latitude, longitude, speed, accuracy } = position.coords; 
+    const { latitude, longitude, speed, accuracy } = position.coords;
     if (!isGpsValid(latitude, longitude, accuracy)) {
         document.getElementById('gpsText').innerText = "⚠️ Sinyal GPS Lemah";
         document.getElementById('gpsText').style.color = "#eab308";
@@ -316,9 +297,9 @@ function updateLocationSuccess(position) {
     document.getElementById('lng').innerText = longitude.toFixed(6);
     document.getElementById('spdDisplay').innerText = speedKmH;
     const gpsEl = document.getElementById('gpsText');
-    if (gpsEl) { 
-    gpsEl.innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
-    gpsEl.style.color = "#22c55e";
+    if (gpsEl) {
+        gpsEl.innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
+        gpsEl.style.color = "#22c55e";
     }
     if (isTrackingActive) {
         catatPerjalanan(latitude, longitude, speedKmH);
@@ -326,7 +307,7 @@ function updateLocationSuccess(position) {
     const checkLat = latitude.toFixed(3);
     const checkLng = longitude.toFixed(3);
     if (checkLat !== lastAddressLat || checkLng !== lastAddressLng) {
-        updateStreetName(latitude, longitude); 
+        updateStreetName(latitude, longitude);
         lastAddressLat = checkLat;
         lastAddressLng = checkLng;
     }
@@ -340,17 +321,16 @@ function recenterMap() {
             animate: true,
             duration: 1
         });
-       const gpsEl = document.getElementById('gpsText');
-            if (gpsEl) {
-                gpsEl.innerText = "📡 Live Tracking";
-                gpsEl.style.color = "#22c55e";
-            }
-            logKeLayar("🎯 Fokus ke Lokasi"); 
+        const gpsEl = document.getElementById('gpsText');
+        if (gpsEl) {
+            gpsEl.innerText = "📡 Live Tracking";
+            gpsEl.style.color = "#22c55e";
+        }
     }
 }
 
 function updateLocationError(error) {
-    switch(error.code) {
+    switch (error.code) {
         case error.PERMISSION_DENIED: msg = "Izin GPS ditolak supir."; break;
         case error.POSITION_UNAVAILABLE: msg = "Sinyal GPS hilang."; break;
         case error.TIMEOUT: msg = "GPS Timeout."; break;
@@ -358,13 +338,12 @@ function updateLocationError(error) {
     }
     document.getElementById('gpsText').innerText = msg;
     document.getElementById('gpsText').style.color = "#ef4444";
-    logKeLayar("⚠️ " + msg);
 }
 
 async function updateStreetName(lat, lng) {
     const streetElement = document.getElementById('street-name');
     const cacheKey = `addr_${lat.toFixed(3)}_${lng.toFixed(3)}`;
-    const cachedAddress = localStorage.getItem(cacheKey);  
+    const cachedAddress = localStorage.getItem(cacheKey);
     if (cachedAddress) {
         console.log("Ambil dari cache HP...");
         streetElement.innerText = cachedAddress;
@@ -373,15 +352,15 @@ async function updateStreetName(lat, lng) {
     try {
         if (localStorage.length > 500) {
             console.log("🧹 Membersihkan cache lama...");
-            localStorage.clear(); 
+            localStorage.clear();
         }
         console.log("Tanya ke internet (Nominatim)...");
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
-        const response = await fetch(url, { 
-        headers: { 
-            'Accept-Language': 'id',
-            'User-Agent': 'SatpamAsetApp/1.0' // WAJIB TAMBAH INI
-            } 
+        const response = await fetch(url, {
+            headers: {
+                'Accept-Language': 'id',
+                'User-Agent': 'SatpamAsetApp/1.0' // WAJIB TAMBAH INI
+            }
         });
         const data = await response.json();
         const address = data.address;
@@ -395,11 +374,9 @@ async function updateStreetName(lat, lng) {
 
 function drawRouteOnMap(encodedPolyline) {
     if (!map) {
-        logKeLayar("❌ Map belum siap");
         return;
     }
     if (!encodedPolyline || typeof encodedPolyline !== "string") {
-        logKeLayar("❌ Polyline tidak valid");
         return;
     }
     isAutoCenter = false;
@@ -410,7 +387,6 @@ function drawRouteOnMap(encodedPolyline) {
     if (endMarker) map.removeLayer(endMarker);
     const coords = decodePolyline(encodedPolyline);
     if (!coords || coords.length === 0) {
-        logKeLayar("❌ Gagal decode polyline");
         return;
     }
     currentPolyline = L.polyline(coords, {
@@ -422,14 +398,13 @@ function drawRouteOnMap(encodedPolyline) {
     const start = coords[0];
     const end = coords[coords.length - 1];
     startMarker = L.marker(start, { icon: startIcon }).addTo(map);
-        startMarker.bindTooltip("Start", { permanent: false });
+    startMarker.bindTooltip("Start", { permanent: false });
     endMarker = L.marker(end, { icon: endIcon }).addTo(map)
         .bindPopup("🏁 Tujuan");
-        endMarker.bindTooltip("Tujuan", { permanent: false });
+    endMarker.bindTooltip("Tujuan", { permanent: false });
     map.fitBounds(currentPolyline.getBounds(), {
         padding: [20, 20]
     });
-    logKeLayar("🗺️ Rute + Marker ditampilkan");
 }
 
 function decodePolyline(encoded) {
@@ -467,16 +442,16 @@ window.initMap = initMap;
 window.initGPS = initGPS;
 window.recenterMap = recenterMap;
 window.drawRouteOnMap = drawRouteOnMap;
-window.isTrackingActive = false; 
-window.calculateDistanceperjalanan = function(lat1, lon1, lat2, lon2) {
+window.isTrackingActive = false;
+window.calculateDistanceperjalanan = function (lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; 
+    return R * c;
 }
 
 async function handleBerangkat() {
@@ -484,9 +459,8 @@ async function handleBerangkat() {
     const btnSampai = document.getElementById('btnSampai');
     if (!window.currentPolylineString) {
         alert("⚠️ Pilih rutenya dulu");
-        logKeLayar("⚠️ Polyline belum dipilih");
         return;
-    }   
+    }
     if (!window.currentPos || window.currentPos.lat === 0) {
         alert("⚠️ Tunggu sampai GPS mendapatkan lokasi Anda!");
         return;
@@ -499,15 +473,15 @@ async function handleBerangkat() {
     }
     const waktuBerangkat = new Date();
     const durasiMenit = window.deliveryData && !isNaN(parseInt(window.deliveryData.durasi, 10))
-    ? parseInt(window.deliveryData.durasi, 10)
-    : 0;
+        ? parseInt(window.deliveryData.durasi, 10)
+        : 0;
     const targetSampai = new Date(waktuBerangkat.getTime() + durasiMenit * 60000);
-    if(document.getElementById('target-text')) {
-        const opsi = { 
-            day: '2-digit', 
-            month: 'long', 
-            year: 'numeric', 
-            hour: '2-digit', 
+    if (document.getElementById('target-text')) {
+        const opsi = {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
             minute: '2-digit',
             hour12: false // Pakai format 24 jam
         };
@@ -521,7 +495,7 @@ async function handleBerangkat() {
         lng_awal: window.currentPos.lng,
         waktu_berangkat: waktuBerangkat.toISOString(),
         target_sampai: targetSampai.toISOString(),
-        rute_dipilih: window.currentPolylineString, 
+        rute_dipilih: window.currentPolylineString,
         path_history: [{ lat: window.currentPos.lat, lng: window.currentPos.lng, spd: 0 }],
         last_update: { lat: window.currentPos.lat, lng: window.currentPos.lng, spd: 0 }
     };
@@ -531,18 +505,15 @@ async function handleBerangkat() {
     window.isAutoCenter = true;
     btnBerangkat.style.display = 'none';
     btnSampai.style.display = 'block';
-    if(document.getElementById('ruteSelectionArea')) {
+    if (document.getElementById('ruteSelectionArea')) {
         document.getElementById('ruteSelectionArea').style.display = 'none';
     }
     if (typeof map !== "undefined" && map) {
-    map.flyTo([window.currentPos.lat, window.currentPos.lng], 18);
+        map.flyTo([window.currentPos.lat, window.currentPos.lng], 18);
     }
     const targetEl = document.querySelector('.target');
     if (targetEl) targetEl.classList.remove('hidden');
     if (typeof requestWakeLock === 'function') requestWakeLock();
-    logKeLayar("🚀 Perjalanan DIMULAI!");
-    logKeLayar(`📋 SJKB: ${noSJKB}`);
-    logKeLayar(`💾 Cache: Rute ${travelSession.rute_dipilih ? "✅ Tersimpan" : "❌ Kosong"}`);
 }
 
 function catatPerjalanan(lat, lng, speed) {
@@ -554,9 +525,8 @@ function catatPerjalanan(lat, lng, speed) {
     if (!Array.isArray(history) || history.length === 0) return;
     const lastPoint = history[history.length - 1];
     const dist = window.calculateDistanceperjalanan(lastPoint.lat, lastPoint.lng, lat, lng);
-    if (dist > 0.05) { 
+    if (dist > 0.05) {
         history.push({ lat, lng, spd: speed });
-        logKeLayar(`📍 Titik ke-${history.length} masuk cache (${(dist*1000).toFixed(0)}m)`);
     }
     localStorage.setItem('active_session', JSON.stringify(session));
 }
@@ -567,73 +537,67 @@ function catatPerjalanan(lat, lng, speed) {
     if (sessionData) {
         const session = JSON.parse(sessionData);
         if (targetEl) targetEl.classList.remove('hidden');
-        window.isTrackingActive = true; 
+        window.isTrackingActive = true;
         if (typeof requestWakeLock === 'function') requestWakeLock();
         document.getElementById('btnBerangkat').style.display = 'none';
         document.getElementById('btnSampai').style.display = 'block';
-        if(document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = session.no_sjkb;
-        if(document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = session.tujuan;
+        if (document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = session.no_sjkb;
+        if (document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = session.tujuan;
         const historyCount = Array.isArray(session.path_history) ? session.path_history.length : 0;
-        logKeLayar(`📦 Cache Restore: ${historyCount} titik tersimpan`);
-        if(document.getElementById('lt_input')) {
+        if (document.getElementById('lt_input')) {
             const berangkat = new Date(session.waktu_berangkat);
             const target = new Date(session.target_sampai);
             const durasiMenit = Math.round((target - berangkat) / 60000);
             document.getElementById('lt_input').value = durasiMenit;
         }
-        if(document.getElementById('target-text') && session.target_sampai) {
+        if (document.getElementById('target-text') && session.target_sampai) {
             const targetDate = new Date(session.target_sampai);
-            const opsi = { 
-                day: '2-digit', month: 'long', year: 'numeric', 
-                hour: '2-digit', minute: '2-digit', hour12: false 
+            const opsi = {
+                day: '2-digit', month: 'long', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: false
             };
             const formatter = new Intl.DateTimeFormat('id-ID', opsi).format(targetDate);
             document.getElementById('target-text').innerText = `${formatter.replace('.', ':')} WIB`;
         }
         setTimeout(() => {
             if (session.rute_dipilih && typeof decodePolyline === 'function') {
-                logKeLayar("🎨 Re-drawing rute...");
                 try {
                     if (window.currentPolyline && map) {
-                    map.removeLayer(window.currentPolyline);
+                        map.removeLayer(window.currentPolyline);
                     }
                     const coordinates = decodePolyline(session.rute_dipilih);
                     if (typeof map !== "undefined" && map) {
-                    window.currentPolyline = L.polyline(coordinates, { color: '#2563eb', weight: 5 }).addTo(map);
+                        window.currentPolyline = L.polyline(coordinates, { color: '#2563eb', weight: 5 }).addTo(map);
                     }
                     const finishPoint = coordinates[coordinates.length - 1];
                     const iconFin = (typeof iconFinish !== 'undefined') ? iconFinish : new L.Icon.Default();
                     if (typeof map !== "undefined" && map && window.finishMarker) {
-                    map.removeLayer(window.finishMarker);
+                        map.removeLayer(window.finishMarker);
                     }
                     if (typeof map !== "undefined" && map) {
                         window.finishMarker = L.marker(finishPoint, { icon: iconFin }).addTo(map);
                     }
                     if (window.currentPos && window.currentPos.lat !== 0) {
                         if (typeof map !== "undefined" && map) {
-                        map.flyTo([window.currentPos.lat, window.currentPos.lng], 18);
+                            map.flyTo([window.currentPos.lat, window.currentPos.lng], 18);
                         }
                     } else {
                         map.fitBounds(window.currentPolyline.getBounds());
                     }
-                    logKeLayar("✅ Rute dipulihkan ke peta");
                     window.isAutoCenter = true;
                 } catch (e) {
-                    logKeLayar("❌ Gagal gambar rute dari cache");
                 }
             } else {
                 if (targetEl) targetEl.classList.remove('hidden');
-                logKeLayar("⚠️ Rute_dipilih tidak ditemukan di cache");
             }
-    }, 1500);
-    } else { 
+        }, 1500);
+    } else {
         if (targetEl) targetEl.classList.add('hidden');
-    } 
+    }
 })();
 
 async function handleSampai() {
     if (!confirm("Apakah Anda sudah sampai di lokasi tujuan?")) return;
-    logKeLayar("🏁 Mengakhiri perjalanan...");
     try {
         const sessionData = localStorage.getItem('active_session');
         const session = sessionData ? JSON.parse(sessionData) : {};
@@ -642,13 +606,13 @@ async function handleSampai() {
         window.isAutoCenter = true;
         if (window.currentPos && window.currentPos.lat !== 0) {
             if (typeof map !== "undefined" && map) {
-            map.flyTo([window.currentPos.lat, window.currentPos.lng], 18);
+                map.flyTo([window.currentPos.lat, window.currentPos.lng], 18);
             }
         }
-        if(document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = "";
-        if(document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = "";
-        if(document.getElementById('lt_input')) document.getElementById('lt_input').value = "";
-        if(document.getElementById('target-text')) document.getElementById('target-text').innerText = "--:--";
+        if (document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = "";
+        if (document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = "";
+        if (document.getElementById('lt_input')) document.getElementById('lt_input').value = "";
+        if (document.getElementById('target-text')) document.getElementById('target-text').innerText = "--:--";
         const targetEl = document.querySelector('.target');
         if (targetEl) targetEl.classList.add('hidden');
         window.currentPolylineString = "";
@@ -658,24 +622,20 @@ async function handleSampai() {
         if (btnSampai) btnSampai.style.display = 'none';
         if (document.getElementById('ruteSelectionArea')) {
             document.getElementById('ruteSelectionArea').style.display = 'block';
-            document.getElementById('ruteSelectionArea').innerHTML = ""; 
+            document.getElementById('ruteSelectionArea').innerHTML = "";
         }
         if (window.currentPolyline && map) {
             map.removeLayer(window.currentPolyline);
         }
         if (typeof map !== "undefined" && map && window.finishMarker) {
-        map.removeLayer(window.finishMarker);
+            map.removeLayer(window.finishMarker);
         }
         if (typeof releaseWakeLock === 'function') releaseWakeLock();
         window.deliveryData = null;
         window.currentPolyline = null;
         window.finishMarker = null;
-        logKeLayar(`✅ FINISH: ${session.no_sjkb || '-'}`);
-        logKeLayar(`📍 Titik Terakhir: ${Array.isArray(session.path_history) ? session.path_history.length : 0} titik dicatat`);
-        logKeLayar("✅ Cache dibersihkan & Form dikosongkan.");
         alert("🏁 Sampai Tujuan! Data perjalanan telah ditutup.");
     } catch (e) {
-        logKeLayar("❌ Gagal mereset form: " + e.message);
     }
 }
 
@@ -694,9 +654,9 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Jari-jari bumi dalam KM
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
+    const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c; // Hasilnya dalam KM
@@ -714,7 +674,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const loader = document.getElementById('loading-satpam');
     if (loader) {
         loader.style.setProperty('display', 'flex', 'important');
-        logKeLayar("Sistem dimulai...");
     }
 
     const btnScan = document.getElementById('btnScanAction');
@@ -722,7 +681,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnScan.addEventListener('click', (e) => {
             e.preventDefault();
             window.isLocked = false; // Reset lock setiap kali tombol scan ditekan
-            logKeLayar("Membuka Kamera...");
             openScanner();
         });
     }
@@ -733,31 +691,26 @@ async function initSatpam() {
     const progressText = document.getElementById('load-progress');
     const loadingOverlay = document.getElementById('loading-satpam');
     try {
-        logKeLayar("Menyiapkan Tesseract...");
         window.worker = await Tesseract.createWorker('eng');
         progressText.innerText = "OCR Siap";
         await window.worker.setParameters({
             tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
             tessedit_pageseg_mode: '3'
         });
-        logKeLayar("Satpam Siap!");
         setTimeout(() => {
             loadingOverlay.style.opacity = '0';
             setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
         }, 1000);
     } catch (e) {
-        logKeLayar("‼️ GAGAL INIT: " + e.message);
         progressText.innerText = "Error Sistem. Cek Koneksi.";
     }
 }
 
 async function openScanner() {
     if (window.isProcessing || window.isLocked || window.isCameraActive) {
-        logKeLayar("⚠️ Sistem sedang sibuk, tunggu bentar Bang...");
         return;
     }
-    requestWakeLock().catch(err => console.error("WakeLock Error:", err)); 
-    logKeLayar("Mengecek GPS..."); // Cek apakah log ini muncul?
+    requestWakeLock().catch(err => console.error("WakeLock Error:", err));
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     const btnScan = document.getElementById('btnScanAction');
@@ -767,17 +720,14 @@ async function openScanner() {
     }
     const zone = isDriverInZone(window.currentPos.lat, window.currentPos.lng);
     if (!zone) {
-        logKeLayar("❌ Akses Ditolak: Anda di luar radius 1 KM");
         alert("Harap mulai perjalanan dari lokasi tempat anda bekerja.");
         return;
     }
     if (window.isCameraActive) {
-        logKeLayar("⚠️ Kamera masih aktif");
         return;
     }
     btnScan.disabled = true;
     document.getElementById('scan-status').innerText = "🔍 Scanning...";
-    logKeLayar(`✅ Lokasi Terverifikasi: ${zone.name}`);  
     window.isLocked = false;
     window.isProcessing = false;
     window.isCameraActive = true;
@@ -789,27 +739,25 @@ async function openScanner() {
     }
     container.style.display = 'block';
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment" } 
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" }
         });
         video.srcObject = stream;
         video.onloadeddata = null;
         video.onloadeddata = async () => {
             await video.play();
-            logKeLayar("Mencari Target...");
             startValidasiProses();
         };
     } catch (err) {
-    const btnScan = document.getElementById('btnScanAction');
-    btnScan.disabled = false;
-    window.isCameraActive = false;
-    alert("Kamera Error: " + err.message);
+        const btnScan = document.getElementById('btnScanAction');
+        btnScan.disabled = false;
+        window.isCameraActive = false;
+        alert("Kamera Error: " + err.message);
     }
 }
 
 async function startValidasiProses() {
     if (!window.worker) {
-        logKeLayar("⚠️ Worker belum siap");
         return;
     }
     const video = document.getElementById('video');
@@ -818,7 +766,7 @@ async function startValidasiProses() {
     const scanBox = document.getElementById('scan-box');
     const rect = scanBox.getBoundingClientRect();
     const videoRect = video.getBoundingClientRect();
-    if (!video.videoWidth || !video.videoHeight || !videoRect.width || video.readyState < 2 ) {
+    if (!video.videoWidth || !video.videoHeight || !videoRect.width || video.readyState < 2) {
         window.isProcessing = false;
         setTimeout(() => requestAnimationFrame(startValidasiProses), 300);
         return;
@@ -843,50 +791,43 @@ async function startValidasiProses() {
             .toUpperCase()
             .replace(/O/g, '0')
             .replace(/\s+/g, ' ');
-        logKeLayar("👁️ Anchor: " + rawText.substring(0, 30));
         const hasToyota = /TOYOTA|T0YOTA|TOY0TA|T0Y0TA/.test(rawText);
-        const hasAstra  = /ASTRA/.test(rawText);
-        const hasMotor  = /M0T0R|MOTOR|M0TOR|MOT0R/.test(rawText);
+        const hasAstra = /ASTRA/.test(rawText);
+        const hasMotor = /M0T0R|MOTOR|M0TOR|MOT0R/.test(rawText);
         if (hasToyota && hasAstra && hasMotor) {
             window.isLocked = true;
             showLoading("Mengambil gambar...");
             document.getElementById('scan-status').innerText = "🎯 MATCH! CAPTURING...";
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-setTimeout(() => {
-    const fullCanvas = document.createElement('canvas');
-    const MAX_WIDTH = 1280;   
-    let width = video.videoWidth;
-    let height = video.videoHeight;
-    if (width > MAX_WIDTH) {
-        height *= MAX_WIDTH / width;
-        width = MAX_WIDTH;
-    }
-    fullCanvas.width = width;
-    fullCanvas.height = height;
-    const fullCtx = fullCanvas.getContext('2d');
-    fullCtx.filter = 'contrast(1.4) brightness(1.1)';
-    fullCtx.drawImage(video, 0, 0, width, height);
-    let finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9); 
-    let currentLength = finalBlob.length; 
-    logKeLayar(`Cek awal: ${currentLength} karakter`);
-    if (currentLength < 70000) {
-        finalBlob = fullCanvas.toDataURL('image/png');
-        logKeLayar("⚠️ Burik Terdeteksi! Force PNG (Detail Maksimal)");
-    } 
-    else if (currentLength > 300000) {
-        finalBlob = fullCanvas.toDataURL('image/jpeg', 0.7);
-        logKeLayar("⚡ Kegedean! Kompres ke JPEG 0.7");
-    }
-    else {
-        logKeLayar("✅ Ukuran Ideal, kirim JPEG 0.9");
-    }
-    closeCamera();
-    uploadKeGemini(finalBlob);
-    logKeLayar("🚀 Final Payload: " + finalBlob.length + " karakter");   
-}, 300);
+            setTimeout(() => {
+                const fullCanvas = document.createElement('canvas');
+                const MAX_WIDTH = 1280;
+                let width = video.videoWidth;
+                let height = video.videoHeight;
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+                fullCanvas.width = width;
+                fullCanvas.height = height;
+                const fullCtx = fullCanvas.getContext('2d');
+                fullCtx.filter = 'contrast(1.4) brightness(1.1)';
+                fullCtx.drawImage(video, 0, 0, width, height);
+                let finalBlob = fullCanvas.toDataURL('image/jpeg', 0.9);
+                let currentLength = finalBlob.length;
+                if (currentLength < 70000) {
+                    finalBlob = fullCanvas.toDataURL('image/png');
+                }
+                else if (currentLength > 300000) {
+                    finalBlob = fullCanvas.toDataURL('image/jpeg', 0.7);
+                }
+                else {
+                }
+                closeCamera();
+                uploadKeGemini(finalBlob);
+            }, 300);
         }
     } catch (err) {
-        logKeLayar("OCR error: " + err.message);
     } finally {
         if (!window.isLocked && window.isCameraActive) {
             window.isProcessing = false;
@@ -897,7 +838,6 @@ setTimeout(() => {
 
 async function uploadKeGemini(base64Data) {
     showLoading(" membaca data...");
-    logKeLayar("🚀 Mengirim ke Gemini via GAS...");
     document.getElementById('no_sjkb').value = "Loading...";
     document.getElementById('tujuan_dealer').value = "Loading...";
     const pureBase64 = base64Data.split(',')[1];
@@ -911,29 +851,23 @@ async function uploadKeGemini(base64Data) {
             body: JSON.stringify({ image: pureBase64 })
         });
         const result = await response.json();
-    if (result.success) {
-        logKeLayar("✅ Data diterima dari GAS");
-        document.getElementById('no_sjkb').value = result.no_sjkb || "-";
-        document.getElementById('tujuan_dealer').value = result.tujuan || "-";
-        window.deliveryData = await fetchSpreadsheetData(result.tujuan);
-        if (window.deliveryData) {
-            logKeLayar("🚚 Data siap dipakai");
-            // 🔥 KIRIM DATA LANGSUNG KE FUNGSI
-            updateRuteUI(window.deliveryData); 
-        }
+        if (result.success) {
+            document.getElementById('no_sjkb').value = result.no_sjkb || "-";
+            document.getElementById('tujuan_dealer').value = result.tujuan || "-";
+            window.deliveryData = await fetchSpreadsheetData(result.tujuan);
+            if (window.deliveryData) {
+                updateRuteUI(window.deliveryData);
+            }
         } else {
-        logKeLayar("❌ Gagal: " + result.error);
-    }
-        } catch (err) {
-            logKeLayar("‼️ Fetch Error: " + err.message);
-            console.error(err);
-    }finally {
-    setTimeout(() => {
-        window.isProcessing = false;
-        window.isLocked = false;
-        window.isCameraActive = false;
-        logKeLayar("✅ Selesai. Siap scan lagi.");
-        hideLoading();
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        setTimeout(() => {
+            window.isProcessing = false;
+            window.isLocked = false;
+            window.isCameraActive = false;
+            hideLoading();
         }, 1500);
     }
 }
@@ -943,7 +877,6 @@ function isiHasilScan(data) {
     const inputTujuan = document.getElementById('tujuan_dealer');
     if (inputSJKB) inputSJKB.value = data.no_sjkb || "";
     if (inputTujuan) inputTujuan.value = data.tujuan || "";
-    logKeLayar("✅ Input terisi otomatis");
 }
 
 function closeCamera() {
@@ -959,7 +892,6 @@ function closeCamera() {
     window.isLocked = false;
     window.isCameraActive = false;
     container.style.display = 'none';
-    logKeLayar("🔴 Kamera Mati Total.");
 }
 
 function showLoading(text = "Memproses...") {
@@ -978,7 +910,6 @@ function hideLoading() {
 
 async function fetchSpreadsheetData(tujuanGemini) {
     if (!window.currentPos || !window.currentPos.lat || !window.currentPos.lng) {
-        logKeLayar("⚠️ GPS belum tersedia");
         return null;
     }
     const zone = isDriverInZone(window.currentPos.lat, window.currentPos.lng);
@@ -987,7 +918,6 @@ async function fetchSpreadsheetData(tujuanGemini) {
         .toUpperCase()
         .replace(/[^A-Z0-9\s]/g, "")
         .trim();
-    logKeLayar(`🚀 REQ | tujuan: ${tujuanClean} | lokasi: ${lokasiSheet}`);
     try {
         const response = await fetch("https://script.google.com/macros/s/AKfycbxwMg2ne9r7ViTTppPhV5qPrb-S35kQf_xEH_R7VZllP_uuTiwV6TM-p7vyw8gME1zn/exec", {
             method: "POST",
@@ -999,15 +929,12 @@ async function fetchSpreadsheetData(tujuanGemini) {
                 lokasi: lokasiSheet
             })
         });
-        logKeLayar(`📡 STATUS: ${response.status}`);
         const text = await response.text();
         const shortText = text.length > 100 ? text.substring(0, 500) + "..." : text;
-        logKeLayar(`📦 RAW: ${shortText}`);
-        let result; 
+        let result;
         try {
-        result = JSON.parse(text);
+            result = JSON.parse(text);
         } catch (e) {
-            logKeLayar("❌ JSON PARSE ERROR");
             return null;
         }
         if (result.success) {
@@ -1015,18 +942,14 @@ async function fetchSpreadsheetData(tujuanGemini) {
             if (result.data.rute && result.data.rute.length > 0) {
                 // Set rute pertama sebagai default secara otomatis
                 window.currentPolylineString = result.data.rute[0].polyline;
-                logKeLayar("💡 Rute 1 otomatis diset sebagai default");
             } else {
-                window.currentPolylineString = ""; 
-                logKeLayar("⚠️ Data rute kosong dari server!");
+                window.currentPolylineString = "";
             }
             return result.data;
         } else {
-            logKeLayar(`❌ GAS ERROR: ${result.error}`);
             return null;
         }
     } catch (err) {
-        logKeLayar(`‼️ FETCH ERROR: ${err.message}`);
         return null;
     }
 }
@@ -1035,23 +958,19 @@ function updateRuteUI(data) {
     const container = document.getElementById('ruteButtons');
     const area = document.getElementById('ruteSelectionArea');
     if (!container || !area) {
-        logKeLayar("❌ Element UI tidak ditemukan");
         return;
     }
-    container.innerHTML = ''; 
+    container.innerHTML = '';
     const targetData = data || window.deliveryData;
     if (!targetData) {
-        logKeLayar("⚠️ Tidak ada data");
         return;
     }
-    logKeLayar("CEK DATA: " + JSON.stringify(targetData));
     let polyList = targetData.polylines || targetData.rute;
     if (typeof polyList === "string") {
         polyList = [polyList];
     }
     if (Array.isArray(polyList) && polyList.length > 0) {
-        logKeLayar(`✨ Ditemukan ${polyList.length} rute`);
-        area.style.display = 'block'; 
+        area.style.display = 'block';
         polyList.forEach((poly, index) => {
             const btn = document.createElement('button');
             btn.innerText = `Rute ${index + 1}`;
@@ -1060,8 +979,7 @@ function updateRuteUI(data) {
             btn.onclick = () => {
                 document.querySelectorAll('.btn-rute').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                window.currentPolylineString = polyString; 
-                logKeLayar(`📍 Rute dipilih (Size: ${polyString.length} chars)`);
+                window.currentPolylineString = polyString;
                 if (typeof window.drawRouteOnMap === "function") {
                     window.drawRouteOnMap(polyString);
                 }
@@ -1070,61 +988,59 @@ function updateRuteUI(data) {
         });
         container.firstChild.click();
     } else {
-        logKeLayar("⚠️ Tidak ada polyline");
         area.style.display = 'none';
     }
 }
 
 window.openScanner = openScanner;
-window.logKeLayar = logKeLayar;
 window.closeCamera = closeCamera;
 window.updateRuteUI = updateRuteUI;
 window.fetchSpreadsheetData = fetchSpreadsheetData;
 const google = {
-  script: {
-    run: {
-      withSuccessHandler: function(callback) {
-        this.callback = callback;
-        return this;
-      },
-      withFailureHandler: function(failCallback) {
-        this.failCallback = failCallback;
-        return this;
-      },
-      getData: function() {
-        console.log("Mock: Mengambil data...");
-        setTimeout(() => {
-          const fakeData = [
-            ["SJKB-001", "Dealer Jakarta", "2026-04-30T10:00:00", "2026-04-30T11:00:00"],
-            ["SJKB-002", "Dealer Bekasi", "2026-04-30T12:00:00", "-"]
-          ];
-          this.callback(fakeData);
-        }, 1000);
-      },
-      ocrViaDrive: function(base64) {
-        console.log("Mock: Menjalankan OCR...");
-        setTimeout(() => {
-          this.callback({
-            no_sjkb: "SJKB-MOCK-123",
-            tujuan: "DEALER TOYOTA CIBUBUR",
-            lt: "45",
-            confidence: "HIGH",
-            rute_options: ["encoded_polyline_1", "encoded_polyline_2"]
-          });
-        }, 2000);
-      },
-      mulaiRecordSheet: function(no, tujuan, lat, lng, rute) {
-        console.log("Mock: Memulai perjalanan...");
-        setTimeout(() => {
-          this.callback("Berhasil Record di Server (Fake)");
-        }, 1500);
-      },
-      updateSampaiSheet: function(no, path, lat, lng, speed) {
-        console.log("Mock: Menyimpan data sampai...");
-        setTimeout(() => {
-          this.callback();
-        }, 1500);
-      }
+    script: {
+        run: {
+            withSuccessHandler: function (callback) {
+                this.callback = callback;
+                return this;
+            },
+            withFailureHandler: function (failCallback) {
+                this.failCallback = failCallback;
+                return this;
+            },
+            getData: function () {
+                console.log("Mock: Mengambil data...");
+                setTimeout(() => {
+                    const fakeData = [
+                        ["SJKB-001", "Dealer Jakarta", "2026-04-30T10:00:00", "2026-04-30T11:00:00"],
+                        ["SJKB-002", "Dealer Bekasi", "2026-04-30T12:00:00", "-"]
+                    ];
+                    this.callback(fakeData);
+                }, 1000);
+            },
+            ocrViaDrive: function (base64) {
+                console.log("Mock: Menjalankan OCR...");
+                setTimeout(() => {
+                    this.callback({
+                        no_sjkb: "SJKB-MOCK-123",
+                        tujuan: "DEALER TOYOTA CIBUBUR",
+                        lt: "45",
+                        confidence: "HIGH",
+                        rute_options: ["encoded_polyline_1", "encoded_polyline_2"]
+                    });
+                }, 2000);
+            },
+            mulaiRecordSheet: function (no, tujuan, lat, lng, rute) {
+                console.log("Mock: Memulai perjalanan...");
+                setTimeout(() => {
+                    this.callback("Berhasil Record di Server (Fake)");
+                }, 1500);
+            },
+            updateSampaiSheet: function (no, path, lat, lng, speed) {
+                console.log("Mock: Menyimpan data sampai...");
+                setTimeout(() => {
+                    this.callback();
+                }, 1500);
+            }
+        }
     }
-  }
 };
