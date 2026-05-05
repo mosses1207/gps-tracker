@@ -72,12 +72,12 @@ let endMarker = null;
 let userMarker = null;
 let isAutoCenter = true;
 const startIcon = L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/5425/5425869.png',
+    iconUrl: '/markerrute.png',
     iconSize: [32, 32],
     iconAnchor: [16, 32]
 });
 const endIcon = L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/5425/5425869.png',
+    iconUrl: '/markerrute.png',
     iconSize: [32, 32],
     iconAnchor: [16, 32]
 });
