@@ -2,28 +2,17 @@
 <html lang="id">
 
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#ff0000">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
   <title>Delivery Monitoring System</title>
-  <link rel="icon" type="image/png"
-    href="https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
-  <script src="https://unpkg.com/leaflet.tilelayer.pouchdbcached@1.0.0/L.TileLayer.PouchDBCached.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="/Toyota-Logo-Free.png">
   <link rel="manifest" href="manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/polyline-encoded@0.0.9/Polyline.encoded.js"></script>
+  <script type="module" src="/main.js" defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
-
   <div id="loading-satpam"
     style="position:fixed !important; top:0; left:0; width:100%; height:100%; background:white !important; z-index:100000 !important; display:flex; flex-direction:column; align-items:center; justify-content:center;">
     <div class="spinner"></div>
@@ -35,7 +24,6 @@
   </div>
 
   <!-- 🔷 HEADER -->
-
   <!-- Mini Logger (Debug Mode) 
   <div id="debug-log"> 
   <div>-- System Log Ready --</div> 
@@ -44,7 +32,7 @@
   <header class="main-header">
     <div class="brand-section">
       <div class="brand-logo">
-        <img src="https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png" alt="Toyota">
+        <img src="/Toyota-Logo-Free.png" alt="Toyota">
       </div>
 
       <div class="brand-title">
@@ -53,30 +41,24 @@
       </div>
     </div>
 
-    <div class="system-status">
-      <div class="status-dot"></div>
-      <span>SYSTEM ONLINE</span>
+    <div id="status-container" class="system-status">
+      <div id="status-dot" class="status-dot"></div>
+      <span id="status-text">SYSTEM ONLINE</span>
     </div>
   </header>
-  <!-- 🔷 END HEADER -->
 
-  <!-- 🔷 NAV BUTTON -->
-  <button class="btn-monitor-nav">🖥️ Dashboard</button>
+  <button class="btn-monitor-nav">Dashboard</button>
 
-    <!-- 🔷 LOGIN OVERLAY (Gunakan ID yang sudah ada di CSS Abang) -->
   <div id="login-overlay">
     <div class="login-card">
       <div class="brand-logo" style="margin-bottom: 10px;">
-        <img src="https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png" alt="Toyota"
-          style="width: 50px;">
+        <img src="/Toyota-Logo-Free.png" alt="Toyota" style="width: 50px;">
       </div>
       <h2 id="title-login">Akses Sistem</h2>
 
-      <!-- CONTAINER 1: LOGIN GOOGLE (Muncul Pertama) -->
       <div id="area-google">
         <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Gunakan akun Google untuk masuk</p>
 
-        <!-- Tombol Google Login -->
         <div id="google-login-btn" style="display: flex; justify-content: center;"></div>
 
         <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
@@ -87,7 +69,6 @@
         </div>
       </div>
 
-      <!-- CONTAINER 2: LOGIN ADMIN (Hidden by Default) -->
       <div id="area-admin" style="display: none;">
         <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Khusus Manajemen / Admin</p>
 
@@ -105,9 +86,6 @@
 
     </div>
   </div>
-  <!-- 🔷 END LOGIN -->
-
-  <!-- 🔷 MAIN KAMERA -->
 
   <div id="camera-container"
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999;">
@@ -115,7 +93,7 @@
     <div class="scan-container">
       <div class="scan-label">Posisikan SJKB sesuai arahan</div>
       <div id="scan-box">
-        <img src="https://lh3.googleusercontent.com/d/1m8WsVMjpzbvCXIMxA64xtDjqW631ZpGF" id="guide-overlay">
+        <img src="anchor-toyota.png" id="guide-overlay">
         <div class="corner tl"></div>
         <div class="corner tr"></div>
         <div class="corner bl"></div>
@@ -130,57 +108,49 @@
       <br>
       <br><br>
       <button onclick="closeCamera()"
-        style="color:white; background:rgba(255,0,0,0.5); border:1px solid white; padding:8px 20px; border-radius:5px; font-size:14px;">
+        id="btnCloseCamera" style="color:white; background:rgba(255,0,0,0.5); border:1px solid white; padding:8px 20px; border-radius:5px; font-size:14px;">
         Batal / Kembali
       </button>
     </div>
   </div>
 
-  <!-- 🔷 END KAMERA -->
-
-  <!-- 🔷 MAIN CONTAINER -->
   <div class="container">
 
-    <!-- 🔷 INPUT CARD -->
     <div class="card">
 
       <div class="input-group-wrapper">
         <input type="text" id="no_sjkb" placeholder="Scan / Input No SJKB" readonly>
         <input type="text" id="tujuan_dealer" placeholder="Tujuan" readonly>
+        <input type="text" id="lt_input" placeholder="LT" readonly>
 
         <div class="mobile-input-row">
-          <input type="text" id="lt_input" placeholder="LT" readonly>
           <button type="button" id="btnScanAction" class="btn-scan">
             📸 Foto
           </button>
         </div>
       </div>
 
-      <!-- 🔷 ROUTE SELECTION -->
       <div id="ruteSelectionArea"
         style="margin-top: 15px; display: none; border-top: 1px solid #eee; padding-top: 15px;">
         <p style="font-size: 13px; margin-bottom: 8px; font-weight: bold;">
-          📍 Pilih Jalur Rute:
+          Pilih Jalur Rute:
         </p>
         <div id="ruteButtons" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
       </div>
 
-      <!-- 🔷 ACTION BUTTON -->
       <div id="actionArea">
         <br>
         <button id="btnBerangkat" class="btn-blue">
-          🚀 Mulai Perjalanan (Berangkat)
+          Mulai Perjalanan (Berangkat)
         </button>
 
         <button id="btnSampai" class="btn-green">
-          ✅ Sampai di Tujuan
+          Sampai di Tujuan
         </button>
       </div>
 
     </div>
-    <!-- 🔷 END INPUT CARD -->
 
-    <!-- 🔷 GPS STATUS -->
     <div id="gpsStatus">
       <!-- Baris Status -->
       <div class="gps-info-line">
@@ -202,18 +172,24 @@
     <!-- 🔷 END GPS -->
 
     <!-- 🔷 MAP -->
-    <div class="card" style="padding: 0; overflow: hidden; height: 300px; position: relative;">
-      <div id="map" style="width: 100%; height: 100%;"></div>
-      <div class="target hidden">
-        <span><b>Target Sampai</b> <span id="target-text" class="status-value">-</span></span>
-      </div>
-      <div class="location-overlay">
+
+    <div class="card map-container-main">
+      <!-- Box Nama Jalan (Bagian Atas) -->
+      <div class="location-header-top">
         <span class="location-icon">📍</span>
         <span id="street-name">Mendeteksi Jalan...</span>
       </div>
-      <button class="btn-center-map" title="Kembali ke Lokasi Saya">
-        🎯
-      </button>
+
+      <!-- Area Peta (Bagian Bawah) -->
+      <div class="map-content">
+        <div id="map"></div>
+
+        <!-- Info Target & Tombol Recenter tetep di dalem sini -->
+        <div class="target hidden">
+          <span><b>Target Sampai</b> <span id="target-text" class="status-value">-</span></span>
+        </div>
+        <button id="btn-recenter" class="btn-center-map">🎯</button>
+      </div>
     </div>
     <!-- 🔷 END MAP -->
 
@@ -245,7 +221,6 @@
   </div>
   <!-- 🔷 END CONTAINER -->
 
-
   <!-- 🔷 LOADER -->
   <div id="loader-overlay">
     <div class="spinner"></div>
@@ -259,31 +234,4 @@
       <p id="loading-text">Memproses...</p>
     </div>
   </div>
-
-  <!-- 🔷 FILE INPUT (HIDDEN) -->
-
- 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=7') // Samakan dengan versi di sw.js
-          .then(reg => {
-            console.log("SW Terdaftar!");
-            reg.onupdatefound = () => {
-              const installingWorker = reg.installing;
-              installingWorker.onstatechange = () => {
-                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  location.reload();
-                }
-              };
-            };
-          })
-          .catch(err => console.log("SW Error:", err));
-      });
-    }
-  </script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script type="module" src="/main.js" defer></script>
 </body>
