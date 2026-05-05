@@ -71,6 +71,7 @@ let startMarker = null;
 let endMarker = null;
 let userMarker = null;
 let isAutoCenter = true;
+delete L.Icon.Default.prototype._getIconUrl;
 const startIcon = L.icon({
     iconUrl: '/markerrute.png',
     iconSize: [32, 32],
