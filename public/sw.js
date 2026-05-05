@@ -1,12 +1,12 @@
-const CACHE_NAME = 'nvdc-cache-v7';
-
+const CACHE_NAME = 'nvdc-cache-v9';
 const assets = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/style.css'
+  '/main.js',
+  '/manifest.json', 
+  '/style.css',
+  '/Toyota-Logo-Free.png'
 ];
-
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(
@@ -22,7 +22,6 @@ self.addEventListener('install', e => {
     })
   );
 });
-
 self.addEventListener('activate', e => {
   self.clients.claim();
   e.waitUntil(
@@ -35,24 +34,19 @@ self.addEventListener('activate', e => {
     )
   );
 });
-
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-
-  // Handle navigation (biar SPA aman)
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request).catch(() => caches.match('/index.html'))
     );
     return;
   }
-
   e.respondWith(
     caches.match(e.request).then(cachedRes => {
       const fetchPromise = fetch(e.request)
         .then(networkRes => {
           const url = new URL(e.request.url);
-
           if (
             networkRes &&
             networkRes.status === 200 &&
@@ -63,12 +57,11 @@ self.addEventListener('fetch', e => {
               cache.put(e.request, cloned);
             });
           }
-
           return networkRes;
         })
         .catch(() => cachedRes || caches.match('/index.html'));
-
       return cachedRes || fetchPromise;
     })
   );
 });
+
