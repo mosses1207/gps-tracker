@@ -1032,7 +1032,7 @@ function decodePolyline(encoded) {
 // #region path history
 
 db.version(1).stores({
-    travel_sessions: '_id, status, waktu_berangkat'
+    travel_sessions: 'idseason, status, waktu_berangkat'
 });
 
 function generateUniqueId(emailSesi) {
