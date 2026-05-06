@@ -1,4 +1,4 @@
-if ('serviceWorker' in navigator) {
+aif ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js?v=9')
             .then(reg => {
@@ -26,10 +26,11 @@ import 'leaflet/dist/leaflet.css'
 import Tesseract from 'tesseract.js'
 import Dexie from 'dexie';
 import CryptoJS from 'crypto-js';
-
-const db = new Dexie('logistic_db');
+import { createClient } from '@supabase/supabase-js'
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const db = new Dexie('logistic_db');
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 const loaderSatpam = document.getElementById('loading-satpam');
@@ -1058,7 +1059,7 @@ async function handleBerangkat() {
             alert("Pilih rutenya dulu");
             return;
         }
-        if (!currentPos || !currentPos.lat === 0) {
+        if (!currentPos || isNaN(currentPos.lat) || isNaN(currentPos.lng)) {
             alert("Tunggu sampai GPS mendapatkan lokasi Anda!");
             return;
         }
@@ -1071,7 +1072,7 @@ async function handleBerangkat() {
         const waktuBerangkat = new Date();
         const durasiMenit = deliveryData && !isNaN(parseInt(deliveryData.durasi, 10))
             ? parseInt(deliveryData.durasi, 10)
-            : 0;
+            : 60;
         const targetSampai = new Date(waktuBerangkat.getTime() + durasiMenit * 60000);
         if (document.getElementById('target-text')) {
             const opsi = {
@@ -1087,35 +1088,48 @@ async function handleBerangkat() {
         }
 
         const session = JSON.parse(localStorage.getItem('user_session'));
+        if (!session) {
+            alert("Sesi user tidak ditemukan, silakan login ulang.");
+            return;
+        }
+        const uid = session.uid;
         const travelId = generateUniqueId(session.email);
         await db.travel_sessions.put({
             _id: travelId,
             no_sjkb: encryptData(noSJKB),
             tujuan: encryptData(tujuan),
-            lat_awal: encryptData(currentPos.lat),
-            lng_awal: encryptData(currentPos.lng),
+            lat_awal: encryptData(currentPos.lat.toString()), // Pastikan string jika perlu
+            lng_awal: encryptData(currentPos.lng.toString()),
             waktu_berangkat: encryptData(waktuBerangkat.toISOString()),
             target_sampai: encryptData(targetSampai.toISOString()),
             rute_dipilih: encryptData(currentPolylineString),
-
-            path_history: [{
-                lat: currentPos.lat,
-                lng: currentPos.lng,
-                spd: 0
-            }],
-
-            last_update: encryptData({
-                lat: currentPos.lat,
-                lng: currentPos.lng,
-                spd: 0
-            }),
-
+            path_history: [{ lat: currentPos.lat, lng: currentPos.lng, spd: 0 }],
             status: "Active"
         });
 
         localStorage.setItem('current_session_id', travelId);
-        console.log(localStorage.getItem('current_session_id'));
-        if (navigator.vibrate) navigator.vibrate(200);
+
+        // 4. Kirim ke Supabase
+        const { error: supabaseError } = await supabase
+            .from('path_history')
+            .insert([{
+                idseason: travelId,
+                sjkb: encryptData(noSJKB),
+                dest: encryptData(tujuan),
+                "lat-aw": encryptData(currentPos.lat.toString()),
+                "lng-aw": encryptData(currentPos.lng.toString()),
+                "t-depart": encryptData(waktuBerangkat.toISOString()),
+                "t-arrv-time": encryptData(targetSampai.toISOString()),
+                "rute-master": encryptData(currentPolylineString),
+                status: "Active",
+                user_id: session.uid
+            }]);
+        if (navigator.vibrate) {
+            navigator.vibrate(200);
+        }
+        if (supabaseError) {
+            console.error('Error simpan ke Supabase:', supabaseError.message);
+        }
         isTrackingActive = true;
         isAutoCenter = true;
         const btnScan = document.getElementById('btnScanAction');
