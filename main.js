@@ -24,15 +24,13 @@ import { createClient } from '@supabase/supabase-js'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import Tesseract from 'tesseract.js'
-import Dexie from 'dexie';
-import CryptoJS from 'crypto-js';
-import { createClient } from '@supabase/supabase-js'
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+import Dexie from 'dexie'
+import CryptoJS from 'crypto-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 const db = new Dexie('logistic_db');
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
 const loaderSatpam = document.getElementById('loading-satpam');
 const loadProgress = document.getElementById('load-progress');
 const MAX_RADIUS_KM = 1;
