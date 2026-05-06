@@ -1093,16 +1093,20 @@ async function handleBerangkat() {
         const uid = session.uid;
         const travelId = generateUniqueId(session.email);
         await db.travel_sessions.put({
-            _id: travelId,
-            no_sjkb: encryptData(noSJKB),
-            tujuan: encryptData(tujuan),
-            lat_awal: encryptData(currentPos.lat.toString()), // Pastikan string jika perlu
-            lng_awal: encryptData(currentPos.lng.toString()),
-            waktu_berangkat: encryptData(waktuBerangkat.toISOString()),
-            target_sampai: encryptData(targetSampai.toISOString()),
-            rute_dipilih: encryptData(currentPolylineString),
-            path_history: [{ lat: currentPos.lat, lng: currentPos.lng, spd: 0 }],
-            status: "Active"
+                sjkb: encryptData(noSJKB),
+                dest: encryptData(tujuan),
+                lat_start: encryptData(currentPos.lat.toString()),
+                lng_start: encryptData(currentPos.lng.toString()),
+                lat: encryptData(currentPos.lat.toString()),
+                lng: encryptData(currentPos.lng.toString()),
+                depart_at: encryptData(waktuBerangkat.toISOString()),
+                arrive_target: encryptData(targetSampai.toISOString()),
+                updated_at: encryptData(new Date().toISOString()),
+                route_master: encryptData(currentPolylineString),
+                path_hist: null,
+                status: "Active",
+                user_id: session.uid,
+                idseason: travelId
         });
 
         localStorage.setItem('current_session_id', travelId);
@@ -1111,16 +1115,20 @@ async function handleBerangkat() {
         const { error: supabaseError } = await supabase
             .from('path_history')
             .insert([{
-                idseason: travelId,
                 sjkb: encryptData(noSJKB),
                 dest: encryptData(tujuan),
-                "lat-aw": encryptData(currentPos.lat.toString()),
-                "lng-aw": encryptData(currentPos.lng.toString()),
-                "t-depart": encryptData(waktuBerangkat.toISOString()),
-                "t-arrv-time": encryptData(targetSampai.toISOString()),
-                "rute-master": encryptData(currentPolylineString),
+                lat_start: encryptData(currentPos.lat.toString()),
+                lng_start: encryptData(currentPos.lng.toString()),
+                lat: encryptData(currentPos.lat.toString()),
+                lng: encryptData(currentPos.lng.toString()),
+                depart_at: encryptData(waktuBerangkat.toISOString()),
+                arrive_target: encryptData(targetSampai.toISOString()),
+                updated_at: encryptData(new Date().toISOString()),
+                route_master: encryptData(currentPolylineString),
+                path_hist: null,
                 status: "Active",
-                user_id: session.uid
+                user_id: session.uid,
+                idseason: travelId
             }]);
         if (navigator.vibrate) {
             navigator.vibrate(200);
@@ -1149,6 +1157,7 @@ async function handleBerangkat() {
         const targetEl = document.querySelector('.target');
         if (targetEl) targetEl.classList.remove('hidden');
         if (typeof requestWakeLock === 'function') requestWakeLock();
+        startTracking();
     } catch (err) {
         console.error("Gagal simpan sesi PouchDB:", err);
         alert("Gagal memulai perjalanan Coba Lagi.");
@@ -1341,15 +1350,66 @@ async function handleSampai() {
         finishMarker = null;
         alert("Sampai Tujuan!.");
         const btnScan = document.getElementById('btnScanAction');
+        stopTracking();
         if (btnScan) {
             btnScan.disabled = false;
             btnScan.style.opacity = "1"; // Opsional: biar kelihatan redup/mati
-            btnScan.style.cursor = "not-allowed";
+            btnScan.style.cursor = "pointer";
         }
     } catch (e) {
     }
 }
 
+async function handleUpdate5menit() {
+    try {
+        if (!currentPos || isNaN(currentPos.lat) || isNaN(currentPos.lng)) {
+            alert("Signal GPS Lemah");
+            return;
+        }
+        const travelId = localStorage.getItem('current_session_id');
+        if (!travelId) {
+            throw new Error("Session ID tidak ditemukan di localStorage");
+        }
+        const updatetime = encryptData(new Date().toISOString());
+        await db.travel_sessions.update(travelId, {
+            lat: encryptData(currentPos.lat.toString()),
+            lng: encryptData(currentPos.lng.toString()),
+            updated_at: updatetime,
+        });
+        const { error: supabaseError } = await supabase
+            .from('path_history')
+            .update({
+                lat: encryptData(currentPos.lat.toString()),
+                lng: encryptData(currentPos.lng.toString()),
+                updated_at: updatetime,
+            })
+            .eq('idseason', travelId);
+        if (navigator.vibrate) {
+            navigator.vibrate(200);
+        }
+        if (supabaseError) {
+            console.error('Error update ke Supabase:', supabaseError.message);
+        }
+    } catch (err) {
+        console.error("Gagal simpan sesi PouchDB:", err);
+    }
+}
+
+// Simpan ID intervalnya biar bisa dimatikan nanti
+let trackingInterval = null;
+
+function startTracking() {
+    // 300000 ms = 5 menit
+    trackingInterval = setInterval(() => {
+        handleUpdate5menit();
+    }, 300000); 
+}
+
+function stopTracking() {
+    if (trackingInterval) {
+        clearInterval(trackingInterval);
+        trackingInterval = null;
+    }
+}
 
 // #endregion
-
