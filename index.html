@@ -13,6 +13,7 @@
 </head>
 
 <body>
+
   <div id="loading-satpam"
     style="position:fixed !important; top:0; left:0; width:100%; height:100%; background:white !important; z-index:100000 !important; display:flex; flex-direction:column; align-items:center; justify-content:center;">
     <div class="spinner"></div>
@@ -22,6 +23,7 @@
       sedang Memuat Data.
     </small>
   </div>
+
 
   <!-- 🔷 HEADER -->
   <!-- Mini Logger (Debug Mode) 
@@ -56,34 +58,47 @@
       </div>
       <h2 id="title-login">Akses Sistem</h2>
 
-      <div id="area-google">
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Gunakan akun Google untuk masuk</p>
+      <!-- Bagian Google Login -->
+      <div id="area-google" class="fade-in">
+        <!-- Icon Kunci/Shield Kecil sebagai pemanis -->
+        <div
+          style="background: #f8fafc; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </div>
 
-        <div id="google-login-btn" style="display: flex; justify-content: center;"></div>
+        <p style="font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Selamat Datang Kembali</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">Silakan verifikasi identitas Anda untuk
+          melanjutkan ke sistem.</p>
 
-        <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-          <button onclick="pindahKeAdmin(true)"
-            style="background:none; border:none; color:#6366f1; font-size:12px; font-weight:600; cursor:pointer;">
-            Login Admin Manual
-          </button>
+        <!-- Container Tombol Google -->
+        <div id="google-login-btn" class="google-btn-container"></div>
+
+        <!-- Footer Keamanan -->
+        <div
+          style="margin-top: 30px; display: flex; align-items: center; justify-content: center; gap: 8px; opacity: 0.6;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="#64748b" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <span style="font-size: 11px; color: #64748b; letter-spacing: 0.5px;">SECURED BY GOOGLE AUTH</span>
         </div>
       </div>
 
+      <!-- Bagian Admin Login -->
       <div id="area-admin" style="display: none;">
         <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Khusus Manajemen / Admin</p>
-
         <input type="text" id="userAdmin" placeholder="Username / Email">
         <input type="password" id="passAdmin" placeholder="Password">
-
         <div class="login-footer">
           <button class="btn-blue" onclick="prosesLoginAdmin()">Login Admin</button>
+          <p onclick="switchAuthMode('google')" style="cursor:pointer; font-size:12px; color:#64748b; margin-top:15px;">
+            Kembali ke Google Login</p>
         </div>
-        <button onclick="pindahKeAdmin(false)"
-          style="background:none; border:none; color:#64748b; font-size:12px; margin-top:15px; cursor:pointer;">
-          &larr; Kembali ke Login Google
-        </button>
       </div>
-
     </div>
   </div>
 
@@ -107,8 +122,8 @@
       </div>
       <br>
       <br><br>
-      <button onclick="closeCamera()"
-        id="btnCloseCamera" style="color:white; background:rgba(255,0,0,0.5); border:1px solid white; padding:8px 20px; border-radius:5px; font-size:14px;">
+      <button onclick="closeCamera()" id="btnCloseCamera"
+        style="color:white; background:rgba(255,0,0,0.5); border:1px solid white; padding:8px 20px; border-radius:5px; font-size:14px;">
         Batal / Kembali
       </button>
     </div>
@@ -118,18 +133,18 @@
 
     <div class="card">
 
-<div class="input-group-wrapper">
-  <input type="text" id="no_sjkb" placeholder="Scan / Input No SJKB" readonly>
-  <input type="text" id="tujuan_dealer" placeholder="Tujuan" readonly>
+      <div class="input-group-wrapper">
+        <input type="text" id="no_sjkb" placeholder="Scan / Input No SJKB" readonly>
+        <input type="text" id="tujuan_dealer" placeholder="Tujuan" readonly>
 
-  <!-- Masukin LT ke sini bang biar bisa satu baris -->
-  <div class="mobile-input-row">
-    <input type="text" id="lt_input" placeholder="LT" readonly>
-    <button type="button" id="btnScanAction" class="btn-scan">
-      📸 Foto
-    </button>
-  </div>
-</div>
+        <!-- Masukin LT ke sini bang biar bisa satu baris -->
+        <div class="mobile-input-row">
+          <input type="text" id="lt_input" placeholder="LT" readonly>
+          <button type="button" id="btnScanAction" class="btn-scan">
+            📸 Foto
+          </button>
+        </div>
+      </div>
 
       <div id="ruteSelectionArea"
         style="margin-top: 15px; display: none; border-top: 1px solid #eee; padding-top: 15px;">
@@ -223,10 +238,6 @@
   <!-- 🔷 END CONTAINER -->
 
   <!-- 🔷 LOADER -->
-  <div id="loader-overlay">
-    <div class="spinner"></div>
-    <div id="loader-text">Sedang memproses...</div>
-  </div>
 
   <!-- Overlay FULL SCREEN -->
   <div id="loading-overlay">
@@ -236,29 +247,20 @@
     </div>
   </div>
 
-  <div id="offline-screen" class="offline-overlay" style="display: none;">
-  <div class="offline-box">
-    
-    <div class="offline-icon">📡</div>
+  <!-- 🔷 EMERGENCY SCREEN -->
+  <div id="emergency-screen" class="emergency-overlay" style="display: none;">
+    <div class="emergency-box">
+      <div class="emergency-icon">⚠️</div>
+      <h2>Sistem Terhenti</h2>
+      <p id="emergency-message">Terjadi kendala teknis pada aplikasi.</p>
 
-    <h2>Koneksi Terputus</h2>
+      <button class="btn-refresh" onclick="location.reload()">
+        Segarkan Aplikasi
+      </button>
 
-    <p id="offline-message">
-      Aplikasi sedang berjalan dalam mode offline.<br>
-      Data akan disinkronkan saat koneksi kembali.
-    </p>
-
-    <div class="signal-loader">
-      <span></span>
-      <span></span>
-      <span></span>
+      <span class="emergency-footer">Tekan tombol untuk memuat ulang sistem</span>
     </div>
-
-    <span class="offline-footer">
-      Menunggu koneksi...
-    </span>
-
   </div>
-</div>
+  <!-- 🔷 END EMERGENCY SCREEN -->
 
 </body>
