@@ -1,9 +1,3 @@
-
-/*
-=================================================================================================
-*/
-
-// #region service worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js?v=10')
@@ -22,13 +16,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// #endregion
-
-/*
-=================================================================================================
-*/
-
-// #region import dan inisialisasi variabel global
 import './style.css'
 import { createClient } from '@supabase/supabase-js'
 import L from 'leaflet'
@@ -93,13 +80,6 @@ const endIcon = L.icon({
 });
 let finishMarker = null;
 let initialBody = "";
-// #endregion
-
-/*
-=================================================================================================
-*/
-
-// #region session & auth gate
 
 window.addEventListener('DOMContentLoaded', async () => {
     console.log("Ambil inital body");
@@ -140,14 +120,12 @@ async function ambildatahtml() {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
-
         const btnBerangkat = document.getElementById('btnBerangkat');
         if (btnBerangkat) btnBerangkat.style.display = 'block';
-
         const btnScan = document.getElementById('btnScanAction');
         if (btnScan) {
             btnScan.style.opacity = "1";
-            btnScan.style.backgroundColor = "#2563eb"; // Warna biru primer (sesuain punya kamu)
+            btnScan.style.backgroundColor = "#2563eb";
             btnScan.style.cursor = "pointer";
             btnScan.disabled = false;
             btnScan.style.transform = "scale(1)";
@@ -168,7 +146,6 @@ async function checkSessionGate() {
     const hasSession = localData && localData.lastLogin;
     const isSessionValid = hasSession && (new Date() - new Date(localData.lastLogin) < SATU_BULAN);
     if (isOnline) {
-        // --- JALUR ONLINE ---
         if (!isSessionValid) {
             await initSystem();
             console.log("Sesi expired/kosong. Meminta login ulang (Online)...");
@@ -179,14 +156,12 @@ async function checkSessionGate() {
         await resetTampilan();
         await checkActiveSessiononline();
     } else {
-        // --- JALUR OFFLINE ---
         if (isSessionValid) {
             console.log("Sesi valid. Memuat sistem offline...");
             await initSatpam();
             await resetTampilan();
             await checkActiveSessionoffline();
         } else {
-            // Offline dan tidak punya sesi yang valid
             console.warn("Offline dan tidak ada sesi valid. Sistem dihentikan.");
             const pesan = !hasSession
                 ? "Tidak ada data login. Butuh internet untuk login pertama kali."
@@ -235,12 +210,6 @@ async function initSystem() {
     }
 }
 
-/**
- * SECTION: AUTHENTICATION SYSTEM
- * Alur: checkSessionGate -> handleUnauthenticated -> renderGoogleButton -> Response
- */
-
-
 function handleUnauthenticated() {
     localStorage.removeItem('user_session');
     updateLoading(30, "Menyiapkan Gerbang Login...");
@@ -264,14 +233,12 @@ function handleUnauthenticated() {
 }
 
 function renderGoogleButton() {
-    // Inisialisasi Google
     console.log("Menginisialisasi Google Sign-In...");
     google.accounts.id.initialize({
         client_id: googleClientId,
         callback: handleCredentialResponse,
         auto_select: false,
     });
-
     const loginoverlay = document.getElementById('login-overlay');
     const googleBtnDiv = document.getElementById("google-login-btn");
     const googlearea = document.getElementById("area-google");
@@ -298,8 +265,6 @@ function renderGoogleButton() {
             shape: "rectangular",
             logo_alignment: "center"
         });
-
-        // Pasang listener Enter untuk input manual yang sudah ada di HTML
         const passInput = document.getElementById('login-password');
         if (passInput) {
             passInput.addEventListener('keypress', (e) => {
@@ -312,7 +277,6 @@ function renderGoogleButton() {
     updateLoading(100, "Silakan Login");
 }
 
-// 3. Handler Login via Google
 async function handleCredentialResponse(response) {
     updateLoading(50, "Memverifikasi Token Google...");
     const { data, error } = await supabase.auth.signInWithIdToken({
@@ -332,7 +296,6 @@ async function handleCredentialResponse(response) {
         }
         location.reload();
     } else {
-        // Simpan data agar checkSessionGate mengenali sesi setelah reload
         const userData = {
             email: data.user.email,
             uid: data.user.id,
@@ -353,11 +316,10 @@ async function handleCredentialResponse(response) {
     }
 }
 
-// 5. Fallback jika Google SDK Gagal Muat
 function handleSDKLoadFailure() {
     console.warn("Google SDK tidak ditemukan.");
     let retry = Number(localStorage.getItem('google_sdk_retry')) || 0;
-    if (retry < 2) { // Coba reload 2 kali saja agar tidak looping terus
+    if (retry < 2) {
         retry++;
         localStorage.setItem('google_sdk_retry', retry);
         const loginoverlay = document.getElementById('login-overlay');
@@ -450,16 +412,15 @@ function updateOnlineStatus() {
     const container = document.getElementById('status-container');
     const text = document.getElementById('status-text');
     const dot = document.getElementById('status-dot');
-
     if (navigator.onLine) {
         container.classList.remove('status-offline');
         text.innerText = "SYSTEM ONLINE";
-        dot.style.backgroundColor = "#28a745"; // Hijau
+        dot.style.backgroundColor = "#28a745";
         console.log("App is Online");
     } else {
         container.classList.add('status-offline');
         text.innerText = "SYSTEM OFFLINE";
-        dot.style.backgroundColor = "#dc3545"; // Merah
+        dot.style.backgroundColor = "#dc3545";
         console.log("App is Offline");
     }
 }
@@ -482,7 +443,10 @@ async function checkActiveSessionoffline() {
         const activeSession = sessions.find(s => s.status && s.status.toLowerCase() === "active");
         const sessionId = activeSession ? activeSession.idseason : null;
         if (sessionId) {
+            isTrackingActive = true;
+            isAutoCenter = true;
             startTracking();
+            //stopTracking();
             console.log("Sesi aktif ditemukan di Dexie:", sessionId);
             const noSJKB = decryptData(activeSession.sjkb);
             if (noSJKB) {
@@ -500,7 +464,6 @@ async function checkActiveSessionoffline() {
             }
             const waktuBerangkat = new Date(decryptData(activeSession.depart_at));
             const targetSampai = new Date(decryptData(activeSession.arrive_target));
-
             if (!isNaN(waktuBerangkat) && !isNaN(targetSampai)) {
                 const selisihWaktu = targetSampai - waktuBerangkat;
                 const durasiMenit = Math.round(selisihWaktu / 60000);
@@ -525,9 +488,7 @@ async function checkActiveSessionoffline() {
                 if (targetTextEl) {
                     targetTextEl.innerText = `${formatter.replace(/\./g, ':')} WIB`;
                 }
-
             }
-
             setTimeout(() => {
                 const ruteDipilih = decryptData(activeSession.route_master);
                 if (ruteDipilih && typeof decodePolyline === 'function') {
@@ -553,7 +514,6 @@ async function checkActiveSessionoffline() {
                             map.fitBounds(currentPolyline.getBounds());
                         }
                     }
-
                     const btnScan = document.getElementById('btnScanAction');
                     if (btnScan) {
                         btnScan.disabled = true;
@@ -568,12 +528,10 @@ async function checkActiveSessionoffline() {
                     if (btnSampai) {
                         btnSampai.style.display = 'block';
                     }
-
                 } else {
                     console.error("Rute yang dipilih tidak valid atau tidak ditemukan di sesi Dexie.");
                 }
             }, 1500);
-            isTrackingActive = true;
             if (typeof requestWakeLock === 'function') requestWakeLock();
             console.log("Sesi aktif berhasil dimuat dari Dexie, sistem siap melanjutkan tracking.");
             retryCount = 0;
@@ -581,6 +539,10 @@ async function checkActiveSessionoffline() {
             console.error("Tidak ada sesi aktif di Dexie.");
             retryCount = 0;
             resetTampilan();
+            isTrackingActive = true;
+            isAutoCenter = true;
+            //startTracking();
+            stopTracking();
         }
     } catch (error) {
         console.error("Gagal memuat sesi aktif, percobaan ke-", retryCount + 1, ":", error);
@@ -592,10 +554,13 @@ async function checkActiveSessionoffline() {
             alert("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
             showOfflineScreen("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
             retryCount = 0;
+            isTrackingActive = false;
+            isAutoCenter = false;
+            //startTracking();
+            stopTracking();
             stopAllSystem();
         }
     }
-
 }
 
 function updateUIFromSession(session) {
@@ -604,7 +569,7 @@ function updateUIFromSession(session) {
     const rawBerangkat = decryptData(session.depart_at);
     const rawTarget = decryptData(session.arrive_target);
     if (noSJKB) document.getElementById('no_sjkb').value = noSJKB;
-    if (tujuan) document.getElementById('tujuan').value = tujuan;
+    if (tujuan) document.getElementById('tujuan_dealer').value = tujuan;
     const waktuBerangkat = new Date(rawBerangkat);
     const targetSampai = new Date(rawTarget);
     if (!isNaN(waktuBerangkat) && !isNaN(targetSampai)) {
@@ -640,47 +605,39 @@ function updateUIFromSession(session) {
     }
     if (document.getElementById('btnBerangkat')) document.getElementById('btnBerangkat').style.display = 'none';
     if (document.getElementById('btnSampai')) document.getElementById('btnSampai').style.display = 'block';
+        isTrackingActive = true;
+        isAutoCenter = true;
+        startTracking();
+        //stopTracking();
 }
 
 async function checkActiveSessiononline() {
     const userSession = JSON.parse(localStorage.getItem('user_session'));
     const uid = userSession ? userSession.uid : null;
-    
     if (!uid) {
         console.warn("Sesi tidak ditemukan di localstorage. User harus login ulang.");
+        location.reload();
         return;
     }
-
     try {
-        // Cek sesi aktif di Supabase berdasarkan user_id dan status 'Active'
         const { data: activeSession, error } = await supabase
             .from('path_history')
             .select('*')
             .eq('user_id', uid)
             .eq('status', 'Active')
             .maybeSingle();
-
         if (error) throw error;
-
         if (activeSession) {
             console.log("Sesi aktif ditemukan di server:", activeSession.idseason);
-
-            // Cek data perjalanan lokal di Dexie
             const localSessions = await db.travel_sessions.toArray();
             const localData = localSessions.length > 0 ? localSessions[0] : null;
-
-            // Jika ID Sesi di Supabase sama dengan ID Sesi di Dexie, lewati pembaruan
             if (localData && localData.idseason === activeSession.idseason) {
                 console.log("Sesi sama dengan lokal, gunakan data Dexie.");
                 startTracking();
                 updateUIFromSession(localData);  // Update UI menggunakan data lokal
             } else {
                 console.warn("ID berbeda atau lokal kosong! Overwrite Dexie dengan data Server...");
-                
-                // Hapus data perjalanan lokal di Dexie
                 await db.travel_sessions.clear();
-
-                // Simpan data sesi aktif dari Supabase ke Dexie
                 await db.travel_sessions.put({
                     sjkb: activeSession.sjkb,
                     dest: activeSession.dest,
@@ -697,19 +654,17 @@ async function checkActiveSessiononline() {
                     user_id: activeSession.user_id,
                     idseason: activeSession.idseason
                 });
-
-                // Update UI menggunakan data sesi yang baru saja disinkronkan
-                startTracking();
                 updateUIFromSession(activeSession);
             }
-
-            isTrackingActive = true;
             if (typeof requestWakeLock === 'function') requestWakeLock();
-
             return activeSession.idseason;
         } else {
             console.log("Tidak ada sesi aktif di server.");
-            if (typeof ambildatahtml === 'function') ambildatahtml();
+            ambildatahtml();
+            isTrackingActive = true;
+            isAutoCenter = true;
+            //startTracking();
+            stopTracking();
             return;
         }
 
@@ -741,7 +696,7 @@ function isGpsValid(newLat, newLng, accuracy) {
         return false;
     }
     let sessionData = localStorage.getItem('active_session');
-    if (!sessionData) return true; // Titik pertama valid kalau akurasinya lolos < 100m
+    if (!sessionData) return true;
     let session = JSON.parse(sessionData);
     let lastPoint = session.last_update;
     const dist = window.calculateDistanceperjalanan(lastPoint.lat, lastPoint.lng, newLat, newLng);
@@ -757,7 +712,7 @@ function isGpsValid(newLat, newLng, accuracy) {
     return true;
 }
 
-function updateLocationSuccess(position) {
+async function updateLocationSuccess(position) {
     const { latitude, longitude, speed, accuracy } = position.coords;
     const now = Date.now();
     if (!isGpsValid(latitude, longitude, accuracy)) {
@@ -768,37 +723,54 @@ function updateLocationSuccess(position) {
         }
         return;
     }
-
-    // 3. Update Data Internal & UI Dasar
     const speedKmH = speed ? Math.round(speed * 3.6) : 0;
+    const elLat = document.getElementById('lat');
+    const elLng = document.getElementById('lng');
+    const elSpd = document.getElementById('spdDisplay');
+    if (elLat) elLat.innerText = latitude.toFixed(6);
+    if (elLng) elLng.innerText = longitude.toFixed(6);
+    if (elSpd) elSpd.innerText = speedKmH;
     currentPos.lat = latitude;
     currentPos.lng = longitude;
-
-    document.getElementById('lat').innerText = latitude.toFixed(6);
-    document.getElementById('lng').innerText = longitude.toFixed(6);
-    document.getElementById('spdDisplay').innerText = speedKmH;
-
     const gpsEl = document.getElementById('gpsText');
     if (gpsEl) {
         gpsEl.innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
         gpsEl.style.color = "#22c55e";
     }
-
-    // 4. LOGIKA UPDATE ALAMAT (DEBOUNCE)
-    const checkLat = latitude.toFixed(3);
-    const checkLng = longitude.toFixed(3);
-    const isMovedFarEnough = (checkLat !== lastAddressLat || checkLng !== lastAddressLng);
+    if (typeof isTrackingActive !== 'undefined' && isTrackingActive === true) {
+        try {
+            const sessions = await db.travel_sessions.toArray();
+            if (sessions.length > 0) {
+                const currentSession = sessions[0];
+                let pathArray = [];
+                if (currentSession.path_hist) {
+                    const decryptedPath = decryptData(currentSession.path_hist);
+                    pathArray = JSON.parse(decryptedPath);
+                }
+                pathArray.push([latitude, longitude]);
+                await db.travel_sessions.update(currentSession.idseason, {
+                    lat: encryptData(latitude.toString()),
+                    lng: encryptData(longitude.toString()),
+                    updated_at: encryptData(new Date().toISOString()),
+                    path_hist: encryptData(JSON.stringify(pathArray))
+                });                
+                console.log("Posisi & Path berhasil disimpan ke Dexie.");
+            }
+        } catch (err) {
+            console.error("Gagal update path ke Dexie:", err);
+        }
+    }
+    const isMovedFarEnough = (latitude.toFixed(3) !== lastAddressLat || longitude.toFixed(3) !== lastAddressLng);
     const isTimePassed = (now - lastAddressRequestTime > ADDRESS_DEBOUNCE_MS);
-
     if (isMovedFarEnough && isTimePassed) {
         updateStreetName(latitude, longitude);
-        lastAddressLat = checkLat;
-        lastAddressLng = checkLng;
+        lastAddressLat = latitude.toFixed(3);
+        lastAddressLng = longitude.toFixed(3);
         lastAddressRequestTime = now;
     }
-
     updateMapDisplay(latitude, longitude);
 }
+
 
 function recenterMap() {
     isAutoCenter = true;
@@ -829,22 +801,16 @@ function updateLocationError(error) {
 async function updateStreetName(lat, lng) {
     const streetElement = document.getElementById('street-name');
     if (!streetElement || isFetchingAddress) return;
-
     const cacheKey = `addr_${lat.toFixed(3)}_${lng.toFixed(3)}`;
     const cachedAddress = localStorage.getItem(cacheKey);
-
     if (cachedAddress) {
         streetElement.innerText = cachedAddress;
         return;
     }
-
     try {
         isFetchingAddress = true;
-
-        // Pembersihan cache yang aman
         const allKeys = Object.keys(localStorage);
         const addrKeys = allKeys.filter(key => key.startsWith('addr_'));
-
         if (addrKeys.length > 300) {
             addrKeys.sort();
             for (let i = 0; i < 100; i++) {
@@ -852,7 +818,6 @@ async function updateStreetName(lat, lng) {
                 console.log("🧹 Membersihkan cache alamat lama...");
             }
         }
-
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
         const response = await fetch(url, {
             headers: {
@@ -860,18 +825,14 @@ async function updateStreetName(lat, lng) {
                 'User-Agent': 'SatpamAsetApp/1.0'
             }
         });
-
         if (!response.ok) throw new Error("Respons server gagal");
-
         const data = await response.json();
         const address = data.address;
-
         if (address) {
             const street = address.road || address.residential || address.suburb || address.village || "Area tidak teridentifikasi";
             localStorage.setItem(cacheKey, street);
             streetElement.innerText = street;
         }
-
     } catch (error) {
         console.error("Gagal ambil alamat:", error);
         streetElement.innerText = "Gagal memuat alamat...";
@@ -883,29 +844,18 @@ async function updateStreetName(lat, lng) {
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
-// #endregion
-
-/*
-=================================================================================================
-*/
-
-// #region listener / event manggil tombol klik
-
 async function handleManualLogin() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-
     if (!email || !password) {
         alert("Harap isi email dan password!");
         return;
     }
-
     updateLoading(50, "Memverifikasi Identitas...");
     const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
     });
-
     if (error) {
         alert("Gagal Masuk: " + error.message);
         updateLoading(100, "Gagal Masuk");
@@ -913,7 +863,6 @@ async function handleManualLogin() {
         if (loginoverlay) {
             loginoverlay.style.display = "none";
         }
-
     } else {
         const userData = {
             email: data.user.email,
@@ -935,11 +884,9 @@ async function handleManualLogin() {
     }
 }
 
-
 function togglePassword() {
     const passwordInput = document.getElementById("login-password");
     const theSvg = document.getElementById("eye-icon"); // ID SVG kamu
-
     if (passwordInput.type === "password") {
         passwordInput.type = "text";
         theSvg.innerHTML = `
@@ -957,21 +904,16 @@ function togglePassword() {
 }
 
 async function re_initEventListeners() {
-
     const theButton = document.getElementById("eyebuton");
-
     if (theButton) {
         theButton.addEventListener('click', async () => {
-            togglePassword(); // Jalankan fungsi ganti mata & tipe input
-
-            // Kasih efek klik ke TOMBOLNYA
+            togglePassword();
             theButton.style.transform = "translateY(-50%) scale(0.9)";
             setTimeout(() => {
                 theButton.style.transform = "translateY(-50%) scale(1)";
             }, 100);
         });
     }
-
     const btnlogin = document.getElementById('handleManualLogin');
     if (btnlogin) {
         btnlogin.addEventListener('click', async () => {
@@ -981,7 +923,6 @@ async function re_initEventListeners() {
             }
         });
     }
-
     const btnAreaAdmin = document.getElementById('btn-area-admin');
     if (btnAreaAdmin) {
         btnAreaAdmin.addEventListener('click', async () => {
@@ -993,7 +934,6 @@ async function re_initEventListeners() {
             }
         });
     }
-
     const btnrecenter = document.getElementById('btn-recenter');
     if (btnrecenter) {
         btnrecenter.addEventListener('click', async () => {
@@ -1002,7 +942,6 @@ async function re_initEventListeners() {
             setTimeout(() => btnrecenter.style.transform = "scale(1)", 100);
         });
     }
-
     const btnScanAction = document.getElementById('btnScanAction');
     if (btnScanAction) {
         btnScanAction.addEventListener('click', async () => {
@@ -1035,18 +974,7 @@ async function re_initEventListeners() {
             setTimeout(() => btnSampai.style.transform = "scale(1)", 100);
         });
     }
-
 }
-
-
-// #endregion
-
-/*
-=================================================================================================
-*/
-
-
-// #region del preparation
 
 function isDriverInZone(userLat, userLng) {
     const nearbyLocation = ALLOWED_LOCATIONS.find(loc => {
@@ -1060,7 +988,6 @@ function resetScannerUI() {
     isCameraActive = false;
     isLocked = false;
     isProcessing = false;
-
     const btnScan = document.getElementById('btnScanAction');
     if (btnScan) btnScan.disabled = false;
 }
@@ -1074,7 +1001,6 @@ async function openScanner() {
     isCameraActive = true;
     isProcessing = true;
     isScannerRunning = false;
-    //requestWakeLock().catch(err => console.error("WakeLock Error:", err));
     if (currentPos.lat === 0 || currentPos.lng === 0) {
         alert("⚠️ GPS belum siap atau koordinat belum terbaca.");
         resetScannerUI();
@@ -1098,7 +1024,6 @@ async function openScanner() {
                 loadingOverlay.style.opacity = '1';
             }
             if (progressText) progressText.innerText = "Memuat ulang OCR...";
-
             await initSatpam();
         }
         if (!worker) {
@@ -1118,7 +1043,6 @@ async function openScanner() {
                 await video.play();
                 isCameraActive = true;
                 isProcessing = false;
-
                 if (!isScannerRunning) {
                     isScannerRunning = true;
                     startValidasiProses();
@@ -1240,7 +1164,7 @@ async function uploadKeGemini(base64Data) {
         const response = await fetch(gasUrl, {
             method: "POST",
             headers: {
-                "Content-Type": "text/plain", // 🔥 FIX DISINI
+                "Content-Type": "text/plain",
             },
             body: JSON.stringify({ image: pureBase64 })
         });
@@ -1283,21 +1207,11 @@ function closeCamera() {
     resetScannerUI()
 }
 
-// #endregion
-
-/*
-=================================================================================================
-*/
-
-// #region helper fungsi tambahan untuk manajemen state, tampilan, dan sistem secara keseluruhan
-
-
 function toggleUIBerangkat(isStarting) {
     const btnScan = document.getElementById('btnScanAction');
     const btnBerangkat = document.getElementById('btnBerangkat');
     const btnSampai = document.getElementById('btnSampai');
     const ruteArea = document.getElementById('ruteSelectionArea');
-
     if (isStarting) {
         if (btnBerangkat) btnBerangkat.style.display = 'none';
         if (btnSampai) btnSampai.style.display = 'block';
@@ -1327,7 +1241,7 @@ const AES_SECRET = import.meta.env.VITE_AES_KEY;
 
 function encryptData(data) {
     if (!AES_SECRET) {
-        console.error("❌ VITE_AES_KEY nggak ketemu di .env");
+        console.error("VITE_AES_KEY nggak ketemu di .env");
         return data;
     }
     try {
@@ -1374,35 +1288,35 @@ window.calculateDistanceperjalanan = function (lat1, lon1, lat2, lon2) {
 
 function stopAllSystem() {
     console.warn("sistem dihentikan");
-    if (window.trackingInterval) {
+    if (trackingInterval) {
         clearInterval(window.trackingInterval);
-        window.trackingInterval = null;
+        trackingInterval = null;
     }
-    if (window.polliingtimeout) {
+    if (polliingtimeout) {
         clearTimeout(window.polliingtimeout);
-        window.polliingtimeout = null;
+        polliingtimeout = null;
     }
-    if (window.watchId) {
+    if (watchId) {
         navigator.geolocation.clearWatch(window.watchId);
-        window.watchId = null;
+        watchId = null;
     }
-    if (window.WebSocket) {
+    if (WebSocket) {
         try {
-            window.socket.close();
+            socket.close();
         } catch (error) {
             console.error("Error occurred while closing WebSocket:", error);
         }
     }
-    if (window.AbortController) {
+    if (AbortController) {
         try {
             window.abortController.abort();
         } catch { }
-        window.abortController = null;
+        abortController = null;
     }
-    window.isTrackingActive = false;
-    window.isCameraActive = false;
-    window.isProcessing = false;
-    window.isInitRunning = false;
+    isTrackingActive = false;
+    isCameraActive = false;
+    isProcessing = false;
+    isInitRunning = false;
     console.log("Semua sistem dihentikan, state reset ke default.");
 }
 
@@ -1459,14 +1373,6 @@ async function resetTampilan() {
     initMap();
     initGPS()
 }
-
-// #endregion
-
-/*
-=================================================================================================
-*/
-
-// #region fungsi utama untuk mengambil data rute dari spreadsheet, menampilkan pilihan rute, dan menggambar rute di peta
 
 async function fetchSpreadsheetData(tujuanGemini) {
     if (!currentPos || !currentPos.lat || !currentPos.lng) {
@@ -1671,7 +1577,6 @@ async function handleBerangkat() {
             const formatter = new Intl.DateTimeFormat('id-ID', opsi).format(targetSampai);
             document.getElementById('target-text').innerText = `${formatter.replace('.', ':')} WIB`;
         }
-
         const session = JSON.parse(localStorage.getItem('user_session'));
         if (!session) {
             alert("Sesi user tidak ditemukan, silakan login ulang.");
@@ -1695,7 +1600,6 @@ async function handleBerangkat() {
             user_id: session.uid,
             idseason: travelId
         });
-
         localStorage.setItem('current_session_id', travelId);
         const { error: supabaseError } = await supabase
             .from('path_history')
@@ -1723,6 +1627,7 @@ async function handleBerangkat() {
         }
         isTrackingActive = true;
         isAutoCenter = true;
+        startTracking();
         const btnScan = document.getElementById('btnScanAction');
         const btnBerangkat = document.getElementById('btnBerangkat');
         const btnSampai = document.getElementById('btnSampai');
@@ -1730,7 +1635,7 @@ async function handleBerangkat() {
         btnSampai.style.display = 'block';
         if (btnScan) {
             btnScan.disabled = true;
-            btnScan.style.opacity = "0.5"; // Opsional: biar kelihatan redup/mati
+            btnScan.style.opacity = "0.5";
             btnScan.style.cursor = "not-allowed";
         }
         if (document.getElementById('ruteSelectionArea')) {
@@ -1742,7 +1647,6 @@ async function handleBerangkat() {
         const targetEl = document.querySelector('.target');
         if (targetEl) targetEl.classList.remove('hidden');
         if (typeof requestWakeLock === 'function') requestWakeLock();
-        startTracking();
     } catch (err) {
         console.error("Gagal simpan sesi PouchDB:", err);
         alert("Gagal memulai perjalanan Coba Lagi.");
@@ -1757,6 +1661,7 @@ async function handleSampai() {
         await db.travel_sessions.clear();
         isTrackingActive = false;
         isAutoCenter = true;
+        stopTracking();
         if (currentPos && currentPos.lat !== 0) {
             if (typeof map !== "undefined" && map) {
                 map.flyTo([currentPos.lat, currentPos.lng], 18);
@@ -1833,10 +1738,7 @@ async function handleUpdate5menit() {
         console.error("Gagal simpan sesi PouchDB:", err);
     }
 }
-
-// Simpan ID intervalnya biar bisa dimatikan nanti
 let trackingInterval = null;
-
 function startTracking() {
     // 300000 ms = 5 menit
     trackingInterval = setInterval(() => {
