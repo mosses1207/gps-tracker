@@ -1100,3 +1100,63 @@ input[readonly]:focus {
     color: #94a3b8;
     text-align: right;
 }
+
+/* Container Utama */
+.search-container {
+    padding: 15px;
+    background: #f8fafc; /* Warna background kalem */
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center; /* Biar di laptop posisinya di tengah */
+}
+
+/* Wrapper Input */
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 600px; /* Di laptop maksimal lebarnya segini */
+    display: flex;
+    align-items: center;
+}
+
+/* Ikon di dalem input */
+.search-icon {
+    position: absolute;
+    left: 15px;
+    font-size: 1.1rem;
+    color: #94a3b8;
+}
+
+/* Inputan Utama */
+#searchInput {
+    width: 100%;
+    padding: 14px 15px 14px 45px; /* Kasih space kiri buat ikon */
+    font-size: 16px; /* 16px biar di iPhone nggak auto-zoom pas ngetik */
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    outline: none;
+    background: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+/* Efek pas diklik */
+#searchInput:focus {
+    border-color: #2563eb; /* Biru Toyota */
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+/* Penyesuaian buat HP */
+@media (max-width: 600px) {
+    .search-container {
+        padding: 10px;
+    }
+    #searchInput {
+        padding: 12px 15px 12px 40px;
+        font-size: 14px;
+    }
+}
+
+
