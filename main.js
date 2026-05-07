@@ -642,7 +642,6 @@ async function checkActiveSessiononline() {
             const localData = localSessions.length > 0 ? localSessions[0] : null;
             if (localData && localData.idseason === activeSession.idseason) {
                 console.log("Sesi sama dengan lokal, gunakan data Dexie.");
-                startTracking();
                 updateUIFromSession(localData);  // Update UI menggunakan data lokal
             } else {
                 console.warn("ID berbeda atau lokal kosong! Overwrite Dexie dengan data Server...");
