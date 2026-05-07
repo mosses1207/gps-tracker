@@ -645,58 +645,79 @@ function updateUIFromSession(session) {
 async function checkActiveSessiononline() {
     const userSession = JSON.parse(localStorage.getItem('user_session'));
     const uid = userSession ? userSession.uid : null;
+    
     if (!uid) {
         console.warn("Sesi tidak ditemukan di localstorage. User harus login ulang.");
         return;
     }
+
     try {
+        // Cek sesi aktif di Supabase berdasarkan user_id dan status 'Active'
         const { data: activeSession, error } = await supabase
             .from('path_history')
             .select('*')
             .eq('user_id', uid)
             .eq('status', 'Active')
             .maybeSingle();
+
         if (error) throw error;
+
         if (activeSession) {
             console.log("Sesi aktif ditemukan di server:", activeSession.idseason);
+
+            // Cek data perjalanan lokal di Dexie
             const localSessions = await db.travel_sessions.toArray();
             const localData = localSessions.length > 0 ? localSessions[0] : null;
 
+            // Jika ID Sesi di Supabase sama dengan ID Sesi di Dexie, lewati pembaruan
             if (localData && localData.idseason === activeSession.idseason) {
                 console.log("Sesi sama dengan lokal, gunakan data Dexie.");
                 startTracking();
-                updateUIFromSession(localData);
+                updateUIFromSession(localData);  // Update UI menggunakan data lokal
             } else {
                 console.warn("ID berbeda atau lokal kosong! Overwrite Dexie dengan data Server...");
+                
+                // Hapus data perjalanan lokal di Dexie
                 await db.travel_sessions.clear();
+
+                // Simpan data sesi aktif dari Supabase ke Dexie
                 await db.travel_sessions.put({
-                    ...activeSession,
-                    path_hist: null
+                    sjkb: activeSession.sjkb,
+                    dest: activeSession.dest,
+                    lat_start: activeSession.lat_start,
+                    lng_start: activeSession.lng_start,
+                    lat: activeSession.lat,
+                    lng: activeSession.lng,
+                    depart_at: activeSession.depart_at,
+                    arrive_target: activeSession.arrive_target,
+                    updated_at: activeSession.updated_at,
+                    route_master: activeSession.route_master,
+                    path_hist: null, // kosongkan path_hist
+                    status: "Active",
+                    user_id: activeSession.user_id,
+                    idseason: activeSession.idseason
                 });
+
+                // Update UI menggunakan data sesi yang baru saja disinkronkan
                 startTracking();
                 updateUIFromSession(activeSession);
             }
+
             isTrackingActive = true;
             if (typeof requestWakeLock === 'function') requestWakeLock();
+
             return activeSession.idseason;
-            retryCount = 0;
         } else {
             console.log("Tidak ada sesi aktif di server.");
-            if (typeof resetTampilan === 'function') resetTampilan();
-            retryCount = 0;
+            if (typeof ambildatahtml === 'function') ambildatahtml();
+            return;
         }
+
     } catch (error) {
-        console.error("Gagal memuat sesi aktif, percobaan ke-", retryCount + 1, ":", error);
-        if (retryCount < 3) {
-            retryCount++;
-            console.error("Mencoba lagi untuk memuat sesi aktif... (Percobaan ke-" + retryCount + ")");
-            setTimeout(checkActiveSessiononline, 2000);
-        } else {
-            alert("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
-            showOfflineScreen("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
-            retryCount = 0;
-            stopAllSystem();
-        }
+        console.error("Gagal memuat sesi aktif:", error);
+        alert("Gagal memuat sesi aktif. Silakan muat ulang halaman.");
+        showOfflineScreen("Gagal memuat sesi aktif.");
+        stopAllSystem();
     }
 }
 
