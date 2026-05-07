@@ -49,7 +49,7 @@
     </div>
   </header>
 
-  <button class="btn-monitor-nav">Dashboard</button>
+  <button id="btn-dashboard" class="btn-monitor-nav">Dashboard</button>
 
   <div id="login-overlay">
     <div class="login-card">
@@ -58,9 +58,10 @@
       </div>
       <h2 id="title-login">Akses Sistem</h2>
 
-      <!-- Bagian Google Login -->
+
+      <!-- Bagian Login -->
       <div id="area-google" class="fade-in">
-        <!-- Icon Kunci/Shield Kecil sebagai pemanis -->
+        <!-- Icon Shield -->
         <div
           style="background: #f8fafc; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -70,8 +71,35 @@
         </div>
 
         <p style="font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Selamat Datang Kembali</p>
-        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">Silakan verifikasi identitas Anda untuk
-          melanjutkan ke sistem.</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">Silakan masuk untuk melanjutkan ke sistem.</p>
+
+        <!-- FORM LOGIN MANUAL -->
+        <div style="text-align: left; margin-bottom: 20px;">
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #64748b; margin-bottom: 4px; display: block;">Email</label>
+            <input type="email" id="login-email" placeholder="nama@email.com"
+              style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; transition: 0.3s;"
+              onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label style="font-size: 12px; color: #64748b; margin-bottom: 4px; display: block;">Password</label>
+            <input type="password" id="login-password" placeholder="••••••••"
+              style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; transition: 0.3s;"
+              onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+          </div>
+          <button onclick="handleManualLogin()"
+            style="width: 100%; padding: 12px; background: #1e293b; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s;"
+            onmouseover="this.style.background='#0f172a'" onmouseout="this.style.background='#1e293b'">
+            Masuk ke Sistem
+          </button>
+        </div>
+
+        <!-- Pembatas (OR) -->
+        <div style="display: flex; align-items: center; margin-bottom: 20px; opacity: 0.5;">
+          <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+          <span style="font-size: 11px; color: #94a3b8; padding: 0 10px;">ATAU</span>
+          <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+        </div>
 
         <!-- Container Tombol Google -->
         <div id="google-login-btn" class="google-btn-container"></div>
@@ -84,9 +112,11 @@
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          <span style="font-size: 11px; color: #64748b; letter-spacing: 0.5px;">SECURED BY GOOGLE AUTH</span>
+          <span style="font-size: 11px; color: #64748b; letter-spacing: 0.5px;">SECURED BY GOOGLE AUTH & SUPABASE</span>
         </div>
       </div>
+
+
 
       <!-- Bagian Admin Login -->
       <div id="area-admin" style="display: none;">
@@ -248,19 +278,35 @@
   </div>
 
   <!-- 🔷 EMERGENCY SCREEN -->
-  <div id="emergency-screen" class="emergency-overlay" style="display: none;">
-    <div class="emergency-box">
-      <div class="emergency-icon">⚠️</div>
-      <h2>Sistem Terhenti</h2>
-      <p id="emergency-message">Terjadi kendala teknis pada aplikasi.</p>
+<div id="offline-screen" class="offline-overlay" style="display: none;">
+  <div class="offline-box">
+    
+    <div class="offline-icon">📡</div>
 
-      <button class="btn-refresh" onclick="location.reload()">
-        Segarkan Aplikasi
-      </button>
+    <h2>Koneksi Terputus</h2>
 
-      <span class="emergency-footer">Tekan tombol untuk memuat ulang sistem</span>
+    <p id="offline-message">
+      Aplikasi sedang berjalan dalam mode offline.<br>
+      Data akan disinkronkan saat koneksi kembali.
+    </p>
+
+    <div class="signal-loader">
+      <span></span>
+      <span></span>
+      <span></span>
     </div>
+
+
+
+    <span class="offline-footer">
+      Menunggu koneksi...<br><br>
+      <button onclick="window.location.reload()" class="reload-btn">
+      Muat Ulang Halaman
+    </button>
+    </span>
+
   </div>
+</div>
   <!-- 🔷 END EMERGENCY SCREEN -->
 
 </body>
