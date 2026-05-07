@@ -102,14 +102,27 @@ let initialBody = "";
 // #region session & auth gate
 
 window.addEventListener('DOMContentLoaded', async() => {
-    initialBody = document.body.innerHTML;
+    console.log("Ambil inital body");
+    await ambildatahtml();
+    console.log("Merubah flag tracking menjadi off");
     await stopTracking();
+    console.log("merubah flag istracking");
     isTrackingActive = false;
+    console.log("check session gate");
     await checkSessionGate();
+    console.log("reinit event listener");
     await re_initEventListeners();
+    console.log("hideofline screen");
     await hideOfflineScreen();
+    console.log("check status online");
     await updateOnlineStatus();
 });
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+async function ambildatahtml() {
+    initialBody = document.body.innerHTML;
+    await sleep(500); // Delay 0,5 detik
+}
 
 async function checkSessionGate() {
     updateLoading(10, "Memeriksa Koneksi...");
@@ -270,10 +283,14 @@ async function handleCredentialResponse(response) {
         provider: 'google',
         token: response.credential,
     });
-
     if (error) {
         alert("Gagal Login Google: " + error.message);
         updateLoading(100, "Gagal Masuk");
+        const loginoverlay = document.getElementById('login-overlay');
+        if (loginoverlay) {
+            loginoverlay.style.display = "none";
+        }
+        location.reload();
     } else {
         // Simpan data agar checkSessionGate mengenali sesi setelah reload
         const userData = {
@@ -299,9 +316,17 @@ function handleSDKLoadFailure() {
     if (retry < 2) { // Coba reload 2 kali saja agar tidak looping terus
         retry++;
         localStorage.setItem('google_sdk_retry', retry);
+        const loginoverlay = document.getElementById('login-overlay');
+        if (loginoverlay) {
+            loginoverlay.style.display = "none";
+        }
         location.reload();
     } else {
         localStorage.removeItem('google_sdk_retry');
+        const loginoverlay = document.getElementById('login-overlay');
+        if (loginoverlay) {
+            loginoverlay.style.display = "none";
+        }
         showOfflineScreen("SDK Google tidak dapat dimuat. Pastikan koneksi stabil.");
         console.error("Gagal memuat Google SDK setelah beberapa percobaan.");
         stopAllSystem();
@@ -815,6 +840,11 @@ async function handleManualLogin() {
     if (error) {
         alert("Gagal Masuk: " + error.message);
         updateLoading(100, "Gagal Masuk");
+        const loginoverlay = document.getElementById('login-overlay');
+        if (loginoverlay) {
+            loginoverlay.style.display = "none";
+        }
+        
     } else {
         const userData = {
             email: data.user.email,
