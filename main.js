@@ -97,12 +97,17 @@ window.addEventListener('DOMContentLoaded', async () => {
     await hideOfflineScreen();
     console.log("check status online");
     await updateOnlineStatus();
-    const savedUid = localStorage.getItem('user_id_login');
-    if (savedUid) {
-        await startTunnelListener(savedUid);
+    const sessionRaw = localStorage.getItem('user_session');
+    if (sessionRaw) {
+        const sessionData = JSON.parse(sessionRaw);
+        const uid = sessionData.uid; 
+        if (uid) {
+            console.log("UID ditemukan:", uid);
+            await startTunnelListener(uid);
+        }
     } else {
-        console.warn("User belum login, terowongan tidak dibuka.");
-    }  
+        console.warn("User belum login (user_session kosong)");
+    }
 });
 
 function hideAllOverlays() {
