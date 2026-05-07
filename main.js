@@ -84,6 +84,8 @@ let initialBody = "";
 window.addEventListener('DOMContentLoaded', async () => {
     console.log("Ambil inital body");
     await ambildatahtml();
+    console.log("hide overlay");
+    await hideAllOverlays();
     console.log("Merubah flag tracking menjadi off");
     await stopTracking();
     console.log("merubah flag istracking");
@@ -99,6 +101,14 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+function hideAllOverlays() {
+    const overlays = ['loading-satpam', 'login-overlay', 'loading-overlay'];
+    overlays.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+}
 
 async function ambildatahtml() {
     function resetAppToDefault() {
