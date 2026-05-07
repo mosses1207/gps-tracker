@@ -283,7 +283,10 @@ async function handleCredentialResponse(response) {
             lastLogin: new Date().toISOString()
         };
         localStorage.setItem('user_session', JSON.stringify(userData));
-
+        const loginoverlay = document.getElementById('login-overlay');
+        if (loginoverlay) {
+            loginoverlay.style.display = "none";
+        }
         updateLoading(100, "Login Berhasil!");
         location.reload();
     }
@@ -293,7 +296,6 @@ async function handleCredentialResponse(response) {
 function handleSDKLoadFailure() {
     console.warn("Google SDK tidak ditemukan.");
     let retry = Number(localStorage.getItem('google_sdk_retry')) || 0;
-
     if (retry < 2) { // Coba reload 2 kali saja agar tidak looping terus
         retry++;
         localStorage.setItem('google_sdk_retry', retry);
@@ -821,7 +823,9 @@ async function handleManualLogin() {
             lastLogin: new Date().toISOString()
         };
         localStorage.setItem('user_session', JSON.stringify(userData));
-
+        if (loginoverlay) {
+        loginoverlay.style.display = "none";
+        }
         updateLoading(100, "Login Berhasil!");
         setTimeout(() => { location.reload(); }, 800);
     }
