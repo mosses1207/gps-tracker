@@ -115,7 +115,7 @@ async function checkSessionGate() {
     updateLoading(10, "Memeriksa Koneksi...");
     const localData = JSON.parse(localStorage.getItem('user_session'));
     const isOnline = navigator.onLine;
-    const SATU_BULAN = 30 * 24 * 60 * 60 * 1000;  
+    const SATU_BULAN = 30 * 24 * 60 * 60 * 1000;
     const hasSession = localData && localData.lastLogin;
     const isSessionValid = hasSession && (new Date() - new Date(localData.lastLogin) < SATU_BULAN);
     if (isOnline) {
@@ -123,24 +123,24 @@ async function checkSessionGate() {
         if (!isSessionValid) {
             await initSystem();
             console.log("Sesi expired/kosong. Meminta login ulang (Online)...");
-            return; 
+            return;
         }
         console.log("Sesi valid. Memuat sistem online...");
-        await initSatpam(); 
+        await initSatpam();
         await resetTampilan();
         await checkActiveSessiononline();
     } else {
         // --- JALUR OFFLINE ---
         if (isSessionValid) {
             console.log("Sesi valid. Memuat sistem offline...");
-            await initSatpam(); 
-            await resetTampilan(); 
-            await checkActiveSessionoffline(); 
+            await initSatpam();
+            await resetTampilan();
+            await checkActiveSessionoffline();
         } else {
             // Offline dan tidak punya sesi yang valid
             console.warn("Offline dan tidak ada sesi valid. Sistem dihentikan.");
-            const pesan = !hasSession 
-                ? "Tidak ada data login. Butuh internet untuk login pertama kali." 
+            const pesan = !hasSession
+                ? "Tidak ada data login. Butuh internet untuk login pertama kali."
                 : "Sesi berakhir. Anda perlu koneksi internet untuk login ulang.";
             showOfflineScreen(pesan);
             await stopAllSystem();
@@ -149,7 +149,7 @@ async function checkSessionGate() {
 }
 
 async function initSystem() {
-    try { 
+    try {
         updateLoading(20, "Mengecek Hak Akses...");
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log("Hasil getSession:", { session, error });
@@ -202,8 +202,8 @@ function handleUnauthenticated() {
             showOfflineScreen("<b>Gagal Memuat Sistem Login</b><br>Layanan otentikasi ditolak (Error 403) atau koneksi terganggu.");
             console.log("Emergency Timer Triggered: Google Login button failed to load within expected time.");
             stopAllSystem();
-        }   
-    }, 6000); 
+        }
+    }, 6000);
     if (typeof google !== 'undefined' && google.accounts) {
         console.log("Google SDK terdeteksi, menampilkan tombol login...");
         renderGoogleButton();
@@ -226,18 +226,18 @@ function renderGoogleButton() {
     const loginoverlay = document.getElementById('login-overlay');
     const googleBtnDiv = document.getElementById("google-login-btn");
     const googlearea = document.getElementById("area-google");
-        if (loginoverlay) {
-            console.log("Menampilkan overlay login...");
-            loginoverlay.style.display = "flex";
-        } else {
-            console.warn("Elemen login-overlay tidak ditemukan. Pastikan elemen dengan id 'login-overlay' ada di HTML.");
-        }
-        if (googlearea) {
-            console.log("Menampilkan area Google Sign-In...");
-            document.getElementById("area-google").style.display = "block";
-        } else {
-            console.warn("Elemen area-google tidak ditemukan. Pastikan elemen dengan id 'area-google' ada di HTML.");
-        }
+    if (loginoverlay) {
+        console.log("Menampilkan overlay login...");
+        loginoverlay.style.display = "flex";
+    } else {
+        console.warn("Elemen login-overlay tidak ditemukan. Pastikan elemen dengan id 'login-overlay' ada di HTML.");
+    }
+    if (googlearea) {
+        console.log("Menampilkan area Google Sign-In...");
+        document.getElementById("area-google").style.display = "block";
+    } else {
+        console.warn("Elemen area-google tidak ditemukan. Pastikan elemen dengan id 'area-google' ada di HTML.");
+    }
     if (googleBtnDiv) {
         console.log("Merender tombol Google Sign-In...");
         const parentWidth = googleBtnDiv.offsetWidth || 350;
@@ -285,40 +285,7 @@ async function handleCredentialResponse(response) {
         localStorage.setItem('user_session', JSON.stringify(userData));
 
         updateLoading(100, "Login Berhasil!");
-        location.reload(); 
-    }
-}
-
-// 4. Handler Login via Email & Password Manual
-async function handleManualLogin() {
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-
-    if (!email || !password) {
-        alert("Harap isi email dan password!");
-        return;
-    }
-
-    updateLoading(50, "Memverifikasi Identitas...");
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
-
-    if (error) {
-        alert("Gagal Masuk: " + error.message);
-        updateLoading(100, "Gagal Masuk");
-    } else {
-        const userData = {
-            email: data.user.email,
-            uid: data.user.id,
-            name: data.user.user_metadata.full_name || email.split('@')[0],
-            lastLogin: new Date().toISOString()
-        };       
-        localStorage.setItem('user_session', JSON.stringify(userData));
-
-        updateLoading(100, "Login Berhasil!");
-        setTimeout(() => { location.reload(); }, 800);
+        location.reload();
     }
 }
 
@@ -326,7 +293,7 @@ async function handleManualLogin() {
 function handleSDKLoadFailure() {
     console.warn("Google SDK tidak ditemukan.");
     let retry = Number(localStorage.getItem('google_sdk_retry')) || 0;
-    
+
     if (retry < 2) { // Coba reload 2 kali saja agar tidak looping terus
         retry++;
         localStorage.setItem('google_sdk_retry', retry);
@@ -604,9 +571,9 @@ async function checkActiveSessiononline() {
     const userSession = JSON.parse(localStorage.getItem('user_session'));
     const uid = userSession ? userSession.uid : null;
     if (!uid) {
-            console.warn("Sesi tidak ditemukan di localstorage. User harus login ulang.");
-            return; 
-        }
+        console.warn("Sesi tidak ditemukan di localstorage. User harus login ulang.");
+        return;
+    }
     try {
         const { data: activeSession, error } = await supabase
             .from('path_history')
@@ -828,8 +795,80 @@ window.addEventListener('offline', updateOnlineStatus);
 
 // #region listener / event manggil tombol klik
 
+async function handleManualLogin() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    if (!email || !password) {
+        alert("Harap isi email dan password!");
+        return;
+    }
+
+    updateLoading(50, "Memverifikasi Identitas...");
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+
+    if (error) {
+        alert("Gagal Masuk: " + error.message);
+        updateLoading(100, "Gagal Masuk");
+    } else {
+        const userData = {
+            email: data.user.email,
+            uid: data.user.id,
+            name: data.user.user_metadata.full_name || email.split('@')[0],
+            lastLogin: new Date().toISOString()
+        };
+        localStorage.setItem('user_session', JSON.stringify(userData));
+
+        updateLoading(100, "Login Berhasil!");
+        setTimeout(() => { location.reload(); }, 800);
+    }
+}
+
+
+function togglePassword() {
+    const passwordInput = document.getElementById("login-password");
+    const eyeIcon = document.getElementById("eye-icon");
+    if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+        eyeIcon.innerHTML = `
+            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20
+            C5 20 1 12 1 12a21.8 21.8 0 0 1 5.06-5.94"/>
+            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4
+            c7 0 11 8 11 8a21.8 21.8 0 0 1-4.06 5.94"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+        `;
+    } else {
+        passwordInput.type = "password";
+        eyeIcon.innerHTML = `
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+            <circle cx="12" cy="12" r="3"/>
+        `;
+    }
+}
 
 async function re_initEventListeners() {
+
+    const eyeIcon = document.getElementById("eyebutton");
+    if (eyeIcon) {
+        eyeIcon.addEventListener('click', async () => {
+            togglePassword();
+            eyeBtn.style.transform = "translateY(-50%) scale(0.9)";
+            setTimeout(() => {
+                eyeBtn.style.transform = "translateY(-50%) scale(1)";
+            }, 100);
+        });
+    }
+
+    const btnlogin = document.getElementById('handleManualLogin');
+    if (btnlogin) {
+        const passInput = confirm("apakah pasword dan email sudah diisi? klik cancel untuk batal.");
+        btnlogin.addEventListener('click', async () => {
+            await handleManualLogin();
+        });
+    }
 
     const btnAreaAdmin = document.getElementById('btn-area-admin');
     if (btnAreaAdmin) {
@@ -1466,10 +1505,6 @@ function decodePolyline(encoded) {
     }
     return points;
 }
-
-// #endregion
-
-// #region path history
 
 db.version(1).stores({
     travel_sessions: 'idseason, status, waktu_berangkat'
