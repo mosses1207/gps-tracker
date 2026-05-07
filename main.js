@@ -224,6 +224,13 @@ function renderGoogleButton() {
     });
 
     const googleBtnDiv = document.getElementById("google-login-btn");
+    const googlearea = document.getElementById("area-google");
+        if (googlearea) {
+            console.log("Menampilkan area Google Sign-In...");
+            document.getElementById("area-google").style.display = "block";
+        } else {
+            console.warn("Elemen area-google tidak ditemukan. Pastikan elemen dengan id 'area-google' ada di HTML.");
+        }
     if (googleBtnDiv) {
         console.log("Merender tombol Google Sign-In...");
         const parentWidth = googleBtnDiv.offsetWidth || 350;
@@ -243,6 +250,8 @@ function renderGoogleButton() {
                 if (e.key === 'Enter') handleManualLogin();
             });
         }
+    } else {
+        console.warn("Elemen google-login-btn tidak ditemukan. Pastikan elemen dengan id 'google-login-btn' ada di HTML.");
     }
     updateLoading(100, "Silakan Login");
 }
