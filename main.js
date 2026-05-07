@@ -863,13 +863,13 @@ window.addEventListener('online', async () => {
     if (savedUid) {
         console.log("Sinyal kembali, menghubungkan ulang...");
         await startTunnelListener(savedUid);
-        await updateOnlineStatus();
+        updateOnlineStatus();
     }
 });
 
 window.addEventListener('offline', () => {
     showPushNotif("Sinyal Terputus. Menunggu koneksi...");
-    await updateOnlineStatus();
+    updateOnlineStatus();
 });
 
 async function handleManualLogin() {
@@ -1968,3 +1968,40 @@ function showPushNotif(msg) {
     }, 3000);
 }
 
+function renderToUI(items) {
+    const container = document.getElementById('logContainer');
+    if (!container) return;
+
+    if (items.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">Belum ada riwayat perjalanan.</div>';
+        return;
+    }
+
+    container.innerHTML = items.map(item => {
+        // Dekripsi data pas mau ditampilin
+        const noSJKB = decryptData(item.sjkb) || '-';
+        const tujuan = decryptData(item.dest) || '-';
+        const berangkat = item.depart_at ? new Date(decryptData(item.depart_at)).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '-';
+        const sampaiTarget = item.arrive_target ? new Date(decryptData(item.arrive_target)).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '-';
+
+        return `
+            <div class="log-card">
+                <div class="header">
+                    <span>📄 ${noSJKB}</span>
+                    <span style="color:#2563eb;">Active</span>
+                </div>
+                <div class="detail">
+                    <span>📍 Tujuan:</span>
+                    <span style="font-weight:500; color:#334155;">${tujuan}</span>
+                </div>
+                <div class="detail">
+                    <span>⏱️ Estimasi:</span>
+                    <span>${berangkat} - ${sampaiTarget} WIB</span>
+                </div>
+                <div class="status-time">
+                    Diupdate: ${new Date(item.created_at).toLocaleTimeString('id-ID')}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
