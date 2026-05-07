@@ -101,7 +101,7 @@ let initialBody = "";
 
 // #region session & auth gate
 
-window.addEventListener('DOMContentLoaded', async() => {
+window.addEventListener('DOMContentLoaded', async () => {
     console.log("Ambil inital body");
     await ambildatahtml();
     console.log("Merubah flag tracking menjadi off");
@@ -119,9 +119,45 @@ window.addEventListener('DOMContentLoaded', async() => {
 });
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function ambildatahtml() {
-    initialBody = document.body.innerHTML;
-    await sleep(500); // Delay 0,5 detik
+    function resetAppToDefault() {
+        console.log("Cleaning up system...");
+        const inputs = ['no_sjkb', 'tujuan_dealer', 'lt_input'];
+        inputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+        });
+        const toHide = [
+            'camera-container',
+            'area-admin',
+            'login-overlay',
+            'area-google',
+            'ruteSelectionArea',
+            'btnSampai'
+        ];
+        toHide.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+
+        const btnBerangkat = document.getElementById('btnBerangkat');
+        if (btnBerangkat) btnBerangkat.style.display = 'block';
+
+        const btnScan = document.getElementById('btnScanAction');
+        if (btnScan) {
+            btnScan.style.opacity = "1";
+            btnScan.style.backgroundColor = "#2563eb"; // Warna biru primer (sesuain punya kamu)
+            btnScan.style.cursor = "pointer";
+            btnScan.disabled = false;
+            btnScan.style.transform = "scale(1)";
+        }
+        if (currentPolyline) {
+            map.removeLayer(currentPolyline);
+            currentPolyline = null;
+        }
+        console.log("System Clean! Siap rute baru.");
+    }
 }
 
 async function checkSessionGate() {
@@ -291,7 +327,7 @@ async function handleCredentialResponse(response) {
             loginoverlay.style.display = "none";
         }
         const areagoogle = document.getElementById('area-google');
-        if  (areagoogle){
+        if (areagoogle) {
             areagoogle.style.display = "none";
         }
         location.reload();
@@ -309,7 +345,7 @@ async function handleCredentialResponse(response) {
             loginoverlay.style.display = "none";
         }
         const areagoogle = document.getElementById('area-google');
-        if  (areagoogle){
+        if (areagoogle) {
             areagoogle.style.display = "none";
         }
         updateLoading(100, "Login Berhasil!");
@@ -329,7 +365,7 @@ function handleSDKLoadFailure() {
             loginoverlay.style.display = "none";
         }
         const areagoogle = document.getElementById('area-google');
-        if  (areagoogle){
+        if (areagoogle) {
             areagoogle.style.display = "none";
         }
         location.reload();
@@ -870,7 +906,7 @@ async function handleManualLogin() {
             loginoverlay.style.display = "none";
         }
         const areagoogle = document.getElementById('area-google');
-        if  (areagoogle){
+        if (areagoogle) {
             areagoogle.style.display = "none";
         }
         updateLoading(100, "Login Berhasil!");
@@ -882,7 +918,7 @@ async function handleManualLogin() {
 function togglePassword() {
     const passwordInput = document.getElementById("login-password");
     const theSvg = document.getElementById("eye-icon"); // ID SVG kamu
-    
+
     if (passwordInput.type === "password") {
         passwordInput.type = "text";
         theSvg.innerHTML = `
@@ -901,19 +937,19 @@ function togglePassword() {
 
 async function re_initEventListeners() {
 
-    const theButton = document.getElementById("eyebuton"); 
+    const theButton = document.getElementById("eyebuton");
 
-if (theButton) {
-    theButton.addEventListener('click', async () => {
-        togglePassword(); // Jalankan fungsi ganti mata & tipe input
-        
-        // Kasih efek klik ke TOMBOLNYA
-        theButton.style.transform = "translateY(-50%) scale(0.9)";
-        setTimeout(() => {
-            theButton.style.transform = "translateY(-50%) scale(1)";
-        }, 100);
-    });
-}
+    if (theButton) {
+        theButton.addEventListener('click', async () => {
+            togglePassword(); // Jalankan fungsi ganti mata & tipe input
+
+            // Kasih efek klik ke TOMBOLNYA
+            theButton.style.transform = "translateY(-50%) scale(0.9)";
+            setTimeout(() => {
+                theButton.style.transform = "translateY(-50%) scale(1)";
+            }, 100);
+        });
+    }
 
     const btnlogin = document.getElementById('handleManualLogin');
     if (btnlogin) {
@@ -1397,7 +1433,7 @@ async function resetTampilan() {
             console.warn("Gagal menghapus instance peta:", e);
         }
     }
-    document.body.innerHTML = initialBody;
+    ambildatahtml();
     re_initEventListeners();
     initMap();
     initGPS()
@@ -1468,7 +1504,7 @@ function updateRuteUI(data) {
     if (!container || !area) {
         return;
     }
-    container.innerHTML = '';
+    ambildatahtml();
     const targetData = data || deliveryData;
     if (!targetData) {
         return;
@@ -1718,8 +1754,8 @@ async function handleSampai() {
         if (btnSampai) btnSampai.style.display = 'none';
         if (document.getElementById('ruteSelectionArea')) {
             document.getElementById('ruteSelectionArea').style.display = 'block';
-            document.getElementById('ruteSelectionArea').innerHTML = "";
         }
+        ambildatahtml();
         if (currentPolyline && map) {
             map.removeLayer(currentPolyline);
         }
