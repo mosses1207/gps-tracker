@@ -101,14 +101,14 @@ let initialBody = "";
 
 // #region session & auth gate
 
-window.addEventListener('DOMContentLoaded', () => {
-    hideOfflineScreen();
-    stopTracking();
-    isTrackingActive = false;
+window.addEventListener('DOMContentLoaded', async() => {
     initialBody = document.body.innerHTML;
-    re_initEventListeners();
-    checkSessionGate();
-    updateOnlineStatus();
+    await stopTracking();
+    isTrackingActive = false;
+    await checkSessionGate();
+    await re_initEventListeners();
+    await hideOfflineScreen();
+    await updateOnlineStatus();
 });
 
 async function checkSessionGate() {
