@@ -82,6 +82,7 @@ let finishMarker = null;
 let initialBody = "";
 
 window.addEventListener('DOMContentLoaded', async () => {
+    await hideAllOverlays;
     console.log("Ambil inital body");
     await ambildatahtml();
     console.log("Merubah flag tracking menjadi off");
@@ -97,6 +98,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.log("check status online");
     await updateOnlineStatus();
 });
+
+function hideAllOverlays() {
+    const overlays = ['loading-satpam', 'login-overlay', 'loading-overlay'];
+    overlays.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+}
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
