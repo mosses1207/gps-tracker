@@ -1,6 +1,12 @@
+
+/*
+=================================================================================================
+*/
+
+// #region service worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=9')
+        navigator.serviceWorker.register('/sw.js?v=10')
             .then(reg => {
                 console.log("SW Terdaftar!");
                 reg.onupdatefound = () => {
@@ -18,7 +24,11 @@ if ('serviceWorker' in navigator) {
 
 // #endregion
 
-// #region import modulu
+/*
+=================================================================================================
+*/
+
+// #region import dan inisialisasi variabel global
 import './style.css'
 import { createClient } from '@supabase/supabase-js'
 import L from 'leaflet'
@@ -31,8 +41,6 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 const db = new Dexie('logistic_db');
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-const loaderSatpam = document.getElementById('loading-satpam');
-const loadProgress = document.getElementById('load-progress');
 const MAX_RADIUS_KM = 1;
 let isFirstLocation = true;
 let watchId = null;
@@ -40,6 +48,8 @@ let isTrackingActive = false;
 let lastAddressLat = 0;
 let lastAddressLng = 0;
 let currentPos = { lat: 0, lng: 0 };
+const loaderSatpam = document.getElementById('loading-satpam');
+const loadProgress = document.getElementById('load-progress');
 const geoOptions = {
     enableHighAccuracy: true,
     maximumAge: 0,
@@ -82,217 +92,281 @@ const endIcon = L.icon({
     iconAnchor: [16, 32]
 });
 let finishMarker = null;
-
-
+let initialBody = "";
 // #endregion
 
-// #region main
-document.addEventListener('DOMContentLoaded', () => {
+/*
+=================================================================================================
+*/
+
+// #region session & auth gate
+
+window.addEventListener('DOMContentLoaded', () => {
+    hideOfflineScreen();
+    stopTracking();
+    isTrackingActive = false;
+    initialBody = document.body.innerHTML;
+    re_initEventListeners();
     checkSessionGate();
     updateOnlineStatus();
 });
 
 async function checkSessionGate() {
+    updateLoading(10, "Memeriksa Koneksi...");
     const localData = JSON.parse(localStorage.getItem('user_session'));
     const isOnline = navigator.onLine;
-
+    const SATU_BULAN = 30 * 24 * 60 * 60 * 1000;  
+    const hasSession = localData && localData.lastLogin;
+    const isSessionValid = hasSession && (new Date() - new Date(localData.lastLogin) < SATU_BULAN);
     if (isOnline) {
-        if (localData && localData.lastLogin) {
-            const lastLogin = new Date(localData.lastLogin);
-            const now = new Date();
-            const satuBulan = 30 * 24 * 60 * 60 * 1000; // Milidetik dalam 30 hari
-
-            if (now - lastLogin > satuBulan) {
-                console.log("Session expired (1 month), re-validating...");
-                initSystem();
-            } else {
-                console.log("Session valid & online. Skipping Supabase check.");
-                console.table(localData);
-                skipToApp(localData);
-                initSatpam();
-                initMap();
-                initGPS();
-                checkActiveSession();
-            }
-        } else {
-            initSystem();
+        // --- JALUR ONLINE ---
+        if (!isSessionValid) {
+            console.log("Sesi expired/kosong. Meminta login ulang (Online)...");
+            await initSystem();
+            return; 
         }
+        console.log("Sesi valid. Memuat sistem online...");
+        await initSatpam(); 
+        await resetTampilan();
+        await checkActiveSessiononline();
     } else {
-        if (localData && localData.lastLogin) {
-            const lastLogin = new Date(localData.lastLogin);
-            const now = new Date();
-            const satuBulan = 30 * 24 * 60 * 60 * 1000;
-
-            if (now - lastLogin > satuBulan) {
-                updateLoading(100, "Koneksi Offline & Sesi Berakhir. Butuh internet untuk login ulang.");
-                console.error("Offline & Expired.");
-            } else {
-                console.log("Offline mode, using cached session.");
-                console.table(localData);
-                skipToApp(localData);
-                initSatpam();
-                checkActiveSession();
-            }
+        // --- JALUR OFFLINE ---
+        if (isSessionValid) {
+            console.log("Sesi valid. Memuat sistem offline...");
+            await initSatpam(); 
+            await resetTampilan(); 
+            await checkActiveSessionoffline(); 
         } else {
-            updateLoading(100, "Tidak ada koneksi internet.");
+            // Offline dan tidak punya sesi yang valid
+            console.warn("Offline dan tidak ada sesi valid. Sistem dihentikan.");
+            const pesan = !hasSession 
+                ? "Tidak ada data login. Butuh internet untuk login pertama kali." 
+                : "Sesi berakhir. Anda perlu koneksi internet untuk login ulang.";
+            showOfflineScreen(pesan);
+            await stopAllSystem();
         }
     }
 }
 
 async function initSystem() {
-    updateLoading(30, "Mengecek Hak Akses...");
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        const user = session.user;
-        console.log("User Aktif:", user.email);
-        const userPhoto = user.user_metadata.avatar_url || user.user_metadata.picture || "";
-        const userData = {
-            email: user.email,
-            uid: user.id,
-            name: user.user_metadata.full_name || "User",
-            photo: userPhoto,
-            lastLogin: new Date().toISOString()
-        };
-        localStorage.setItem('user_session', JSON.stringify(userData));
-        console.table(userData);
-        const imgProfile = document.getElementById('user-profile-img');
-        if (imgProfile && userPhoto) {
-            imgProfile.src = userPhoto;
-            imgProfile.style.display = 'block';
-        }
-        document.getElementById('login-overlay').style.display = 'none';
-        updateLoading(100, "Sistem Aktif");
-        initMap();
-        initGPS();
-        initSatpam();
-        checkActiveSession();
-    } else {
-        localStorage.removeItem('user_session');
-        updateLoading(60, "Menyiapkan Gerbang Login...");
-        document.getElementById('login-overlay').style.display = 'flex';
-        if (typeof google !== 'undefined' && google.accounts) {
-            renderGoogleButton();
+    try {
+        updateLoading(20, "Mengecek Hak Akses...");
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        if (session) {
+            localStorage.removeItem('google_sdk_retry');
+            const user = session.user;
+            const metadata = user.user_metadata;
+            
+            // Simpan data user terbaru dari session Supabase
+            const userData = {
+                email: user.email,
+                uid: user.id,
+                name: metadata.full_name || user.email.split('@')[0],
+                photo: metadata.avatar_url || metadata.picture || "",
+                lastLogin: new Date().toISOString()
+            };
+            
+            localStorage.setItem('user_session', JSON.stringify(userData));
+            
+            // Jika masuk sini, berarti session oke, bisa lanjut ke sistem utama
+            updateLoading(100, "Berhasil masuk");
+            
         } else {
-            console.warn("Google SDK belum siap, mencoba memuat ulang...");
-            setTimeout(() => {
-                if (typeof google !== 'undefined' && google.accounts) {
-                    renderGoogleButton();
-                } else {
-                    console.error("SDK Google gagal dimuat.");
-                    updateLoading(100, "Gagal memuat Google SDK");
-                }
-            }, 1500);
+            // Jika tidak ada session, arahkan ke form login (Google/Manual)
+            handleUnauthenticated();
+        }
+    } catch (error) {
+        console.error("Gagal percobaan:", error);
+        if (retryCount < 3) {
+            retryCount++;
+            // Gunakan console.log jika fungsi logger belum stabil
+            console.log("Mencoba lagi (Percobaan ke-" + retryCount + ")");
+            setTimeout(initSystem, 2000);
+        } else {
+            showOfflineScreen("Gagal memuat sistem. Periksa koneksi internet Anda.");
+            retryCount = 0;
+            stopAllSystem();
         }
     }
 }
 
-function updateLoading(percent, text) {
-    if (loadProgress) loadProgress.innerText = `${text} (${percent}%)`;
-    if (percent >= 100) {
-        setTimeout(() => {
-            if (loaderSatpam) loaderSatpam.style.display = 'none';
-        }, 800);
-    }
-}
+/**
+ * SECTION: AUTHENTICATION SYSTEM
+ * Alur: checkSessionGate -> handleUnauthenticated -> renderGoogleButton -> Response
+ */
 
-window.pindahKeAdmin = (isAdmin) => {
-    const areaGoogle = document.getElementById('area-google');
-    const areaAdmin = document.getElementById('area-admin');
-    const title = document.getElementById('title-login');
-    if (isAdmin) {
-        areaGoogle.style.display = 'none';
-        areaAdmin.style.display = 'block';
-        title.innerText = "Admin Login";
+
+function handleUnauthenticated() {
+    localStorage.removeItem('user_session');
+    updateLoading(30, "Menyiapkan Gerbang Login...");
+    const emergencyTimer = setTimeout(() => {
+        const btn = document.getElementById("google-login-btn");
+        
+        // Cek apakah di dalam container tombol masih kosong (artinya render gagal)
+        if (btn && btn.innerHTML.trim() === "") {
+            console.error("Authentication Timeout: Tombol Google gagal dimuat.");
+            showOfflineScreen("<b>Gagal Memuat Sistem Login</b><br>Layanan otentikasi ditolak (Error 403) atau koneksi terganggu.");
+            logger("Emergency Timer Triggered: Google Login button failed to load within expected time.");
+            stopAllSystem();
+        }   
+    }, 6000); 
+
+    // 2. CEK SDK GOOGLE
+    if (typeof google !== 'undefined' && google.accounts) {
+        renderGoogleButton();
+        // Timer di atas tetap jalan, kalau renderGoogleButton gagal (karena 403), 
+        // timer akan memicu showOfflineScreen setelah 6 detik.
     } else {
-        areaGoogle.style.display = 'block';
-        areaAdmin.style.display = 'none';
-        title.innerText = "Akses Sistem";
+        // Jika SDK benar-benar tidak ada (terblokir total/offline)
+        clearTimeout(emergencyTimer);
+        handleSDKLoadFailure();
     }
 }
 
-window.prosesLoginAdmin = async () => {
-    const email = document.getElementById('userAdmin').value;
-    const password = document.getElementById('passAdmin').value;
-    if (!email || !password) return alert("Isi email & password admin!");
-    updateLoading(50, "Memverifikasi Admin...");
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-        alert("Gagal Login Admin: " + error.message);
-        updateLoading(100, "Gagal Masuk");
-    } else {
-        location.reload();
+// 2. Fungsi Render UI (Google + Persiapan Manual)
+function renderGoogleButton() {
+    // Inisialisasi Google
+    google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleCredentialResponse,
+        auto_select: false,
+    });
+
+    const googleBtnDiv = document.getElementById("google-login-btn");
+    if (googleBtnDiv) {
+        const parentWidth = googleBtnDiv.offsetWidth || 350;
+        google.accounts.id.renderButton(googleBtnDiv, {
+            theme: "outline",
+            size: "large",
+            width: parentWidth,
+            text: "continue_with",
+            shape: "rectangular",
+            logo_alignment: "center"
+        });
+
+        // Pasang listener Enter untuk input manual yang sudah ada di HTML
+        const passInput = document.getElementById('login-password');
+        if (passInput) {
+            passInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleManualLogin();
+            });
+        }
     }
+    updateLoading(100, "Silakan Login");
 }
 
+// 3. Handler Login via Google
 async function handleCredentialResponse(response) {
     updateLoading(50, "Memverifikasi Token Google...");
     const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: response.credential,
-    })
+    });
+
     if (error) {
         alert("Gagal Login Google: " + error.message);
         updateLoading(100, "Gagal Masuk");
     } else {
+        // Simpan data agar checkSessionGate mengenali sesi setelah reload
+        const userData = {
+            email: data.user.email,
+            uid: data.user.id,
+            name: data.user.user_metadata.full_name || "User Google",
+            lastLogin: new Date().toISOString()
+        };
+        localStorage.setItem('user_session', JSON.stringify(userData));
+
         updateLoading(100, "Login Berhasil!");
-        location.reload();
+        location.reload(); 
     }
 }
 
-function renderGoogleButton() {
-    // 1. Inisialisasi ID Client Google
-    google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: handleCredentialResponse,
-        // Opsi tambahan: Agar otomatis muncul prompt "One Tap" di pojok layar
-        auto_select: false,
+// 4. Handler Login via Email & Password Manual
+async function handleManualLogin() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    if (!email || !password) {
+        alert("Harap isi email dan password!");
+        return;
+    }
+
+    updateLoading(50, "Memverifikasi Identitas...");
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
     });
 
-    const googleBtnDiv = document.getElementById("google-login-btn");
+    if (error) {
+        alert("Gagal Masuk: " + error.message);
+        updateLoading(100, "Gagal Masuk");
+    } else {
+        const userData = {
+            email: data.user.email,
+            uid: data.user.id,
+            name: data.user.user_metadata.full_name || email.split('@')[0],
+            lastLogin: new Date().toISOString()
+        };       
+        localStorage.setItem('user_session', JSON.stringify(userData));
 
-    if (googleBtnDiv) {
-        const parentWidth = googleBtnDiv.offsetWidth || 350;
-
-        google.accounts.id.renderButton(
-            googleBtnDiv,
-            {
-                theme: "outline",
-                size: "large",
-                width: parentWidth,
-                text: "signin_with",
-                shape: "rectangular"
-            }
-        );
+        updateLoading(100, "Login Berhasil!");
+        setTimeout(() => { location.reload(); }, 800);
     }
-    updateLoading(100, "Silakan Login");
 }
 
-window.logoutSistem = async () => {
-    const yakin = confirm("Yakin mau keluar sistem?");
-    if (yakin) {
-        await supabase.auth.signOut();
-        localStorage.removeItem('user_session'); // Hapus cache saat logout
+// 5. Fallback jika Google SDK Gagal Muat
+function handleSDKLoadFailure() {
+    console.warn("Google SDK tidak ditemukan.");
+    let retry = Number(localStorage.getItem('google_sdk_retry')) || 0;
+    
+    if (retry < 2) { // Coba reload 2 kali saja agar tidak looping terus
+        retry++;
+        localStorage.setItem('google_sdk_retry', retry);
         location.reload();
+    } else {
+        localStorage.removeItem('google_sdk_retry');
+        showOfflineScreen("SDK Google tidak dapat dimuat. Pastikan koneksi stabil.");
+        log.console.error("Gagal memuat Google SDK setelah beberapa percobaan.");
+        stopAllSystem();
     }
 }
 
-function skipToApp(userData) {
-    updateLoading(50, "Memuat data lokal...");
-    // Tampilkan foto profil dari cache lokal
-    const imgProfile = document.getElementById('user-profile-img');
-    if (imgProfile && userData.photo) {
-        imgProfile.src = userData.photo;
-        imgProfile.style.display = 'block';
+async function initSatpam() {
+    const progressText = document.getElementById('load-progress');
+    const loadingOverlay = document.getElementById('loading-satpam');
+    const MAX_RETRIES = 3;
+    let attempt = 0;
+    while (attempt < MAX_RETRIES) {
+        try {
+            attempt++;
+            if (progressText) {
+                progressText.innerText = `Menghubungkan ke Sistem OCR... (Percobaan ${attempt}/${MAX_RETRIES})`;
+            }
+            worker = await Tesseract.createWorker('eng');
+            await worker.setParameters({
+                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
+                tessedit_pageseg_mode: '3'
+            });
+            if (progressText) progressText.innerText = "OCR Siap";
+            setTimeout(() => {
+                if (loadingOverlay) {
+                    loadingOverlay.style.opacity = '0';
+                    setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
+                }
+            }, 1000);
+            return;
+        } catch (e) {
+            console.error(`Gagal pada percobaan ke-${attempt}:`, e);
+            if (attempt >= MAX_RETRIES) {
+                if (progressText) progressText.innerText = "Koneksi Gagal. Sistem Diblokir.";
+                throw new Error("BLOCK: Gagal inisialisasi OCR setelah 3 kali percobaan.");
+            }
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
     }
-    // Sembunyikan overlay login karena session masih valid
-    const loginOverlay = document.getElementById('login-overlay');
-    if (loginOverlay) {
-        loginOverlay.style.display = 'none';
-    }
-    updateLoading(100, "Sistem Aktif (Mode Lokal)");
-    // Jalankan fitur utama aplikasi
-    if (typeof initMap === "function") initMap();
-    if (typeof initGPS === "function") initGPS();
 }
 
 function initMap() {
@@ -343,17 +417,6 @@ function updateOnlineStatus() {
     }
 }
 
-window.calculateDistanceperjalanan = function (lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-}
-
 function initGPS() {
     if ("geolocation" in navigator) {
         watchId = navigator.geolocation.watchPosition(
@@ -362,6 +425,231 @@ function initGPS() {
             geoOptions
         );
     } else {
+    }
+}
+
+let retryCount = 0;
+async function checkActiveSessionoffline() {
+    try {
+        const sessions = await db.travel_sessions.toArray();
+        const activeSession = sessions.find(s => s.status && s.status.toLowerCase() === "active");
+        const sessionId = activeSession ? activeSession.idseason : null;
+        if (sessionId) {
+            startTracking();
+            logger("Sesi aktif ditemukan di Dexie:", sessionId);
+            const noSJKB = decryptData(activeSession.sjkb);
+            if (noSJKB) {
+                const inputSJKB = document.getElementById('no_sjkb');
+                if (inputSJKB) {
+                    inputSJKB.value = noSJKB;
+                }
+            }
+            const tujuan = decryptData(activeSession.dest);
+            if (tujuan) {
+                const inputTujuan = document.getElementById('tujuan_dealer');
+                if (inputTujuan) {
+                    inputTujuan.value = tujuan;
+                }
+            }
+            const waktuBerangkat = new Date(decryptData(activeSession.depart_at));
+            const targetSampai = new Date(decryptData(activeSession.arrive_target));
+
+            if (!isNaN(waktuBerangkat) && !isNaN(targetSampai)) {
+                const selisihWaktu = targetSampai - waktuBerangkat;
+                const durasiMenit = Math.round(selisihWaktu / 60000);
+                const inputLt = document.getElementById('lt_input');
+                if (inputLt) {
+                    inputLt.value = `${durasiMenit} Menit`;
+                }
+            } else {
+                logger("Waktu berangkat atau target sampai tidak valid di sesi Dexie.");
+            }
+            if (!isNaN(targetSampai)) {
+                const formattanggal = {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                };
+                const formatter = targetSampai.toLocaleString('id-ID', formattanggal);
+                const targetTextEl = document.getElementById('target-text');
+                if (targetTextEl) {
+                    targetTextEl.innerText = `${formatter.replace(/\./g, ':')} WIB`;
+                }
+
+            }
+
+            setTimeout(() => {
+                const ruteDipilih = decryptData(activeSession.route_master);
+                if (ruteDipilih && typeof decodePolyline === 'function') {
+                    startTracking();
+                    const coordinates = decodePolyline(ruteDipilih);
+                    if (typeof map !== "undefined" && map) {
+                        if (currentPolyline) map.removeLayer(currentPolyline);
+                        currentPolyline = L.polyline(coordinates, { color: '#2563eb', weight: 5 }).addTo(map);
+                        const finishPoint = coordinates[coordinates.length - 1];
+                        const iconFin = (typeof iconFinish !== 'undefined') ? iconFinish : new L.Icon.Default();
+                        if (finishMarker) map.removeLayer(finishMarker);
+                        finishMarker = L.marker(finishPoint, { icon: iconFin }).addTo(map);
+                        const lastPos = decryptData(activeSession.lat) && decryptData(activeSession.lng)
+                            ? { lat: parseFloat(decryptData(activeSession.lat)), lng: parseFloat(decryptData(activeSession.lng)) }
+                            : null;
+                        if (lastPos && lastPos.lat !== 0 && lastPos.lng !== 0) {
+                            console.log("Terbang ke lokasi terakhir dari DB:", lastPos);
+                            map.flyTo([lastPos.lat, lastPos.lng], 18, {
+                                animate: true,
+                                duration: 2
+                            });
+                        } else {
+                            map.fitBounds(currentPolyline.getBounds());
+                        }
+                    }
+
+                    const btnScan = document.getElementById('btnScanAction');
+                    if (btnScan) {
+                        btnScan.disabled = true;
+                        btnScan.style.opacity = "0.5";
+                        btnScan.style.cursor = "not-allowed";
+                    }
+                    const btnBerangkat = document.getElementById('btnBerangkat');
+                    const btnSampai = document.getElementById('btnSampai');
+                    if (btnBerangkat) {
+                        btnBerangkat.style.display = 'none';
+                    }
+                    if (btnSampai) {
+                        btnSampai.style.display = 'block';
+                    }
+
+                } else {
+                    logger("Rute yang dipilih tidak valid atau tidak ditemukan di sesi Dexie.");
+                }
+            }, 1500);
+            isTrackingActive = true;
+            if (typeof requestWakeLock === 'function') requestWakeLock();
+            logger("Sesi aktif berhasil dimuat dari Dexie, sistem siap melanjutkan tracking.");
+            retryCount = 0;
+        } else {
+            logger("Tidak ada sesi aktif di Dexie.");
+            retryCount = 0;
+            resetTampilan();
+        }
+    } catch (error) {
+        console.error("Gagal memuat sesi aktif, percobaan ke-", retryCount + 1, ":", error);
+        if (retryCount < 3) {
+            retryCount++;
+            logger("Mencoba lagi untuk memuat sesi aktif... (Percobaan ke-" + retryCount + ")");
+            setTimeout(checkActiveSessionoffline, 2000);
+        } else {
+            alert("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
+            showOfflineScreen("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
+            retryCount = 0;
+            stopAllSystem();
+        }
+    }
+
+}
+
+function updateUIFromSession(session) {
+    const noSJKB = decryptData(session.sjkb);
+    const tujuan = decryptData(session.dest);
+    const rawBerangkat = decryptData(session.depart_at);
+    const rawTarget = decryptData(session.arrive_target);
+    if (noSJKB) document.getElementById('no_sjkb').value = noSJKB;
+    if (tujuan) document.getElementById('tujuan').value = tujuan;
+    const waktuBerangkat = new Date(rawBerangkat);
+    const targetSampai = new Date(rawTarget);
+    if (!isNaN(waktuBerangkat) && !isNaN(targetSampai)) {
+        const durasiMenit = Math.round((targetSampai - waktuBerangkat) / 60000);
+        if (document.getElementById('lt_input')) document.getElementById('lt_input').value = `${durasiMenit} Menit`;
+        const formattanggal = { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false };
+        const formatter = targetSampai.toLocaleString('id-ID', formattanggal);
+        const targetTextEl = document.getElementById('target-text');
+        if (targetTextEl) targetTextEl.innerText = `${formatter.replace(/\./g, ':')} WIB`;
+    }
+    const ruteDipilih = decryptData(session.route_master);
+    if (ruteDipilih && typeof decodePolyline === 'function') {
+        const coordinates = decodePolyline(ruteDipilih);
+        if (typeof map !== "undefined" && map) {
+            if (currentPolyline) map.removeLayer(currentPolyline);
+            currentPolyline = L.polyline(coordinates, { color: '#2563eb', weight: 5 }).addTo(map);
+            const finishPoint = coordinates[coordinates.length - 1];
+            if (finishMarker) map.removeLayer(finishMarker);
+            finishMarker = L.marker(finishPoint, { icon: (typeof iconFinish !== 'undefined' ? iconFinish : new L.Icon.Default()) }).addTo(map);
+            const lastLat = decryptData(session.lat);
+            const lastLng = decryptData(session.lng);
+            if (lastLat && lastLng && parseFloat(lastLat) !== 0) {
+                map.flyTo([parseFloat(lastLat), parseFloat(lastLng)], 18);
+            } else {
+                map.fitBounds(currentPolyline.getBounds());
+            }
+        }
+    }
+    const btnScan = document.getElementById('btnScanAction');
+    if (btnScan) {
+        btnScan.disabled = true;
+        btnScan.style.opacity = "0.5";
+    }
+    if (document.getElementById('btnBerangkat')) document.getElementById('btnBerangkat').style.display = 'none';
+    if (document.getElementById('btnSampai')) document.getElementById('btnSampai').style.display = 'block';
+}
+
+async function checkActiveSessiononline() {
+    const userSession = JSON.parse(localStorage.getItem('user_session'));
+    const uid = userSession ? userSession.uid : null;
+    if (!uid) {
+            console.warn("Sesi tidak ditemukan di localstorage. User harus login ulang.");
+            return; 
+        }
+    try {
+        const { data: activeSession, error } = await supabase
+            .from('path_history')
+            .select('*')
+            .eq('user_id', uid)
+            .eq('status', 'Active')
+            .maybeSingle();
+        if (error) throw error;
+        if (activeSession) {
+            console.log("Sesi aktif ditemukan di server:", activeSession.idseason);
+            const localSessions = await db.travel_sessions.toArray();
+            const localData = localSessions.length > 0 ? localSessions[0] : null;
+
+            if (localData && localData.idseason === activeSession.idseason) {
+                console.log("Sesi sama dengan lokal, gunakan data Dexie.");
+                startTracking();
+                updateUIFromSession(localData);
+            } else {
+                console.warn("ID berbeda atau lokal kosong! Overwrite Dexie dengan data Server...");
+                await db.travel_sessions.clear();
+                await db.travel_sessions.put({
+                    ...activeSession,
+                    path_hist: null
+                });
+                startTracking();
+                updateUIFromSession(activeSession);
+            }
+            isTrackingActive = true;
+            if (typeof requestWakeLock === 'function') requestWakeLock();
+            return activeSession.idseason;
+            retryCount = 0;
+        } else {
+            console.log("Tidak ada sesi aktif di server.");
+            if (typeof resetTampilan === 'function') resetTampilan();
+            retryCount = 0;
+        }
+    } catch (error) {
+        console.error("Gagal memuat sesi aktif, percobaan ke-", retryCount + 1, ":", error);
+        if (retryCount < 3) {
+            retryCount++;
+            logger("Mencoba lagi untuk memuat sesi aktif... (Percobaan ke-" + retryCount + ")");
+            setTimeout(checkActiveSessiononline, 2000);
+        } else {
+            alert("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
+            showOfflineScreen("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
+            retryCount = 0;
+            stopAllSystem();
+        }
     }
 }
 
@@ -402,11 +690,8 @@ function isGpsValid(newLat, newLng, accuracy) {
 }
 
 function updateLocationSuccess(position) {
-    // 1. Ambil data dari GPS dulu (WAJIB PALING ATAS)
     const { latitude, longitude, speed, accuracy } = position.coords;
     const now = Date.now();
-
-    // 2. Validasi GPS (Kalau busuk, langsung stop)
     if (!isGpsValid(latitude, longitude, accuracy)) {
         const gpsEl = document.getElementById('gpsText');
         if (gpsEl) {
@@ -443,11 +728,6 @@ function updateLocationSuccess(position) {
         lastAddressLng = checkLng;
         lastAddressRequestTime = now;
     }
-
-    // 5. Jalankan Tracking (Simpan ke DB) & Update Peta
-    //if (isTrackingActive) {
-    //    catatPerjalanan(latitude, longitude, speedKmH);
-    //}
 
     updateMapDisplay(latitude, longitude);
 }
@@ -532,99 +812,83 @@ async function updateStreetName(lat, lng) {
     }
 }
 
-async function initSatpam() {
-    const progressText = document.getElementById('load-progress');
-    const loadingOverlay = document.getElementById('loading-satpam');
-    const MAX_RETRIES = 3;
-    let attempt = 0;
-
-    while (attempt < MAX_RETRIES) {
-        try {
-            attempt++;
-            if (progressText) {
-                progressText.innerText = `Menghubungkan ke Sistem OCR... (Percobaan ${attempt}/${MAX_RETRIES})`;
-            }
-
-            // Inisialisasi worker (Source: User Summary - Tesseract.js implementation)
-            worker = await Tesseract.createWorker('eng');
-
-            // Konfigurasi Parameter (Source: User Summary - OCR Configuration)
-            await worker.setParameters({
-                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-. ',
-                tessedit_pageseg_mode: '3'
-            });
-
-            // Jika berhasil sampai sini, langsung bereskan UI
-            if (progressText) progressText.innerText = "OCR Siap";
-
-            setTimeout(() => {
-                if (loadingOverlay) {
-                    loadingOverlay.style.opacity = '0';
-                    setTimeout(() => { loadingOverlay.style.display = 'none'; }, 500);
-                }
-            }, 1000);
-
-            return; // KELUAR DARI FUNGSI (SUKSES)
-
-        } catch (e) {
-            console.error(`Gagal pada percobaan ke-${attempt}:`, e);
-
-            // Cek apakah sudah mencapai batas retry
-            if (attempt >= MAX_RETRIES) {
-                if (progressText) progressText.innerText = "Koneksi Gagal. Sistem Diblokir.";
-
-                // KUNCI UTAMA: Melempar error agar fungsi pemanggil berhenti total
-                throw new Error("BLOCK: Gagal inisialisasi OCR setelah 3 kali percobaan.");
-            }
-
-            // Jeda 1,5 detik sebelum coba lagi (memberi napas buat jaringan)
-            await new Promise(resolve => setTimeout(resolve, 1500));
-        }
-    }
-}
-
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
 // #endregion
 
+/*
+=================================================================================================
+*/
+
 // #region listener / event manggil tombol klik
-document.getElementById('btn-recenter').addEventListener('click', () => {
-    recenterMap();
-    const btn = document.getElementById('btn-recenter');
-    btn.style.transform = "scale(0.9)";
-    setTimeout(() => btn.style.transform = "scale(1)", 100);
-});
 
-document.getElementById('btnScanAction').addEventListener('click', () => {
-    openScanner();
-    const btn = document.getElementById('btnScanAction');
-    btn.style.transform = "scale(0.9)";
-    setTimeout(() => btn.style.transform = "scale(1)", 100);
-});
 
-document.getElementById('btnCloseCamera').addEventListener('click', () => {
-    closeCamera();
-    const btn = document.getElementById('btnCloseCamera');
-    btn.style.transform = "scale(0.9)";
-    setTimeout(() => btn.style.transform = "scale(1)", 100);
-});
+async function re_initEventListeners() {
 
-document.getElementById('btnBerangkat').addEventListener('click', () => {
-    handleBerangkat();
-    const btn = document.getElementById('btnBerangkat');
-    btn.style.transform = "scale(0.9)";
-    setTimeout(() => btn.style.transform = "scale(1)", 100);
-});
+    const btnAreaAdmin = document.getElementById('btn-area-admin');
+    if (btnAreaAdmin) {
+        btnAreaAdmin.addEventListener('click', async () => {
+            const yakin = confirm("Yakin mau keluar sistem?");
+            if (yakin) {
+                await localStorage.removeItem('user_session'); // Hapus cache saat logout
+                const user = document.getElementById('user-name').innerText || "User";
+                const pass = document.getElementById('admin-pass').innerText || "password";
+            }
+        });
+    }
 
-document.getElementById('btnSampai').addEventListener('click', () => {
-    handleSampai();
-    const btn = document.getElementById('btnSampai');
-    btn.style.transform = "scale(0.9)";
-    setTimeout(() => btn.style.transform = "scale(1)", 100);
-});
+    const btnrecenter = document.getElementById('btn-recenter');
+    if (btnrecenter) {
+        btnrecenter.addEventListener('click', async () => {
+            await recenterMap();
+            btnrecenter.style.transform = "scale(0.9)";
+            setTimeout(() => btnrecenter.style.transform = "scale(1)", 100);
+        });
+    }
+
+    const btnScanAction = document.getElementById('btnScanAction');
+    if (btnScanAction) {
+        btnScanAction.addEventListener('click', async () => {
+            await openScanner();
+            btnScanAction.style.transform = "scale(0.9)";
+            setTimeout(() => btnScanAction.style.transform = "scale(1)", 100);
+        });
+    }
+    const btnCloseCamera = document.getElementById('BtnCloseCamera');
+    if (btnCloseCamera) {
+        btnCloseCamera.addEventListener('click', async () => {
+            await closeCamera();
+            btnCloseCamera.style.transform = "scale(0.9)";
+            setTimeout(() => btnCloseCamera.style.transform = "scale(1)", 100);
+        });
+    }
+    const btnBerangkat = document.getElementById('btnBerangkat');
+    if (btnBerangkat) {
+        btnBerangkat.addEventListener('click', async () => {
+            await handleBerangkat();
+            btnBerangkat.style.transform = "scale(0.9)";
+            setTimeout(() => btnBerangkat.style.transform = "scale(1)", 100);
+        });
+    }
+    const btnSampai = document.getElementById('btnSampai');
+    if (btnSampai) {
+        btnSampai.addEventListener('click', async () => {
+            await handleSampai();
+            btnSampai.style.transform = "scale(0.9)";
+            setTimeout(() => btnSampai.style.transform = "scale(1)", 100);
+        });
+    }
+
+}
+
 
 // #endregion
+
+/*
+=================================================================================================
+*/
+
 
 // #region del preparation
 
@@ -863,7 +1127,146 @@ function closeCamera() {
     resetScannerUI()
 }
 
-function showLoading(text = "Memproses...") {
+// #endregion
+
+/*
+=================================================================================================
+*/
+
+// #region helper fungsi tambahan untuk manajemen state, tampilan, dan sistem secara keseluruhan
+
+
+function toggleUIBerangkat(isStarting) {
+    const btnScan = document.getElementById('btnScanAction');
+    const btnBerangkat = document.getElementById('btnBerangkat');
+    const btnSampai = document.getElementById('btnSampai');
+    const ruteArea = document.getElementById('ruteSelectionArea');
+
+    if (isStarting) {
+        if (btnBerangkat) btnBerangkat.style.display = 'none';
+        if (btnSampai) btnSampai.style.display = 'block';
+        if (btnScan) {
+            btnScan.disabled = true;
+            btnScan.style.opacity = "0.5";
+            btnScan.style.cursor = "not-allowed";
+        }
+        if (ruteArea) ruteArea.style.display = 'none';
+    } else {
+        if (btnBerangkat) btnBerangkat.style.display = 'block';
+        if (btnSampai) btnSampai.style.display = 'none';
+        if (btnScan) {
+            btnScan.disabled = false;
+            btnScan.style.opacity = "1";
+            btnScan.style.cursor = "pointer";
+        }
+        if (ruteArea) ruteArea.style.display = 'block';
+    }
+}
+
+function resetberangkatUI() {
+    toggleUIBerangkat(false);
+}
+
+const AES_SECRET = import.meta.env.VITE_AES_KEY;
+
+function encryptData(data) {
+    if (!AES_SECRET) {
+        console.error("❌ VITE_AES_KEY nggak ketemu di .env");
+        return data;
+    }
+    try {
+        const stringData = typeof data === 'object' ? JSON.stringify(data) : String(data);
+        return CryptoJS.AES.encrypt(stringData, AES_SECRET).toString();
+    } catch (e) {
+        console.error("Gagal Enkripsi:", e);
+        return null;
+    }
+}
+
+function decryptData(ciphertext) {
+    if (!AES_SECRET) {
+        console.error("VITE_AES_KEY nggak ketemu di .env");
+        return ciphertext;
+    }
+    try {
+        const bytes = CryptoJS.AES.decrypt(ciphertext, AES_SECRET);
+        const originalText = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!originalText) return null;
+
+        try {
+            return JSON.parse(originalText);
+        } catch {
+            return originalText;
+        }
+    } catch (e) {
+        console.error("Gagal Dekripsi:", e);
+        return null;
+    }
+}
+
+window.calculateDistanceperjalanan = function (lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function stopAllSystem() {
+    console.warn("sistem dihentikan");
+    if (window.trackingInterval) {
+        clearInterval(window.trackingInterval);
+        window.trackingInterval = null;
+    }
+    if (window.polliingtimeout) {
+        clearTimeout(window.polliingtimeout);
+        window.polliingtimeout = null;
+    }
+    if (window.watchId) {
+        navigator.geolocation.clearWatch(window.watchId);
+        window.watchId = null;
+    }
+    if (window.WebSocket) {
+        try {
+            window.socket.close();
+        } catch (error) {
+            console.error("Error occurred while closing WebSocket:", error);
+        }
+    }
+    if (window.AbortController) {
+        try {
+            window.abortController.abort();
+        } catch { }
+        window.abortController = null;
+    }
+    window.isTrackingActive = false;
+    window.isCameraActive = false;
+    window.isProcessing = false;
+    window.isInitRunning = false;
+    console.log("Semua sistem dihentikan, state reset ke default.");
+}
+
+function showOfflineScreen(message = null) {
+    const el = document.getElementById('offline-screen');
+    if (!el) return;
+    el.style.display = 'flex';
+    if (message) {
+        const msg = document.getElementById('offline-message');
+        if (msg) msg.innerHTML = message;
+    }
+}
+
+function hideOfflineScreen() {
+    const el = document.getElementById('offline-screen');
+    if (!el) return;
+    el.style.display = 'none';
+}
+
+function showLoading(text = "Memproses...") { // Bisa dipanggil dengan parameter teks khusus, atau default "Memproses..."
     const overlay = document.getElementById('loading-overlay');
     const textEl = document.getElementById('loading-text');
     textEl.innerText = text;
@@ -876,6 +1279,38 @@ function hideLoading() {
     overlay.style.display = 'none';
     document.body.style.overflow = '';
 }
+
+function updateLoading(percent, text) {
+    if (loadProgress) loadProgress.innerText = `${text} (${percent}%)`;
+    if (percent >= 100) {
+        setTimeout(() => {
+            if (loaderSatpam) loaderSatpam.style.display = 'none';
+        }, 800);
+    }
+}
+
+async function resetTampilan() {
+    if (map) {
+        try {
+            map.remove();
+            map = null;
+        } catch (e) {
+            console.warn("Gagal menghapus instance peta:", e);
+        }
+    }
+    document.body.innerHTML = initialBody;
+    re_initEventListeners();
+    initMap();
+    initGPS()
+}
+
+// #endregion
+
+/*
+=================================================================================================
+*/
+
+// #region fungsi utama untuk mengambil data rute dari spreadsheet, menampilkan pilihan rute, dan menggambar rute di peta
 
 async function fetchSpreadsheetData(tujuanGemini) {
     if (!currentPos || !currentPos.lat || !currentPos.lng) {
@@ -1093,25 +1528,23 @@ async function handleBerangkat() {
         const uid = session.uid;
         const travelId = generateUniqueId(session.email);
         await db.travel_sessions.put({
-                sjkb: encryptData(noSJKB),
-                dest: encryptData(tujuan),
-                lat_start: encryptData(currentPos.lat.toString()),
-                lng_start: encryptData(currentPos.lng.toString()),
-                lat: encryptData(currentPos.lat.toString()),
-                lng: encryptData(currentPos.lng.toString()),
-                depart_at: encryptData(waktuBerangkat.toISOString()),
-                arrive_target: encryptData(targetSampai.toISOString()),
-                updated_at: encryptData(new Date().toISOString()),
-                route_master: encryptData(currentPolylineString),
-                path_hist: null,
-                status: "Active",
-                user_id: session.uid,
-                idseason: travelId
+            sjkb: encryptData(noSJKB),
+            dest: encryptData(tujuan),
+            lat_start: encryptData(currentPos.lat.toString()),
+            lng_start: encryptData(currentPos.lng.toString()),
+            lat: encryptData(currentPos.lat.toString()),
+            lng: encryptData(currentPos.lng.toString()),
+            depart_at: encryptData(waktuBerangkat.toISOString()),
+            arrive_target: encryptData(targetSampai.toISOString()),
+            updated_at: encryptData(new Date().toISOString()),
+            route_master: encryptData(currentPolylineString),
+            path_hist: null,
+            status: "Active",
+            user_id: session.uid,
+            idseason: travelId
         });
 
         localStorage.setItem('current_session_id', travelId);
-
-        // 4. Kirim ke Supabase
         const { error: supabaseError } = await supabase
             .from('path_history')
             .insert([{
@@ -1162,152 +1595,6 @@ async function handleBerangkat() {
         console.error("Gagal simpan sesi PouchDB:", err);
         alert("Gagal memulai perjalanan Coba Lagi.");
         resetberangkatUI();
-    }
-}
-
-function toggleUIBerangkat(isStarting) {
-    const btnScan = document.getElementById('btnScanAction');
-    const btnBerangkat = document.getElementById('btnBerangkat');
-    const btnSampai = document.getElementById('btnSampai');
-    const ruteArea = document.getElementById('ruteSelectionArea');
-
-    if (isStarting) {
-        if (btnBerangkat) btnBerangkat.style.display = 'none';
-        if (btnSampai) btnSampai.style.display = 'block';
-        if (btnScan) {
-            btnScan.disabled = true;
-            btnScan.style.opacity = "0.5";
-            btnScan.style.cursor = "not-allowed";
-        }
-        if (ruteArea) ruteArea.style.display = 'none';
-    } else {
-        if (btnBerangkat) btnBerangkat.style.display = 'block';
-        if (btnSampai) btnSampai.style.display = 'none';
-        if (btnScan) {
-            btnScan.disabled = false;
-            btnScan.style.opacity = "1";
-            btnScan.style.cursor = "pointer";
-        }
-        if (ruteArea) ruteArea.style.display = 'block';
-    }
-}
-
-function resetberangkatUI() {
-    toggleUIBerangkat(false);
-}
-
-const AES_SECRET = import.meta.env.VITE_AES_KEY;
-
-function encryptData(data) {
-    if (!AES_SECRET) {
-        console.error("❌ VITE_AES_KEY nggak ketemu di .env");
-        return data;
-    }
-    try {
-        const stringData = typeof data === 'object' ? JSON.stringify(data) : String(data);
-        return CryptoJS.AES.encrypt(stringData, AES_SECRET).toString();
-    } catch (e) {
-        console.error("Gagal Enkripsi:", e);
-        return null;
-    }
-}
-
-function decryptData(ciphertext) {
-    if (!AES_SECRET) {
-        console.error("VITE_AES_KEY nggak ketemu di .env");
-        return ciphertext;
-    }
-    try {
-        const bytes = CryptoJS.AES.decrypt(ciphertext, AES_SECRET);
-        const originalText = bytes.toString(CryptoJS.enc.Utf8);
-
-        if (!originalText) return null;
-
-        try {
-            return JSON.parse(originalText);
-        } catch {
-            return originalText;
-        }
-    } catch (e) {
-        console.error("Gagal Dekripsi:", e);
-        return null;
-    }
-}
-
-
-async function checkActiveSession() {
-    const sessionId = localStorage.getItem('current_session_id');
-    const targetEl = document.querySelector('.target');
-    if (sessionId) {
-        try {
-            const session = await db.travel_sessions.get(sessionId);
-            if (session && session.status === "Active") {
-                if (targetEl) targetEl.classList.remove('hidden');
-
-                isTrackingActive = true;
-                if (typeof requestWakeLock === 'function') requestWakeLock();
-                document.getElementById('btnBerangkat').style.display = 'none';
-                document.getElementById('btnSampai').style.display = 'block';
-                if (document.getElementById('no_sjkb'))
-                    document.getElementById('no_sjkb').value = decryptData(session.no_sjkb);
-                if (document.getElementById('tujuan_dealer'))
-                    document.getElementById('tujuan_dealer').value = decryptData(session.tujuan);
-                const rawWaktuBerangkat = decryptData(session.waktu_berangkat);
-                const rawTargetSampai = decryptData(session.target_sampai);
-                if (document.getElementById('lt_input')) {
-                    const berangkat = new Date(rawWaktuBerangkat);
-                    const target = new Date(rawTargetSampai);
-                    const durasiMenit = Math.round((target - berangkat) / 60000);
-                    document.getElementById('lt_input').value = `${durasiMenit} Menit`;
-                }
-                if (document.getElementById('target-text') && rawTargetSampai) {
-                    const targetDate = new Date(rawTargetSampai);
-                    const opsi = {
-                        day: '2-digit', month: 'long', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit', hour12: false
-                    };
-                    const formatter = new Intl.DateTimeFormat('id-ID', opsi).format(targetDate);
-                    document.getElementById('target-text').innerText = `${formatter.replace('.', ':')} WIB`;
-                }
-                setTimeout(() => {
-                    const rawRute = decryptData(session.rute_dipilih);
-                    if (rawRute && typeof decodePolyline === 'function') {
-                        const btnScan = document.getElementById('btnScanAction');
-                        if (btnScan) {
-                            btnScan.disabled = true;
-                            btnScan.style.opacity = "0.5";
-                            btnScan.style.cursor = "not-allowed";
-                        }
-                        const coordinates = decodePolyline(rawRute);
-                        if (typeof map !== "undefined" && map) {
-                            if (currentPolyline) map.removeLayer(currentPolyline);
-                            currentPolyline = L.polyline(coordinates, { color: '#2563eb', weight: 5 }).addTo(map);
-                            const finishPoint = coordinates[coordinates.length - 1];
-                            const iconFin = (typeof iconFinish !== 'undefined') ? iconFinish : new L.Icon.Default();
-                            if (finishMarker) map.removeLayer(finishMarker);
-                            finishMarker = L.marker(finishPoint, { icon: iconFin }).addTo(map);
-                            const lastPos = decryptData(session.last_update);
-                            if (lastPos && lastPos.lat && lastPos.lat !== 0) {
-                                console.log("Terbang ke lokasi terakhir dari DB:", lastPos);
-                                map.flyTo([lastPos.lat, lastPos.lng], 18, {
-                                    animate: true,
-                                    duration: 2
-                                });
-                            } else {
-                                map.fitBounds(currentPolyline.getBounds());
-                            }
-                        }
-                    }
-                }, 1500);
-
-            } else {
-                if (targetEl) targetEl.classList.add('hidden');
-            }
-        } catch (error) {
-            console.error("Gagal mengambil sesi dari Dexie:", error);
-        }
-    } else {
-        if (targetEl) targetEl.classList.add('hidden');
     }
 }
 
@@ -1402,7 +1689,7 @@ function startTracking() {
     // 300000 ms = 5 menit
     trackingInterval = setInterval(() => {
         handleUpdate5menit();
-    }, 300000); 
+    }, 300000);
 }
 
 function stopTracking() {
@@ -1411,5 +1698,3 @@ function stopTracking() {
         trackingInterval = null;
     }
 }
-
-// #endregion
