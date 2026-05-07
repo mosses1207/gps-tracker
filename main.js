@@ -97,6 +97,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     await hideOfflineScreen();
     console.log("check status online");
     await updateOnlineStatus();
+    const savedUid = localStorage.getItem('user_id_login');
+    if (savedUid) {
+        await startTunnelListener(savedUid);
+    } else {
+        console.warn("User belum login, terowongan tidak dibuka.");
+    }  
 });
 
 function hideAllOverlays() {
@@ -852,8 +858,19 @@ async function updateStreetName(lat, lng) {
     }
 }
 
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
+window.addEventListener('online', async () => {
+    const savedUid = localStorage.getItem('user_id_login');
+    if (savedUid) {
+        console.log("Sinyal kembali, menghubungkan ulang...");
+        await startTunnelListener(savedUid);
+        await updateOnlineStatus();
+    }
+});
+
+window.addEventListener('offline', () => {
+    showPushNotif("Sinyal Terputus. Menunggu koneksi...");
+    await updateOnlineStatus();
+});
 
 async function handleManualLogin() {
     const email = document.getElementById('login-email').value;
@@ -1732,37 +1749,69 @@ async function handleSampai() {
 
 async function handleUpdate5menit() {
     try {
+        // 1. Validasi GPS (Bukan error coding, jadi return saja)
         if (!currentPos || isNaN(currentPos.lat) || isNaN(currentPos.lng)) {
-            alert("Signal GPS Lemah");
+            console.warn("Signal GPS Lemah");
             return;
         }
-        const travelId = localStorage.getItem('current_session_id');
-        if (!travelId) {
-            throw new Error("Session ID tidak ditemukan di localStorage");
+
+        // 2. Cek Keberadaan Sesi (Jika hilang, ini error sistem -> RELOAD)
+        let travelId = localStorage.getItem('current_session_id');
+        const lastSession = await db.travel_sessions.toCollection().last();
+        
+        if (!travelId || !lastSession) {
+            console.error("Critical: Sesi hilang dari storage!");
+            location.reload(); 
+            return;
         }
+
+        // 3. Proses Enkripsi
         const updatetime = encryptData(new Date().toISOString());
-        await db.travel_sessions.update(travelId, {
-            lat: encryptData(currentPos.lat.toString()),
-            lng: encryptData(currentPos.lng.toString()),
+        const latEnc = encryptData(currentPos.lat.toString());
+        const lngEnc = encryptData(currentPos.lng.toString());
+
+        // 4. Update Dexie (Lokal harus selalu sukses)
+        await db.travel_sessions.update(lastSession.idseason, {
+            lat: latEnc,
+            lng: lngEnc,
             updated_at: updatetime,
         });
+
+        // 5. Update Supabase
         const { error: supabaseError } = await supabase
             .from('path_history')
-            .update({
-                lat: encryptData(currentPos.lat.toString()),
-                lng: encryptData(currentPos.lng.toString()),
-                updated_at: updatetime,
-            })
-            .eq('idseason', travelId);
-        if (navigator.vibrate) {
-            navigator.vibrate(200);
-        }
-        console.log("update data ke supabase setiap 5 menit berhasil");
+            .update({ lat: latEnc, lng: lngEnc, updated_at: updatetime })
+            .eq('idseason', lastSession.idseason);
+
+        // --- FILTER ERROR DI SINI ---
         if (supabaseError) {
-            console.error('Error update ke Supabase:', supabaseError.message);
+            // Cek apakah error karena masalah jaringan (offline/timeout)
+            const isNetworkError = 
+                !navigator.onLine || 
+                supabaseError.message.includes("FetchError") || 
+                supabaseError.code === "PGRST301" || // Contoh code timeout/lost connection
+                supabaseError.status === 0;
+
+            if (isNetworkError) {
+                console.warn("Gagal update karena SIGNAL. Dexie aman, skip reload.");
+            } else {
+                // Jika errornya karena coding (salah nama kolom, query ditolak, dll)
+                console.error("Error Coding/Database:", supabaseError.message);
+                location.reload();
+            }
+        } else {
+            if (navigator.vibrate) navigator.vibrate(200);
+            console.log("Sync Berhasil!");
         }
+
     } catch (err) {
-        console.error("Gagal simpan sesi PouchDB:", err);
+        // Catch ini biasanya menangkap error coding (SyntaxError, TypeError, dll)
+        console.error("Runtime Script Error:", err);
+        
+        // Tetap cek: Kalau internet mati saat proses enkripsi/logic, jangan reload.
+        if (navigator.onLine) {
+            location.reload();
+        }
     }
 }
 
@@ -1834,3 +1883,88 @@ function encodePolyline(points) {
     }
     return str;
 }
+
+let allLogs = []; // Penampung log selama sesi berjalan
+let currentChannel = null; // Penampung channel aktif
+
+async function startTunnelListener(uid) {
+    // 0. Safety Check: Tutup terowongan lama kalau ada (mencegah duplikasi notif)
+    if (currentChannel) {
+        console.log("Menutup terowongan lama...");
+        await supabase.removeChannel(currentChannel);
+    }
+
+    // 1. Initial Load: Ambil 5 data terakhir (Irit Bandwidth)
+    const { data, error } = await supabase
+        .from('path_history')
+        .select('*')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(5);
+    
+    if (!error) {
+        allLogs = data;
+        renderToUI(allLogs);
+    }
+
+    // 2. Buka Terowongan Realtime
+    currentChannel = supabase
+        .channel('db-changes')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'path_history',
+                filter: `user_id=eq.${uid}`
+            },
+            (payload) => {
+                console.log('Data Masuk:', payload.new);
+
+                // Tambahkan ke daftar (paling atas)
+                allLogs.unshift(payload.new);
+                
+                // Update Tampilan UI
+                renderToUI(allLogs);
+
+                // --- PANGGIL NOTIF DI SINI ---
+                const waktu = new Date(payload.new.created_at).toLocaleTimeString('id-ID', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                // Contoh pesan: "Update Lokasi Berhasil: 14:05 WIB"
+                showPushNotif(`Update Lokasi Berhasil: ${waktu} WIB`);
+            }
+        )
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log("Terowongan tersambung dan siap menerima data!");
+            }
+        });
+}
+
+// Helper Fungsi Notif (Sederhana tapi Ganteng)
+function showPushNotif(msg) {
+    const notif = document.createElement('div');
+    notif.className = 'toast-notif';
+    notif.innerText = msg;
+    
+    // Styling dikit biar nggak malu-maluin
+    Object.assign(notif.style, {
+        position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+        background: '#10b981', color: 'white', padding: '10px 20px',
+        borderRadius: '20px', zIndex: '9999', boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        fontSize: '13px', fontWeight: 'bold'
+    });
+
+    document.body.appendChild(notif);
+    
+    if (navigator.vibrate) navigator.vibrate(100);
+
+    setTimeout(() => {
+        notif.style.opacity = '0';
+        setTimeout(() => notif.remove(), 500);
+    }, 3000);
+}
+
