@@ -864,9 +864,11 @@ async function re_initEventListeners() {
 
     const btnlogin = document.getElementById('handleManualLogin');
     if (btnlogin) {
-        const passInput = confirm("apakah pasword dan email sudah diisi? klik cancel untuk batal.");
         btnlogin.addEventListener('click', async () => {
-            await handleManualLogin();
+            const passInput = confirm("apakah pasword dan email sudah diisi? klik cancel untuk batal.");
+            if (passInput) {
+                await handleManualLogin();
+            }
         });
     }
 
