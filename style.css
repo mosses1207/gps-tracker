@@ -344,42 +344,6 @@ td {
     flex-direction: column;
     gap: 12px;
 }
-
-@media (min-width: 600px) {
-    .input-group-wrapper {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-
-    #no_sjkb,
-    #tujuan_dealer {
-        flex: 2;
-    }
-
-    .mobile-input-row {
-        flex: 1.5;
-    }
-}
-
-@media (max-width: 599px) {
-    .mobile-input-row {
-        display: flex;
-        gap: 10px;
-        width: 100%; /* Pastiin row-nya penuhin container */
-    }
-
-    #lt_input {
-        max-width: none !important; /* Lepas kunci 100px-nya */
-        flex: 1; /* LT bakal ngambil sisa ruang di kiri */
-    }
-
-    .btn-scan {
-        flex: 0 0 auto; /* Tombol foto ukurannya tetep (nggak ikut melar) */
-        width: auto;
-        min-width: 100px;
-    }
-}
-
 .leaflet-marker-icon.custom-pin {
     background: none !important;
     border: none !important;
@@ -1148,15 +1112,41 @@ input[readonly]:focus {
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
 }
 
-/* Penyesuaian buat HP */
-@media (max-width: 600px) {
-    .search-container {
+
+@media (min-width: 600px) {
+    .input-group-wrapper {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    #no_sjkb,
+    #tujuan_dealer {
+        flex: 2;
+    }
+
+    .mobile-input-row {
+        flex: 1.5;
+        display: flex;
+        gap: 10px;
+        width: 100%; /* Pastiin row-nya penuhin container */
+    }
+
+        .search-container {
         padding: 10px;
     }
     #searchInput {
         padding: 12px 15px 12px 40px;
         font-size: 14px;
     }
-}
+        #lt_input {
+        max-width: none !important; /* Lepas kunci 100px-nya */
+        flex: 1; /* LT bakal ngambil sisa ruang di kiri */
+    }
 
+    .btn-scan {
+        flex: 0 0 auto; /* Tombol foto ukurannya tetep (nggak ikut melar) */
+        width: auto;
+        min-width: 100px;
+    }
+}
 
