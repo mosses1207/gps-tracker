@@ -689,7 +689,7 @@ async function checkActiveSessiononline() {
         console.error("Gagal memuat sesi aktif, percobaan ke-", retryCount + 1, ":", error);
         if (retryCount < 3) {
             retryCount++;
-            logger("Mencoba lagi untuk memuat sesi aktif... (Percobaan ke-" + retryCount + ")");
+            console.error("Mencoba lagi untuk memuat sesi aktif... (Percobaan ke-" + retryCount + ")");
             setTimeout(checkActiveSessiononline, 2000);
         } else {
             alert("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
