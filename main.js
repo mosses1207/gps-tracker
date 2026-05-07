@@ -82,7 +82,7 @@ let finishMarker = null;
 let initialBody = "";
 
 window.addEventListener('DOMContentLoaded', async () => {
-    await hideAllOverlays;
+    await hideAllOverlays();
     console.log("Ambil inital body");
     await ambildatahtml();
     console.log("Merubah flag tracking menjadi off");
