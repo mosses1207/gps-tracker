@@ -108,6 +108,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     } else {
         console.warn("User belum login (user_session kosong)");
     }
+    hideTargetInfo();
+    //loadTargetFromDexie();
 });
 
 function hideAllOverlays() {
@@ -548,6 +550,8 @@ async function checkActiveSessionoffline() {
                     if (btnSampai) {
                         btnSampai.style.display = 'block';
                     }
+                //hideTargetInfo();
+                loadTargetFromDexie();
                 } else {
                     console.error("Rute yang dipilih tidak valid atau tidak ditemukan di sesi Dexie.");
                 }
@@ -628,6 +632,8 @@ function updateUIFromSession(session) {
     isTrackingActive = true;
     isAutoCenter = true;
     startTracking();
+    //hideTargetInfo();
+    loadTargetFromDexie();
     //stopTracking();
 }
 
@@ -1735,6 +1741,8 @@ async function handleSampai() {
         }
         console.log("berhasil menyelesaikan perjalanan");
         alert("perjalanan selesai");
+        hideTargetInfo();
+        //loadTargetFromDexie();
     } catch (e) {
         console.error("Fatal Error saat Finish:", e);
 
@@ -2030,3 +2038,39 @@ window.filterTable = function() {
     renderToUI(filteredData);
 };
 
+async function loadTargetFromDexie() {
+    try {
+        // 1. Ambil data terakhir dari tabel travel_sessions di Dexie
+        const session = await db.travel_sessions.toArray();
+        
+        if (session && session.length > 0) {
+            // Ambil data paling baru (indeks terakhir atau sesuaikan logika abang)
+            const lastSession = session[session.length - 1];
+
+            if (lastSession.arrive_target) {
+                // 2. DEKRIPSI datanya dulu
+                const decryptedISO = decryptData(lastSession.arrive_target);
+                
+                // 3. Format jadi jam yang enak dibaca (misal: 14:30)
+                const jamTarget = new Date(decryptedISO).toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // 4. Panggil saklar showTargetInfo yang kita buat tadi
+                window.showTargetInfo(jamTarget + " WIB");
+            }
+        }
+    } catch (error) {
+        console.error("Gagal load target dari Dexie:", error);
+    }
+}
+
+window.hideTargetInfo = function() {
+    const targetBox = document.querySelector('.target');
+    if (targetBox) {
+        // Pasang lagi class hidden-nya
+        targetBox.classList.add('hidden');
+        console.log("Target UI disembunyikan.");
+    }
+};
