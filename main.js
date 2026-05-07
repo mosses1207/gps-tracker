@@ -2013,7 +2013,7 @@ function renderToUI(items) {
 
 window.filterTable = function() {
     // 1. Ambil kata kunci dari input
-    const keyword = document.getElementById('searchInput').value.toLowerCase();
+    const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
     
     // 2. Filter data dari variabel allLogs (yang udah kita simpen tadi)
     const filteredData = allLogs.filter(item => {
@@ -2029,3 +2029,4 @@ window.filterTable = function() {
     // Kita panggil lagi fungsi renderToUI yang udah kita buat sebelumnya
     renderToUI(filteredData);
 };
+
