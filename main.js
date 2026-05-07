@@ -121,8 +121,8 @@ async function checkSessionGate() {
     if (isOnline) {
         // --- JALUR ONLINE ---
         if (!isSessionValid) {
-            console.log("Sesi expired/kosong. Meminta login ulang (Online)...");
             await initSystem();
+            console.log("Sesi expired/kosong. Meminta login ulang (Online)...");
             return; 
         }
         console.log("Sesi valid. Memuat sistem online...");
@@ -149,18 +149,15 @@ async function checkSessionGate() {
 }
 
 async function initSystem() {
-    try {
+    try { 
         updateLoading(20, "Mengecek Hak Akses...");
         const { data: { session }, error } = await supabase.auth.getSession();
-
+        console.log("Hasil getSession:", { session, error });
         if (error) throw error;
-
         if (session) {
             localStorage.removeItem('google_sdk_retry');
             const user = session.user;
             const metadata = user.user_metadata;
-            
-            // Simpan data user terbaru dari session Supabase
             const userData = {
                 email: user.email,
                 uid: user.id,
@@ -168,21 +165,17 @@ async function initSystem() {
                 photo: metadata.avatar_url || metadata.picture || "",
                 lastLogin: new Date().toISOString()
             };
-            
             localStorage.setItem('user_session', JSON.stringify(userData));
-            
-            // Jika masuk sini, berarti session oke, bisa lanjut ke sistem utama
             updateLoading(100, "Berhasil masuk");
-            
+            console.log("Sesi ditemukan, user sudah login:", userData);
         } else {
-            // Jika tidak ada session, arahkan ke form login (Google/Manual)
+            console.log("Tidak ada sesi aktif. Meminta login...");
             handleUnauthenticated();
         }
     } catch (error) {
         console.error("Gagal percobaan:", error);
         if (retryCount < 3) {
             retryCount++;
-            // Gunakan console.log jika fungsi logger belum stabil
             console.log("Mencoba lagi (Percobaan ke-" + retryCount + ")");
             setTimeout(initSystem, 2000);
         } else {
@@ -204,31 +197,26 @@ function handleUnauthenticated() {
     updateLoading(30, "Menyiapkan Gerbang Login...");
     const emergencyTimer = setTimeout(() => {
         const btn = document.getElementById("google-login-btn");
-        
-        // Cek apakah di dalam container tombol masih kosong (artinya render gagal)
         if (btn && btn.innerHTML.trim() === "") {
             console.error("Authentication Timeout: Tombol Google gagal dimuat.");
             showOfflineScreen("<b>Gagal Memuat Sistem Login</b><br>Layanan otentikasi ditolak (Error 403) atau koneksi terganggu.");
-            logger("Emergency Timer Triggered: Google Login button failed to load within expected time.");
+            console.log("Emergency Timer Triggered: Google Login button failed to load within expected time.");
             stopAllSystem();
         }   
     }, 6000); 
-
-    // 2. CEK SDK GOOGLE
     if (typeof google !== 'undefined' && google.accounts) {
+        console.log("Google SDK terdeteksi, menampilkan tombol login...");
         renderGoogleButton();
-        // Timer di atas tetap jalan, kalau renderGoogleButton gagal (karena 403), 
-        // timer akan memicu showOfflineScreen setelah 6 detik.
     } else {
-        // Jika SDK benar-benar tidak ada (terblokir total/offline)
+        console.warn("Google SDK tidak terdeteksi saat inisialisasi.");
         clearTimeout(emergencyTimer);
         handleSDKLoadFailure();
     }
 }
 
-// 2. Fungsi Render UI (Google + Persiapan Manual)
 function renderGoogleButton() {
     // Inisialisasi Google
+    console.log("Menginisialisasi Google Sign-In...");
     google.accounts.id.initialize({
         client_id: googleClientId,
         callback: handleCredentialResponse,
@@ -237,6 +225,7 @@ function renderGoogleButton() {
 
     const googleBtnDiv = document.getElementById("google-login-btn");
     if (googleBtnDiv) {
+        console.log("Merender tombol Google Sign-In...");
         const parentWidth = googleBtnDiv.offsetWidth || 350;
         google.accounts.id.renderButton(googleBtnDiv, {
             theme: "outline",
@@ -329,7 +318,7 @@ function handleSDKLoadFailure() {
     } else {
         localStorage.removeItem('google_sdk_retry');
         showOfflineScreen("SDK Google tidak dapat dimuat. Pastikan koneksi stabil.");
-        log.console.error("Gagal memuat Google SDK setelah beberapa percobaan.");
+        console.error("Gagal memuat Google SDK setelah beberapa percobaan.");
         stopAllSystem();
     }
 }
@@ -361,7 +350,7 @@ async function initSatpam() {
         } catch (e) {
             console.error(`Gagal pada percobaan ke-${attempt}:`, e);
             if (attempt >= MAX_RETRIES) {
-                if (progressText) progressText.innerText = "Koneksi Gagal. Sistem Diblokir.";
+                console.error("Koneksi Gagal. Sistem Diblokir.");
                 throw new Error("BLOCK: Gagal inisialisasi OCR setelah 3 kali percobaan.");
             }
             await new Promise(resolve => setTimeout(resolve, 1500));
@@ -436,7 +425,7 @@ async function checkActiveSessionoffline() {
         const sessionId = activeSession ? activeSession.idseason : null;
         if (sessionId) {
             startTracking();
-            logger("Sesi aktif ditemukan di Dexie:", sessionId);
+            console.log("Sesi aktif ditemukan di Dexie:", sessionId);
             const noSJKB = decryptData(activeSession.sjkb);
             if (noSJKB) {
                 const inputSJKB = document.getElementById('no_sjkb');
@@ -462,7 +451,7 @@ async function checkActiveSessionoffline() {
                     inputLt.value = `${durasiMenit} Menit`;
                 }
             } else {
-                logger("Waktu berangkat atau target sampai tidak valid di sesi Dexie.");
+                console.error("Waktu berangkat atau target sampai tidak valid di sesi Dexie.");
             }
             if (!isNaN(targetSampai)) {
                 const formattanggal = {
@@ -523,15 +512,15 @@ async function checkActiveSessionoffline() {
                     }
 
                 } else {
-                    logger("Rute yang dipilih tidak valid atau tidak ditemukan di sesi Dexie.");
+                    console.error("Rute yang dipilih tidak valid atau tidak ditemukan di sesi Dexie.");
                 }
             }, 1500);
             isTrackingActive = true;
             if (typeof requestWakeLock === 'function') requestWakeLock();
-            logger("Sesi aktif berhasil dimuat dari Dexie, sistem siap melanjutkan tracking.");
+            console.log("Sesi aktif berhasil dimuat dari Dexie, sistem siap melanjutkan tracking.");
             retryCount = 0;
         } else {
-            logger("Tidak ada sesi aktif di Dexie.");
+            console.error("Tidak ada sesi aktif di Dexie.");
             retryCount = 0;
             resetTampilan();
         }
@@ -539,7 +528,7 @@ async function checkActiveSessionoffline() {
         console.error("Gagal memuat sesi aktif, percobaan ke-", retryCount + 1, ":", error);
         if (retryCount < 3) {
             retryCount++;
-            logger("Mencoba lagi untuk memuat sesi aktif... (Percobaan ke-" + retryCount + ")");
+            console.log("Mencoba lagi untuk memuat sesi aktif... (Percobaan ke-" + retryCount + ")");
             setTimeout(checkActiveSessionoffline, 2000);
         } else {
             alert("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
