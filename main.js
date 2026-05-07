@@ -2010,3 +2010,22 @@ function renderToUI(items) {
         `;
     }).join('');
 }
+
+window.filterTable = function() {
+    // 1. Ambil kata kunci dari input
+    const keyword = document.getElementById('searchInput').value.toLowerCase();
+    
+    // 2. Filter data dari variabel allLogs (yang udah kita simpen tadi)
+    const filteredData = allLogs.filter(item => {
+        // Dekripsi dulu buat dibandingin (karena data di allLogs masih terenkripsi)
+        const sjkb = decryptData(item.sjkb).toLowerCase();
+        const tujuan = decryptData(item.dest).toLowerCase();
+        
+        // Cek apakah keyword ada di SJKB atau Tujuan
+        return sjkb.includes(keyword) || tujuan.includes(keyword);
+    });
+
+    // 3. Render ulang tampilannya pake data yang udah difilter
+    // Kita panggil lagi fungsi renderToUI yang udah kita buat sebelumnya
+    renderToUI(filteredData);
+};
