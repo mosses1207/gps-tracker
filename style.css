@@ -1056,3 +1056,47 @@ input[readonly]:focus {
 .toggle-password:hover svg {
     stroke: #1e293b;
 }
+
+
+.log-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px;
+    max-height: 400px; /* Biar bisa di-scroll kalau banyak */
+    overflow-y: auto;
+}
+
+.log-card {
+    background: #ffffff;
+    border-left: 5px solid #2563eb; /* Aksen warna biru Toyota */
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.log-card .header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+.log-card .detail {
+    font-size: 0.9rem;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+}
+
+.log-card .status-time {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-align: right;
+}
