@@ -84,8 +84,6 @@ let initialBody = "";
 window.addEventListener('DOMContentLoaded', async () => {
     console.log("Ambil inital body");
     await ambildatahtml();
-    console.log("hide overlay");
-    await hideAllOverlays();
     console.log("Merubah flag tracking menjadi off");
     await stopTracking();
     console.log("merubah flag istracking");
@@ -101,14 +99,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-function hideAllOverlays() {
-    const overlays = ['loading-satpam', 'login-overlay', 'loading-overlay'];
-    overlays.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-}
 
 async function ambildatahtml() {
     function resetAppToDefault() {
@@ -615,10 +605,10 @@ function updateUIFromSession(session) {
     }
     if (document.getElementById('btnBerangkat')) document.getElementById('btnBerangkat').style.display = 'none';
     if (document.getElementById('btnSampai')) document.getElementById('btnSampai').style.display = 'block';
-        isTrackingActive = true;
-        isAutoCenter = true;
-        startTracking();
-        //stopTracking();
+    isTrackingActive = true;
+    isAutoCenter = true;
+    startTracking();
+    //stopTracking();
 }
 
 async function checkActiveSessiononline() {
@@ -752,19 +742,22 @@ async function updateLocationSuccess(position) {
             const sessions = await db.travel_sessions.toArray();
             if (sessions.length > 0) {
                 const currentSession = sessions[0];
-                let pathArray = [];
+                let path = [];
+
                 if (currentSession.path_hist) {
-                    const decryptedPath = decryptData(currentSession.path_hist);
-                    pathArray = JSON.parse(decryptedPath);
+                    try {
+                        path = typeof currentSession.path_hist === 'string'
+                            ? JSON.parse(currentSession.path_hist)
+                            : currentSession.path_hist;
+                    } catch (e) {
+                        path = [];
+                    }
                 }
-                pathArray.push([latitude, longitude]);
+                path.push([latitude, longitude, speedKmH, new Date().toISOString()]);
                 await db.travel_sessions.update(currentSession.idseason, {
-                    lat: encryptData(latitude.toString()),
-                    lng: encryptData(longitude.toString()),
-                    updated_at: encryptData(new Date().toISOString()),
-                    path_hist: encryptData(JSON.stringify(pathArray))
-                });                
-                console.log("Posisi & Path berhasil disimpan ke Dexie.");
+                    path_hist: JSON.stringify(path),
+                });
+                console.log("Path berhasil diupdate");
             }
         } catch (err) {
             console.error("Gagal update path ke Dexie:", err);
@@ -1667,6 +1660,7 @@ async function handleBerangkat() {
 async function handleSampai() {
     if (!confirm("Apakah Anda sudah sampai di lokasi tujuan?")) return;
     try {
+        await syncPathToSupabase();
         localStorage.removeItem('current_session_id');
         await db.travel_sessions.clear();
         isTrackingActive = false;
@@ -1702,7 +1696,6 @@ async function handleSampai() {
         deliveryData = null;
         currentPolyline = null;
         finishMarker = null;
-        alert("Sampai Tujuan!.");
         const btnScan = document.getElementById('btnScanAction');
         stopTracking();
         if (btnScan) {
@@ -1710,7 +1703,22 @@ async function handleSampai() {
             btnScan.style.opacity = "1"; // Opsional: biar kelihatan redup/mati
             btnScan.style.cursor = "pointer";
         }
+        console.log("berhasil menyelesaikan perjalanan");
+        alert("perjalanan selesai");
     } catch (e) {
+        console.error("Fatal Error saat Finish:", e);
+
+        // Tampilkan modal/alert yang lebih informatif
+        const pesanError = e.message || "Koneksi terputus";
+
+        const konfirmasiUlang = confirm(
+            "Gagal Mengirim Laporan Ke Server!" +
+            "Data perjalanan masih aman di HP. Pastikan internet aktif dan coba klik 'Selesai' lagi.\n\n" +
+            "Coba kirim ulang sekarang?"
+        );
+        if (konfirmasiUlang) {
+            handleSampai();
+        }
     }
 }
 
@@ -1741,6 +1749,7 @@ async function handleUpdate5menit() {
         if (navigator.vibrate) {
             navigator.vibrate(200);
         }
+        console.log("update data ke supabase setiap 5 menit berhasil");
         if (supabaseError) {
             console.error('Error update ke Supabase:', supabaseError.message);
         }
@@ -1748,8 +1757,11 @@ async function handleUpdate5menit() {
         console.error("Gagal simpan sesi PouchDB:", err);
     }
 }
+
 let trackingInterval = null;
+
 function startTracking() {
+    console.log("update ke supabase setiap 5 menit aktif")
     // 300000 ms = 5 menit
     trackingInterval = setInterval(() => {
         handleUpdate5menit();
@@ -1757,8 +1769,60 @@ function startTracking() {
 }
 
 function stopTracking() {
+    console.log("update ke supabase setiap 5 menit tidak aktif")
     if (trackingInterval) {
         clearInterval(trackingInterval);
         trackingInterval = null;
     }
+}
+
+
+async function syncPathToSupabase() {
+    try {
+        const sessions = await db.travel_sessions.toArray();
+        if (sessions.length === 0) return;
+        const currentSession = sessions[0];
+        if (!currentSession.path_hist) return;
+        const fullPath = JSON.parse(currentSession.path_hist);
+        const encPoly = encryptData(encodePolyline(fullPath.map(p => [p[0], p[1]])));
+        const encSpeeds = encryptData(JSON.stringify(fullPath.map(p => p[2])));
+        const encTimes = encryptData(JSON.stringify(fullPath.map(p => p[3])));
+        const pathData = [encPoly, encSpeeds, encTimes];
+        const { error } = await supabase
+            .from('travel_history')
+            .update({
+                path_hist: JSON.stringify(pathData),
+                updated_at: encryptData(new Date().toISOString()),
+                status: "Arrive"
+            })
+            .eq('idseason', currentSession.idseason)
+            .eq('user_id', userSession.uid);
+        if (error) throw error;
+        console.log("✅ Data masuk ke kolom TEXT Supabase!");
+    } catch (err) {
+        console.error("Gagal sinkronisasi:", err);
+    }
+}
+
+function encodePolyline(points) {
+    let lastLat = 0;
+    let lastLng = 0;
+    let str = "";
+    function encodeValue(value) {
+        value = value < 0 ? ~(value << 1) : (value << 1);
+        while (value >= 0x20) {
+            str += String.fromCharCode((0x20 | (value & 0x1f)) + 63);
+            value >>= 5;
+        }
+        str += String.fromCharCode(value + 63);
+    }
+    for (let point of points) {
+        let lat = Math.round(point[0] * 1e5);
+        let lng = Math.round(point[1] * 1e5);
+        encodeValue(lat - lastLat);
+        encodeValue(lng - lastLng);
+        lastLat = lat;
+        lastLng = lng;
+    }
+    return str;
 }
