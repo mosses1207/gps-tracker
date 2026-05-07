@@ -290,6 +290,10 @@ async function handleCredentialResponse(response) {
         if (loginoverlay) {
             loginoverlay.style.display = "none";
         }
+        const areagoogle = document.getElementById('area-google');
+        if  (areagoogle){
+            areagoogle.style.display = "none";
+        }
         location.reload();
     } else {
         // Simpan data agar checkSessionGate mengenali sesi setelah reload
@@ -303,6 +307,10 @@ async function handleCredentialResponse(response) {
         const loginoverlay = document.getElementById('login-overlay');
         if (loginoverlay) {
             loginoverlay.style.display = "none";
+        }
+        const areagoogle = document.getElementById('area-google');
+        if  (areagoogle){
+            areagoogle.style.display = "none";
         }
         updateLoading(100, "Login Berhasil!");
         location.reload();
@@ -319,6 +327,10 @@ function handleSDKLoadFailure() {
         const loginoverlay = document.getElementById('login-overlay');
         if (loginoverlay) {
             loginoverlay.style.display = "none";
+        }
+        const areagoogle = document.getElementById('area-google');
+        if  (areagoogle){
+            areagoogle.style.display = "none";
         }
         location.reload();
     } else {
@@ -844,7 +856,7 @@ async function handleManualLogin() {
         if (loginoverlay) {
             loginoverlay.style.display = "none";
         }
-        
+
     } else {
         const userData = {
             email: data.user.email,
@@ -853,8 +865,13 @@ async function handleManualLogin() {
             lastLogin: new Date().toISOString()
         };
         localStorage.setItem('user_session', JSON.stringify(userData));
+        const loginoverlay = document.getElementById('login-overlay');
         if (loginoverlay) {
-        loginoverlay.style.display = "none";
+            loginoverlay.style.display = "none";
+        }
+        const areagoogle = document.getElementById('area-google');
+        if  (areagoogle){
+            areagoogle.style.display = "none";
         }
         updateLoading(100, "Login Berhasil!");
         setTimeout(() => { location.reload(); }, 800);
