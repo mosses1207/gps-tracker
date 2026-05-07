@@ -830,19 +830,18 @@ async function handleManualLogin() {
 
 function togglePassword() {
     const passwordInput = document.getElementById("login-password");
-    const eyeIcon = document.getElementById("eye-icon");
+    const theSvg = document.getElementById("eye-icon"); // ID SVG kamu
+    
     if (passwordInput.type === "password") {
         passwordInput.type = "text";
-        eyeIcon.innerHTML = `
-            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20
-            C5 20 1 12 1 12a21.8 21.8 0 0 1 5.06-5.94"/>
-            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4
-            c7 0 11 8 11 8a21.8 21.8 0 0 1-4.06 5.94"/>
+        theSvg.innerHTML = `
+            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20 C5 20 1 12 1 12a21.8 21.8 0 0 1 5.06-5.94"/>
+            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4 c7 0 11 8 11 8a21.8 21.8 0 0 1-4.06 5.94"/>
             <line x1="1" y1="1" x2="23" y2="23"/>
         `;
     } else {
         passwordInput.type = "password";
-        eyeIcon.innerHTML = `
+        theSvg.innerHTML = `
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
             <circle cx="12" cy="12" r="3"/>
         `;
@@ -851,16 +850,19 @@ function togglePassword() {
 
 async function re_initEventListeners() {
 
-    const eyeIcon = document.getElementById("eyebutton");
-    if (eyeIcon) {
-        eyeIcon.addEventListener('click', async () => {
-            togglePassword();
-            eyeBtn.style.transform = "translateY(-50%) scale(0.9)";
-            setTimeout(() => {
-                eyeBtn.style.transform = "translateY(-50%) scale(1)";
-            }, 100);
-        });
-    }
+    const theButton = document.getElementById("eyebuton"); 
+
+if (theButton) {
+    theButton.addEventListener('click', async () => {
+        togglePassword(); // Jalankan fungsi ganti mata & tipe input
+        
+        // Kasih efek klik ke TOMBOLNYA
+        theButton.style.transform = "translateY(-50%) scale(0.9)";
+        setTimeout(() => {
+            theButton.style.transform = "translateY(-50%) scale(1)";
+        }, 100);
+    });
+}
 
     const btnlogin = document.getElementById('handleManualLogin');
     if (btnlogin) {
