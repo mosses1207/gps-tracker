@@ -223,8 +223,15 @@ function renderGoogleButton() {
         auto_select: false,
     });
 
+    const loginoverlay = document.getElementById('login-overlay');
     const googleBtnDiv = document.getElementById("google-login-btn");
     const googlearea = document.getElementById("area-google");
+        if (loginoverlay) {
+            console.log("Menampilkan overlay login...");
+            loginoverlay.style.display = "flex";
+        } else {
+            console.warn("Elemen login-overlay tidak ditemukan. Pastikan elemen dengan id 'login-overlay' ada di HTML.");
+        }
         if (googlearea) {
             console.log("Menampilkan area Google Sign-In...");
             document.getElementById("area-google").style.display = "block";
