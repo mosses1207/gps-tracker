@@ -13,7 +13,6 @@
 </head>
 
 <body>
-
   <div id="loading-satpam"
     style="position:fixed !important; top:0; left:0; width:100%; height:100%; background:white !important; z-index:100000 !important; display:flex; flex-direction:column; align-items:center; justify-content:center;">
     <div class="spinner"></div>
@@ -23,45 +22,34 @@
       sedang Memuat Data.
     </small>
   </div>
-
-
   <!-- 🔷 HEADER -->
   <!-- Mini Logger (Debug Mode) 
   <div id="debug-log"> 
   <div>-- System Log Ready --</div> 
   </div> -->
-
   <header class="main-header">
     <div class="brand-section">
       <div class="brand-logo">
         <img src="/Toyota-Logo-Free.png" alt="Toyota">
       </div>
-
       <div class="brand-title">
         <h1>NVDC CIBITUNG SYSTEM</h1>
         <p>Delivery Monitoring System</p>
       </div>
     </div>
-
     <div id="status-container" class="system-status">
       <div id="status-dot" class="status-dot"></div>
       <span id="status-text">SYSTEM ONLINE</span>
     </div>
   </header>
-
   <button id="btn-dashboard" class="btn-monitor-nav">Dashboard</button>
-
   <div id="login-overlay">
     <div class="login-card">
       <div class="brand-logo" style="margin-bottom: 10px;">
         <img src="/Toyota-Logo-Free.png" alt="Toyota" style="width: 50px;">
       </div>
       <h2 id="title-login">Akses Sistem</h2>
-
-
-      <!-- Bagian Login -->
       <div id="area-google" class="fade-in">
-        <!-- Icon Shield -->
         <div
           style="background: #f8fafc; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -69,11 +57,8 @@
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
         </div>
-
         <p style="font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Selamat Datang Kembali</p>
         <p style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">Silakan masuk untuk melanjutkan ke sistem.</p>
-
-        <!-- FORM LOGIN MANUAL -->
         <div style="text-align: left; margin-bottom: 20px;">
           <div style="margin-bottom: 12px;">
             <label style="font-size: 12px; color: #64748b; margin-bottom: 4px; display: block;">Email</label>
@@ -81,38 +66,31 @@
               style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; transition: 0.3s;"
               onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
           </div>
-
           <div class="password-group">
-  <label class="password-label">Password</label>
-  <div class="password-wrapper">
-    <input type="password" id="login-password" class="password-input" placeholder="••••••••">
-    <button type="button" class="toggle-password" id = "eyebuton" >
-      <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-    </button>
-  </div>
-</div>
-          
-          <button id= "handleManualLogin"
+            <label class="password-label">Password</label>
+            <div class="password-wrapper">
+              <input type="password" id="login-password" class="password-input" placeholder="••••••••">
+              <button type="button" class="toggle-password" id="eyebuton">
+                <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                  fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button id="handleManualLogin"
             style="width: 100%; padding: 12px; background: #1e293b; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s;"
             onmouseover="this.style.background='#0f172a'" onmouseout="this.style.background='#1e293b'">
             Masuk ke Sistem
           </button>
         </div>
-
-        <!-- Pembatas (OR) -->
         <div style="display: flex; align-items: center; margin-bottom: 20px; opacity: 0.5;">
           <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
           <span style="font-size: 11px; color: #94a3b8; padding: 0 10px;">ATAU</span>
           <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
         </div>
-
-        <!-- Container Tombol Google -->
         <div id="google-login-btn" class="google-btn-container"></div>
-
-        <!-- Footer Keamanan -->
         <div
           style="margin-top: 30px; display: flex; align-items: center; justify-content: center; gap: 8px; opacity: 0.6;">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -123,10 +101,6 @@
           <span style="font-size: 11px; color: #64748b; letter-spacing: 0.5px;">SECURED BY GOOGLE AUTH & SUPABASE</span>
         </div>
       </div>
-
-
-
-      <!-- Bagian Admin Login -->
       <div id="area-admin" style="display: none;">
         <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Khusus Manajemen / Admin</p>
         <input type="text" id="userAdmin" placeholder="Username / Email">
@@ -139,7 +113,6 @@
       </div>
     </div>
   </div>
-
   <div id="camera-container"
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999;">
     <video id="video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
@@ -166,24 +139,13 @@
       </button>
     </div>
   </div>
-
   <div class="container">
-
     <div class="card">
-
       <div class="input-group-wrapper">
         <input type="text" id="no_sjkb" placeholder="Scan / Input No SJKB" readonly>
         <input type="text" id="tujuan_dealer" placeholder="Tujuan" readonly>
-
-        <!-- Masukin LT ke sini bang biar bisa satu baris -->
-        <div class="mobile-input-row">
-          <input type="text" id="lt_input" placeholder="LT" readonly>
-          <button type="button" id="btnScanAction" class="btn-scan">
-            📸 Foto
-          </button>
-        </div>
+        <input type="text" id="lt_input" placeholder="LT" readonly>
       </div>
-
       <div id="ruteSelectionArea"
         style="margin-top: 15px; display: none; border-top: 1px solid #eee; padding-top: 15px;">
         <p style="font-size: 13px; margin-bottom: 8px; font-weight: bold;">
@@ -191,123 +153,80 @@
         </p>
         <div id="ruteButtons" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
       </div>
-
       <div id="actionArea">
         <br>
-        <button id="btnBerangkat" class="btn-blue">
-          Mulai Perjalanan (Berangkat)
-        </button>
-
-        <button id="btnSampai" class="btn-green">
-          Sampai di Tujuan
-        </button>
+        <button id="btnScanAction" class="btn-scan">📸 Foto</button>
+        <br>
+        <button id="btnBerangkat" class="btn-blue">Mulai Perjalanan (Berangkat)</button>
+        <br>
+        <button id="btnSampai" class="btn-green">Sampai di Tujuan</button>
+        <br>
       </div>
-
-    </div>
-
-    <div id="gpsStatus">
-      <!-- Baris Status -->
-      <div class="gps-info-line">
-        <span>📡 <b>Status GPS:</b> <span id="gpsText">Manual Mode</span></span>
-      </div>
-
-      <!-- Baris Koordinat & Speed -->
-      <div class="gps-stats-row">
-        <div class="stat-group">
-          <span>📍 Lat: <b id="lat">-6.449585</b></span>
-          <span class="separator">|</span>
-          <span>📍 Lng: <b id="lng">107.005443</b></span>
+      <div id="gpsStatus">
+        <div class="gps-info-line">
+          <span>📡 <b>Status GPS:</b> <span id="gpsText">Manual Mode</span></span>
         </div>
-        <div class="stat-group">
-          <span>Speed: <b id="spdDisplay">0</b> km/h</span>
+        <div class="gps-stats-row">
+          <div class="stat-group">
+            <span>📍 Lat: <b id="lat">-6.449585</b></span>
+            <span class="separator">|</span>
+            <span>📍 Lng: <b id="lng">107.005443</b></span>
+          </div>
+          <div class="stat-group">
+            <span>Speed: <b id="spdDisplay">0</b> km/h</span>
+          </div>
         </div>
       </div>
-    </div>
-    <!-- 🔷 END GPS -->
-
-    <!-- 🔷 MAP -->
-
-    <div class="card map-container-main">
-      <!-- Box Nama Jalan (Bagian Atas) -->
-      <div class="location-header-top">
-        <span class="location-icon">📍</span>
-        <span id="street-name">Mendeteksi Jalan...</span>
-      </div>
-
-      <!-- Area Peta (Bagian Bawah) -->
-      <div class="map-content">
-        <div id="map"></div>
-
-        <!-- Info Target & Tombol Recenter tetep di dalem sini -->
-        <div class="target hidden">
-          <span><b>Target Sampai</b> <span id="target-text" class="status-value">-</span></span>
+      <div class="card map-container-main">
+        <div class="location-header-top">
+          <span class="location-icon">📍</span>
+          <span id="street-name">Mendeteksi Jalan...</span>
         </div>
-        <button id="btn-recenter" class="btn-center-map">🎯</button>
+        <div class="map-content">
+          <div id="map"></div>
+          <div class="target">
+            <span><b>Target Sampai</b> <span id="target-text" class="status-value">-</span></span>
+          </div>
+          <button id="btn-recenter" class="btn-center-map">🎯</button>
+        </div>
+      </div>
+      <div class="card" style="padding: 15px;">
+        <div class="search-container">
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Cari SJKB atau Kota Tujuan..."
+              onkeyup="window.filterTable()">
+          </div>
+        </div>
+        <div id="logContainer" class="log-list-container">
+        </div>
       </div>
     </div>
-    <!-- 🔷 END MAP -->
-
-
-    <!-- 🔷 TABLE -->
-    <div class="card" style="padding: 15px;">
-
-<div class="search-container">
-  <div class="search-wrapper">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" placeholder="Cari SJKB atau Kota Tujuan..." onkeyup="window.filterTable()">
-  </div>
-</div>
-
-<div id="logContainer" class="log-list-container">
-    <!-- Data bakal masuk ke sini dalam bentuk card -->
-</div>
-
+    <div id="loading-overlay">
+      <div id="loading-box">
+        <div class="spinner"></div>
+        <p id="loading-text">Memproses...</p>
+      </div>
     </div>
-    <!-- 🔷 END TABLE -->
-
-  </div>
-  <!-- 🔷 END CONTAINER -->
-
-  <!-- 🔷 LOADER -->
-
-  <!-- Overlay FULL SCREEN -->
-  <div id="loading-overlay">
-    <div id="loading-box">
-      <div class="spinner"></div>
-      <p id="loading-text">Memproses...</p>
+    <div id="offline-screen" class="offline-overlay" style="display: none;">
+      <div class="offline-box">
+        <div class="offline-icon">📡</div>
+        <h2>Koneksi Terputus</h2>
+        <p id="offline-message">
+          Aplikasi sedang berjalan dalam mode offline.<br>
+          Data akan disinkronkan saat koneksi kembali.
+        </p>
+        <div class="signal-loader">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <span class="offline-footer">
+          Menunggu koneksi...<br><br>
+          <button onclick="window.location.reload()" class="reload-btn">
+            Muat Ulang Halaman
+          </button>
+        </span>
+      </div>
     </div>
-  </div>
-
-  <!-- 🔷 EMERGENCY SCREEN -->
-<div id="offline-screen" class="offline-overlay" style="display: none;">
-  <div class="offline-box">
-    
-    <div class="offline-icon">📡</div>
-
-    <h2>Koneksi Terputus</h2>
-
-    <p id="offline-message">
-      Aplikasi sedang berjalan dalam mode offline.<br>
-      Data akan disinkronkan saat koneksi kembali.
-    </p>
-
-    <div class="signal-loader">
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
-
-
-
-    <span class="offline-footer">
-      Menunggu koneksi...<br><br>
-      <button onclick="window.location.reload()" class="reload-btn">
-      Muat Ulang Halaman
-    </button>
-    </span>
-
-  </div>
-</div>
-  <!-- 🔷 END EMERGENCY SCREEN -->
-
 </body>
