@@ -81,6 +81,14 @@ const endIcon = L.icon({
 let finishMarker = null;
 let initialBody = "";
 
+if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    console.log = () => {};
+    console.warn = () => {};
+    console.debug = () => {};
+    console.info = () => {};
+    // console.error = () => {}; 
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
     await hideAllOverlays();
     console.log("Ambil inital body");
@@ -100,7 +108,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const sessionRaw = localStorage.getItem('user_session');
     if (sessionRaw) {
         const sessionData = JSON.parse(sessionRaw);
-        const uid = sessionData.uid; 
+        const uid = sessionData.uid;
         if (uid) {
             console.log("UID ditemukan:", uid);
             await startTunnelListener(uid);
@@ -108,7 +116,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     } else {
         console.warn("User belum login (user_session kosong)");
     }
-    hideTargetInfo();
+    //hideTargetInfo();
     //loadTargetFromDexie();
 });
 
@@ -550,8 +558,8 @@ async function checkActiveSessionoffline() {
                     if (btnSampai) {
                         btnSampai.style.display = 'block';
                     }
-                //hideTargetInfo();
-                loadTargetFromDexie();
+                    //hideTargetInfo();
+                    loadTargetFromDexie();
                 } else {
                     console.error("Rute yang dipilih tidak valid atau tidak ditemukan di sesi Dexie.");
                 }
@@ -740,6 +748,7 @@ function isGpsValid(newLat, newLng, accuracy) {
 async function updateLocationSuccess(position) {
     const { latitude, longitude, speed, accuracy } = position.coords;
     const now = Date.now();
+
     if (!isGpsValid(latitude, longitude, accuracy)) {
         const gpsEl = document.getElementById('gpsText');
         if (gpsEl) {
@@ -748,24 +757,34 @@ async function updateLocationSuccess(position) {
         }
         return;
     }
+
     const speedKmH = speed ? Math.round(speed * 3.6) : 0;
     const elLat = document.getElementById('lat');
     const elLng = document.getElementById('lng');
     const elSpd = document.getElementById('spdDisplay');
+
     if (elLat) elLat.innerText = latitude.toFixed(6);
     if (elLng) elLng.innerText = longitude.toFixed(6);
     if (elSpd) elSpd.innerText = speedKmH;
+
     currentPos.lat = latitude;
     currentPos.lng = longitude;
+
     const gpsEl = document.getElementById('gpsText');
     if (gpsEl) {
         gpsEl.innerText = isAutoCenter ? "📡 Live Tracking" : "📍 Manual Mode";
         gpsEl.style.color = "#22c55e";
     }
+
+    // --- LOGIC TRACKING & SIMPAN KE DEXIE ---
     if (typeof isTrackingActive !== 'undefined' && isTrackingActive === true) {
         try {
             const sessions = await db.travel_sessions.toArray();
-            if (sessions.length > 0) {
+            
+            // JIKA TIDAK ADA SESI, JANGAN SIMPAN APAPUN
+            if (sessions.length === 0) {
+                console.warn("⚠️ No active session, location not saved to path_hist.");
+            } else {
                 const currentSession = sessions[0];
                 let path = [];
 
@@ -778,24 +797,30 @@ async function updateLocationSuccess(position) {
                         path = [];
                     }
                 }
+
                 path.push([latitude, longitude, speedKmH, new Date().toISOString()]);
+                
                 await db.travel_sessions.update(currentSession.idseason, {
                     path_hist: JSON.stringify(path),
                 });
-                console.log("Path berhasil diupdate");
+                console.log("✅ Path updated in Dexie");
             }
         } catch (err) {
             console.error("Gagal update path ke Dexie:", err);
         }
     }
+
+    // --- LOGIC ALAMAT & MAP ---
     const isMovedFarEnough = (latitude.toFixed(3) !== lastAddressLat || longitude.toFixed(3) !== lastAddressLng);
     const isTimePassed = (now - lastAddressRequestTime > ADDRESS_DEBOUNCE_MS);
+
     if (isMovedFarEnough && isTimePassed) {
         updateStreetName(latitude, longitude);
         lastAddressLat = latitude.toFixed(3);
         lastAddressLng = longitude.toFixed(3);
         lastAddressRequestTime = now;
     }
+
     updateMapDisplay(latitude, longitude);
 }
 
@@ -943,75 +968,76 @@ function togglePassword() {
 }
 
 async function re_initEventListeners() {
+
     const theButton = document.getElementById("eyebuton");
     if (theButton) {
-        theButton.addEventListener('click', async () => {
+        theButton.onclick = async () => {
             togglePassword();
             theButton.style.transform = "translateY(-50%) scale(0.9)";
             setTimeout(() => {
                 theButton.style.transform = "translateY(-50%) scale(1)";
             }, 100);
-        });
+        };
     }
     const btnlogin = document.getElementById('handleManualLogin');
     if (btnlogin) {
-        btnlogin.addEventListener('click', async () => {
+        btnlogin.onclick = async () => {
             const passInput = confirm("apakah pasword dan email sudah diisi? klik cancel untuk batal.");
             if (passInput) {
                 await handleManualLogin();
             }
-        });
+        };
     }
     const btnAreaAdmin = document.getElementById('btn-area-admin');
     if (btnAreaAdmin) {
-        btnAreaAdmin.addEventListener('click', async () => {
+        btnAreaAdmin.onclick = async () => {
             const yakin = confirm("Yakin mau keluar sistem?");
             if (yakin) {
                 await localStorage.removeItem('user_session'); // Hapus cache saat logout
                 const user = document.getElementById('user-name').innerText || "User";
                 const pass = document.getElementById('admin-pass').innerText || "password";
             }
-        });
+        };
     }
     const btnrecenter = document.getElementById('btn-recenter');
     if (btnrecenter) {
-        btnrecenter.addEventListener('click', async () => {
+        btnrecenter.onclick = async () => {
             await recenterMap();
             btnrecenter.style.transform = "scale(0.9)";
             setTimeout(() => btnrecenter.style.transform = "scale(1)", 100);
-        });
+        };
     }
     const btnScanAction = document.getElementById('btnScanAction');
     if (btnScanAction) {
-        btnScanAction.addEventListener('click', async () => {
+        btnScanAction.onclick = async () => {
             await openScanner();
             btnScanAction.style.transform = "scale(0.9)";
             setTimeout(() => btnScanAction.style.transform = "scale(1)", 100);
-        });
+        };
     }
     const btnCloseCamera = document.getElementById('BtnCloseCamera');
     if (btnCloseCamera) {
-        btnCloseCamera.addEventListener('click', async () => {
+        btnCloseCamera.onclick = async () => {
             await closeCamera();
             btnCloseCamera.style.transform = "scale(0.9)";
             setTimeout(() => btnCloseCamera.style.transform = "scale(1)", 100);
-        });
+        };
     }
     const btnBerangkat = document.getElementById('btnBerangkat');
     if (btnBerangkat) {
-        btnBerangkat.addEventListener('click', async () => {
+        btnBerangkat.onclick = async () => {
             await handleBerangkat();
             btnBerangkat.style.transform = "scale(0.9)";
             setTimeout(() => btnBerangkat.style.transform = "scale(1)", 100);
-        });
+        };
     }
     const btnSampai = document.getElementById('btnSampai');
     if (btnSampai) {
-        btnSampai.addEventListener('click', async () => {
-            await handleSampai();
+        btnSampai.onclick = async () => {
             btnSampai.style.transform = "scale(0.9)";
             setTimeout(() => btnSampai.style.transform = "scale(1)", 100);
-        });
+            await handleSampai();
+        };
     }
 }
 
@@ -1741,14 +1767,12 @@ async function handleSampai() {
         }
         console.log("berhasil menyelesaikan perjalanan");
         alert("perjalanan selesai");
-        hideTargetInfo();
+        //hideTargetInfo();
         //loadTargetFromDexie();
     } catch (e) {
         console.error("Fatal Error saat Finish:", e);
-
         // Tampilkan modal/alert yang lebih informatif
         const pesanError = e.message || "Koneksi terputus";
-
         const konfirmasiUlang = confirm(
             "Gagal Mengirim Laporan Ke Server!" +
             "Data perjalanan masih aman di HP. Pastikan internet aktif dan coba klik 'Selesai' lagi.\n\n" +
@@ -1762,35 +1786,25 @@ async function handleSampai() {
 
 async function handleUpdate5menit() {
     try {
-        // 1. Validasi GPS (Bukan error coding, jadi return saja)
         if (!currentPos || isNaN(currentPos.lat) || isNaN(currentPos.lng)) {
             console.warn("Signal GPS Lemah");
             return;
         }
-
-        // 2. Cek Keberadaan Sesi (Jika hilang, ini error sistem -> RELOAD)
         let travelId = localStorage.getItem('current_session_id');
         const lastSession = await db.travel_sessions.toCollection().last();
-        
         if (!travelId || !lastSession) {
             console.error("Critical: Sesi hilang dari storage!");
-            location.reload(); 
+            location.reload();
             return;
         }
-
-        // 3. Proses Enkripsi
         const updatetime = encryptData(new Date().toISOString());
         const latEnc = encryptData(currentPos.lat.toString());
         const lngEnc = encryptData(currentPos.lng.toString());
-
-        // 4. Update Dexie (Lokal harus selalu sukses)
         await db.travel_sessions.update(lastSession.idseason, {
             lat: latEnc,
             lng: lngEnc,
             updated_at: updatetime,
         });
-
-        // 5. Update Supabase
         const { error: supabaseError } = await supabase
             .from('path_history')
             .update({ lat: latEnc, lng: lngEnc, updated_at: updatetime })
@@ -1799,9 +1813,9 @@ async function handleUpdate5menit() {
         // --- FILTER ERROR DI SINI ---
         if (supabaseError) {
             // Cek apakah error karena masalah jaringan (offline/timeout)
-            const isNetworkError = 
-                !navigator.onLine || 
-                supabaseError.message.includes("FetchError") || 
+            const isNetworkError =
+                !navigator.onLine ||
+                supabaseError.message.includes("FetchError") ||
                 supabaseError.code === "PGRST301" || // Contoh code timeout/lost connection
                 supabaseError.status === 0;
 
@@ -1820,7 +1834,6 @@ async function handleUpdate5menit() {
     } catch (err) {
         // Catch ini biasanya menangkap error coding (SyntaxError, TypeError, dll)
         console.error("Runtime Script Error:", err);
-        
         // Tetap cek: Kalau internet mati saat proses enkripsi/logic, jangan reload.
         if (navigator.onLine) {
             location.reload();
@@ -1849,28 +1862,57 @@ function stopTracking() {
 
 async function syncPathToSupabase() {
     try {
+        console.log("1. Ambil data dari Dexie...");
+        const rawSession = localStorage.getItem('user_session');
+        if (!rawSession) {
+            console.error("⚠️ user_session tidak ditemukan di Local Storage!");
+            return;
+        }
+        const userSession = JSON.parse(rawSession);
+        console.log("User UID ditemukan:", userSession.uid);
         const sessions = await db.travel_sessions.toArray();
-        if (sessions.length === 0) return;
+        if (sessions.length === 0) {
+            console.warn("⚠️ Sync batal: Tidak ada session di Dexie!");
+            return;
+        }
         const currentSession = sessions[0];
-        if (!currentSession.path_hist) return;
-        const fullPath = JSON.parse(currentSession.path_hist);
+        console.log("2. Data session:", currentSession);
+        if (!currentSession.path_hist) {
+            console.warn("⚠️ Sync batal: path_hist kosong!");
+            return;
+        }
+        // Cek apakah perlu di-parse atau sudah jadi object
+        const fullPath = typeof currentSession.path_hist === 'string' 
+            ? JSON.parse(currentSession.path_hist) 
+            : currentSession.path_hist;
+
+        console.log("3. Menyiapkan data enkripsi...");
         const encPoly = encryptData(encodePolyline(fullPath.map(p => [p[0], p[1]])));
         const encSpeeds = encryptData(JSON.stringify(fullPath.map(p => p[2])));
         const encTimes = encryptData(JSON.stringify(fullPath.map(p => p[3])));
+        
         const pathData = [encPoly, encSpeeds, encTimes];
+
+        console.log("4. Mengirim ke Supabase...");
         const { error } = await supabase
-            .from('travel_history')
+            .from('path_history')
             .update({
                 path_hist: JSON.stringify(pathData),
                 updated_at: encryptData(new Date().toISOString()),
                 status: "Arrive"
             })
             .eq('idseason', currentSession.idseason)
-            .eq('user_id', userSession.uid);
-        if (error) throw error;
-        console.log("✅ Data masuk ke kolom TEXT Supabase!");
+            .eq('user_id', userSession.uid); // Pakai optional chaining biar gak crash
+
+        if (error) {
+            console.error("❌ Error dari Supabase:", error.message);
+            throw error;
+        }
+
+        console.log("✅ Berhasil Update Supabase!");
+
     } catch (err) {
-        console.error("Gagal sinkronisasi:", err);
+        console.error("💥 ERROR TOTAL:", err);
     }
 }
 
@@ -1914,7 +1956,7 @@ async function startTunnelListener(uid) {
         .eq('user_id', uid)
         .order('created_at', { ascending: false })
         .limit(5);
-    
+
     if (!error) {
         allLogs = data;
         renderToUI(allLogs);
@@ -1936,16 +1978,16 @@ async function startTunnelListener(uid) {
 
                 // Tambahkan ke daftar (paling atas)
                 allLogs.unshift(payload.new);
-                
+
                 // Update Tampilan UI
                 renderToUI(allLogs);
 
                 // --- PANGGIL NOTIF DI SINI ---
-                const waktu = new Date(payload.new.created_at).toLocaleTimeString('id-ID', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                const waktu = new Date(payload.new.created_at).toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit'
                 });
-                
+
                 // Contoh pesan: "Update Lokasi Berhasil: 14:05 WIB"
                 showPushNotif(`Update Lokasi Berhasil: ${waktu} WIB`);
             }
@@ -1962,7 +2004,6 @@ function showPushNotif(msg) {
     const notif = document.createElement('div');
     notif.className = 'toast-notif';
     notif.innerText = msg;
-    
     // Styling dikit biar nggak malu-maluin
     Object.assign(notif.style, {
         position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
@@ -1970,11 +2011,8 @@ function showPushNotif(msg) {
         borderRadius: '20px', zIndex: '9999', boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
         fontSize: '13px', fontWeight: 'bold'
     });
-
     document.body.appendChild(notif);
-    
     if (navigator.vibrate) navigator.vibrate(100);
-
     setTimeout(() => {
         notif.style.opacity = '0';
         setTimeout(() => notif.remove(), 500);
@@ -1984,24 +2022,63 @@ function showPushNotif(msg) {
 function renderToUI(items) {
     const container = document.getElementById('logContainer');
     if (!container) return;
-
     if (items.length === 0) {
         container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">Belum ada riwayat perjalanan.</div>';
         return;
     }
-
     container.innerHTML = items.map(item => {
-        // Dekripsi data pas mau ditampilin
+        const options = {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+
+        // 1. Dekripsi & Logika Waktu
+        const targetDate = new Date(decryptData(item.arrive_target));
+        const isDelay = new Date() > targetDate ? "Delay" : "On Schedule";
+
+        let statusBase = item.status; // Biar status asli nggak rusak buat pengecekan warna
+        let statusTampil = statusBase;
+
+        // 2. Gabungkan status jika Active
+        if (statusBase === "Active") {
+            statusTampil = isDelay;
+        }
+
+        // 3. Logika Warna (Disederhanakan biar nggak salah)
+        let warna = "#2563eb";   // Default Biru (Border)
+        let warnaBG = "#ffffff"; // Default Putih (Background)
+        if (statusBase === "Active") {
+            warna = (isDelay === "Delay") ? "#ef4444" : "#22c55e"; // Merah vs Hijau
+        }
+
+        // 4. Dekripsi Field Lainnya
         const noSJKB = decryptData(item.sjkb) || '-';
         const tujuan = decryptData(item.dest) || '-';
-        const berangkat = item.depart_at ? new Date(decryptData(item.depart_at)).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '-';
-        const sampaiTarget = item.arrive_target ? new Date(decryptData(item.arrive_target)).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '-';
+        const berangkat = item.depart_at ? new Date(decryptData(item.depart_at)).toLocaleString('id-ID', options) : '-';
+        const sampaiTarget = item.arrive_target ? new Date(decryptData(item.arrive_target)).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+        if (statusBase === "Active") {
+            if (isDelay === "Delay") {
+                console.log(isDelay);
+                warna = "#ef4444";   // Merah
+                warnaBG = "#fef2f2"; // Merah Muda
+            } else {
+                warna = "#22c55e";   // Hijau
+                warnaBG = "#f0fdf4"; // Hijau Muda
+            }
+        } else if (statusBase === "Arrival") {
+            warna = "#64748b";   // Abu-abu (Selesai)
+            warnaBG = "#f8fafc"; // Abu-abu sangat muda
+        }
 
         return `
-            <div class="log-card">
+            <div class="log-card" style="background-color: ${warnaBG}; border-left: 6px solid ${warna};">
                 <div class="header">
                     <span>📄 ${noSJKB}</span>
-                    <span style="color:#2563eb;">Active</span>
+                    <span style="color:${warna}; font-weight:bold;">${statusTampil}</span>
                 </div>
                 <div class="detail">
                     <span>📍 Tujuan:</span>
@@ -2012,53 +2089,34 @@ function renderToUI(items) {
                     <span>${berangkat} - ${sampaiTarget} WIB</span>
                 </div>
                 <div class="status-time">
-                    Diupdate: ${new Date(item.created_at).toLocaleTimeString('id-ID')}
+                    Dibuat: ${new Date(item.created_at).toLocaleString('id-ID', options)}
                 </div>
             </div>
         `;
     }).join('');
 }
 
-window.filterTable = function() {
-    // 1. Ambil kata kunci dari input
+window.filterTable = function () {
     const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
-    
-    // 2. Filter data dari variabel allLogs (yang udah kita simpen tadi)
     const filteredData = allLogs.filter(item => {
-        // Dekripsi dulu buat dibandingin (karena data di allLogs masih terenkripsi)
         const sjkb = decryptData(item.sjkb).toLowerCase();
         const tujuan = decryptData(item.dest).toLowerCase();
-        
-        // Cek apakah keyword ada di SJKB atau Tujuan
         return sjkb.includes(keyword) || tujuan.includes(keyword);
     });
-
-    // 3. Render ulang tampilannya pake data yang udah difilter
-    // Kita panggil lagi fungsi renderToUI yang udah kita buat sebelumnya
     renderToUI(filteredData);
 };
 
 async function loadTargetFromDexie() {
     try {
-        // 1. Ambil data terakhir dari tabel travel_sessions di Dexie
         const session = await db.travel_sessions.toArray();
-        
         if (session && session.length > 0) {
-            // Ambil data paling baru (indeks terakhir atau sesuaikan logika abang)
             const lastSession = session[session.length - 1];
-
             if (lastSession.arrive_target) {
-                // 2. DEKRIPSI datanya dulu
                 const decryptedISO = decryptData(lastSession.arrive_target);
-                
-                // 3. Format jadi jam yang enak dibaca (misal: 14:30)
                 const jamTarget = new Date(decryptedISO).toLocaleTimeString('id-ID', {
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-
-                // 4. Panggil saklar showTargetInfo yang kita buat tadi
-                window.showTargetInfo(jamTarget + " WIB");
             }
         }
     } catch (error) {
@@ -2066,11 +2124,6 @@ async function loadTargetFromDexie() {
     }
 }
 
-window.hideTargetInfo = function() {
-    const targetBox = document.querySelector('.target');
-    if (targetBox) {
-        // Pasang lagi class hidden-nya
-        targetBox.classList.add('hidden');
-        console.log("Target UI disembunyikan.");
-    }
-};
+function goToCamera() {
+    window.location.href = 'camera.html';
+}
