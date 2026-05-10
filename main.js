@@ -1026,7 +1026,7 @@ async function re_initEventListeners() {
     const dashboard = document.getElementById('btn-dashboard');
     if (dashboard) {
         dashboard.onclick = async () => {
-            window.location.href = 'dashboard.html';
+            window.location.href = '/dashboard.html';
         };
     }
 
