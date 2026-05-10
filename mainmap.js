@@ -26,7 +26,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const screenType = detectScreenType();
     if (screenType !== 'desktop') {
         alert('Dashboard hanya bisa diakses melalui PC atau Laptop.');
-        window.location.href = 'index.html';
+        window.location.href = '/index.html';
         return;
     }
     await setupPinAutoFocus();
