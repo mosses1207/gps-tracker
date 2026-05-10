@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Dashboard</title>
+    <link rel="icon" type="image/png" href="/Toyota-Logo-Free.png">
+    <link rel="stylesheet" href="stylemap.css">
+</head>
+
+<body>
+<button id="btn-dashboard" class="btn-monitor-nav">🚚</button>
+    <div class="container">
+        <div class="map-container">
+            <main class="map-area" id="map"></main>
+            <button id="recenterBtn" class="recenter-btn">🖥️</button>
+            <div id="statusmap">Mode: Auto Center</div>
+        </div>
+
+        <aside class="sidebar">
+            <div class="header-container">
+                <div class="sidebar-header">
+                    <div class="image-header">
+                        <img src="Toyota-Logo-Free.png" alt="Toyota Logo" class="logo">
+                    </div>
+                    <div class="text-header">
+                        <h2 class="sidebar-title">Delivery Monitoring</h2>
+                        <span class="sidebar-subtitle">NVDC CIBITUNG</span>
+                    </div>
+                </div>
+
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" placeholder="Cari SJKB / tujuan...">
+                </div>
+
+                <div id="active-container"></div>
+
+                <div class="pagination" id="pagination"></div>
+        </aside>
+    </div>
+
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loading-text">Memproses...</p>
+        </div>
+    </div>
+
+    <!-- hiden container-->
+
+    <div id="pinOverlay" class="pin-overlay">
+        <div class="pin-modal">
+            <h2 class="pin-title">Insert Your Pin</h2>
+
+            <div class="pin-input-group">
+                <input type="password" class="pin-field" id="pin1" maxlength="1" inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                <input type="password" class="pin-field" id="pin2" maxlength="1" inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                <input type="password" class="pin-field" id="pin3" maxlength="1" inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                <input type="password" class="pin-field" id="pin4" maxlength="1" inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                <input type="password" class="pin-field" id="pin5" maxlength="1" inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                <input type="password" class="pin-field" id="pin6" maxlength="1" inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+
+            <button id="confirmPin" class="btn-confirm">confirm</button>
+        </div>
+    </div>
+
+    <!-- end hiden container-->
+
+    <script type="module" src="/mainmap.js"></script>
+
+
+
+</body>
+
+</html>
