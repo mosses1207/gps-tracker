@@ -213,7 +213,12 @@ function setupPathHistoryListener() {
                         });
 
                         await db.real_location.put(decryptedData);
-                        await createmarker([decryptedData]);
+                        
+                        if (decryptedData.status?.toLowerCase() === 'active') {
+                            await createmarker([decryptedData]);
+                        }else{
+                            await removeMarker(decryptedData.idseason);
+                        }
                         await refreshTable();
                         await handellistener();
                     }
