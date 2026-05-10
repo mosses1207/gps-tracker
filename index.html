@@ -13,20 +13,13 @@
 </head>
 
 <body>
-  <div id="loading-satpam"
-    style="position:fixed !important; top:0; left:0; width:100%; height:100%; background:white !important; z-index:100000 !important; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-    <div class="spinner"></div>
-    <h3 style="margin-top:20px; color:#ff0000; font-family: 'Inter', sans-serif;">Menyiapkan Sistem...</h3>
-    <p id="load-progress" style="font-size:14px; color:#555;">Mohon Tunggu... (0%)</p>
-    <small style="margin-top:10px; color:#999; text-align:center; padding:0 20px;">
-      sedang Memuat Data.
-    </small>
-  </div>
-  <!-- 🔷 HEADER -->
+
   <!-- Mini Logger (Debug Mode) 
   <div id="debug-log"> 
   <div>-- System Log Ready --</div> 
   </div> -->
+
+  <!-- class header -->
   <header class="main-header">
     <div class="brand-section">
       <div class="brand-logo">
@@ -42,13 +35,170 @@
       <span id="status-text">SYSTEM ONLINE</span>
     </div>
   </header>
-  <button id="btn-dashboard" class="btn-monitor-nav">Dashboard</button>
+  <!-- end class header -->
+
+  <!-- class button dashboard-->
+  <button id="btn-dashboard" class="btn-monitor-nav">🖥️</button>
+  <!-- end class button dashboard-->
+
+  <!--container-->
+  <div class="container">
+
+    <!-- class input group wraper-->
+    <div class="input-group-wrapper">
+      <input type="text" id="no_sjkb" placeholder="Scan / Input No SJKB" readonly>
+      <input type="text" id="tujuan_dealer" placeholder="Tujuan" readonly>
+      <div class="card-btnscan">
+        <input type="text" id="lt_input" placeholder="LT" readonly>
+        <button id="btnScanAction" class="btn-scan">Foto</button>
+      </div>
+    </div>
+    <!-- end class input group wraper-->
+
+    <!-- class rute selection -->
+    <div id="ruteSelectionArea" style="margin-top: 15px; display: none; border-top: 1px solid #eee; padding-top: 15px;">
+      <p style="font-size: 13px; margin-bottom: 8px; font-weight: bold;">
+        Pilih Jalur Rute:
+      </p>
+      <div id="ruteButtons" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+    </div>
+    <!-- end class rute selection -->
+
+    <!-- class button active -->
+    <div class="btnActive">
+      <button id="btnBerangkat" class="btn-blue">Mulai Perjalanan (Berangkat)</button>
+      <button id="btnSampai" class="btn-green">Sampai di Tujuan</button>
+    </div>
+    <!-- end class button active -->
+
+    <!-- end class GPS-->
+    <div id="gpsStatus">
+      <!-- Baris 1: Status & Ping (Kualitas Sinyal) -->
+      <div class="gps-info-line">
+        <div class="status-pill">
+          <span id="gpsDot" class="dot-active"></span>
+          <span id="gpsText">GPS ACTIVE</span>
+        </div>
+        <span class="separator">|</span>
+        <div class="ping-info">
+          <span class="icon">📶</span> Ping: <b id="pingValue">24</b> ms
+        </div>
+      </div>
+
+      <!-- Baris 2: Speed (Data Utama) -->
+      <div class="gps-speed-area">
+        <span class="speed-label">KECEPATAN</span>
+        <div class="speed-value">
+          <b id="spdDisplay">0</b> <small>km/h</small>
+        </div>
+
+        <!-- Loading bar berdasarkan speed -->
+        <div id="speedBar" class="speed-bar">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
+
+
+    </div>
+    <!-- end class GPS-->
+
+    <!-- class map-->
+    <div class="card map-container-main">
+      <div class="location-header-top">
+        <span class="location-icon">📍</span>
+        <span id="street-name">Mendeteksi Jalan...</span>
+      </div>
+      <div class="map-content">
+        <div id="map"></div>
+        <div class="target">
+          <span><b>Target Sampai</b> <span id="target-text" class="status-value">-</span></span>
+        </div>
+        <button id="btn-recenter" class="btn-center-map">🎯</button>
+      </div>
+    </div>
+    <!-- end class map-->
+
+    <!-- class container log-->
+    <div class="card-log">
+
+      <!-- class search log-->
+      <div class="search-container">
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Cari SJKB atau Kota Tujuan..."
+            onkeyup="window.filterTable()">
+        </div>
+      </div>
+      <!-- end class search log-->
+
+      <!-- class log-->
+      <div id="logContainer" class="log-list-container"></div>
+      <!-- end class log-->
+
+    </div>
+    <!-- end class container log-->
+
+  </div>
+  <!--end container-->
+
+  <!-- class loading overlay-->
+  <div id="loading-overlay">
+    <div id="loading-box">
+      <div class="spinner"></div>
+      <p id="loading-text">Memproses...</p>
+    </div>
+  </div>
+  <!-- end class loading overlay-->
+
+  <!-- class ofline screen-->
+  <div id="offline-screen" class="offline-overlay" style="display: none;">
+    <div class="offline-box">
+      <div class="offline-icon">📡</div>
+      <h2>Koneksi Terputus</h2>
+      <p id="offline-message">
+        Aplikasi sedang berjalan dalam mode offline.<br>
+        Data akan disinkronkan saat koneksi kembali.
+      </p>
+      <div class="signal-loader">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <span class="offline-footer">
+        Menunggu koneksi...<br><br>
+        <button onclick="window.location.reload()" class="reload-btn">
+          Muat Ulang Halaman
+        </button>
+      </span>
+    </div>
+  </div>
+  <!-- end class ofline screen-->
+
+  <!-- class loading satpam-->
+  <div id="loading-satpam"
+    style="position:fixed !important; top:0; left:0; width:100%; height:100%; background:white !important; z-index:100000 !important; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <div class="spinner"></div>
+    <h3 style="margin-top:20px; color:#ff0000; font-family: 'Inter', sans-serif;">Menyiapkan Sistem...</h3>
+    <p id="load-progress" style="font-size:14px; color:#555;">Mohon Tunggu... (0%)</p>
+    <small style="margin-top:10px; color:#999; text-align:center; padding:0 20px;">
+      sedang Memuat Data.
+    </small>
+  </div>
+  <!-- end class loading satpam-->
+
+  <!-- class login overlay-->
   <div id="login-overlay">
+
+    <!-- Login card-->
     <div class="login-card">
       <div class="brand-logo" style="margin-bottom: 10px;">
         <img src="/Toyota-Logo-Free.png" alt="Toyota" style="width: 50px;">
       </div>
       <h2 id="title-login">Akses Sistem</h2>
+
+      <!-- Area google-->
       <div id="area-google" class="fade-in">
         <div
           style="background: #f8fafc; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
@@ -101,18 +251,15 @@
           <span style="font-size: 11px; color: #64748b; letter-spacing: 0.5px;">SECURED BY GOOGLE AUTH & SUPABASE</span>
         </div>
       </div>
-      <div id="area-admin" style="display: none;">
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Khusus Manajemen / Admin</p>
-        <input type="text" id="userAdmin" placeholder="Username / Email">
-        <input type="password" id="passAdmin" placeholder="Password">
-        <div class="login-footer">
-          <button class="btn-blue" onclick="prosesLoginAdmin()">Login Admin</button>
-          <p onclick="switchAuthMode('google')" style="cursor:pointer; font-size:12px; color:#64748b; margin-top:15px;">
-            Kembali ke Google Login</p>
-        </div>
-      </div>
+      <!-- end area google-->
+
     </div>
+    <!-- end Login card-->
+
   </div>
+  <!-- end class login overlay-->
+
+  <!--class container camera-->
   <div id="camera-container"
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999;">
     <video id="video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
@@ -133,100 +280,13 @@
       </div>
       <br>
       <br><br>
-      <button onclick="closeCamera()" id="btnCloseCamera"
+      <button id="btnCloseCamera"
         style="color:white; background:rgba(255,0,0,0.5); border:1px solid white; padding:8px 20px; border-radius:5px; font-size:14px;">
         Batal / Kembali
       </button>
     </div>
   </div>
-  <div class="container">
-    <div class="card">
-      <div class="input-group-wrapper">
-        <input type="text" id="no_sjkb" placeholder="Scan / Input No SJKB" readonly>
-        <input type="text" id="tujuan_dealer" placeholder="Tujuan" readonly>
-        <input type="text" id="lt_input" placeholder="LT" readonly>
-      </div>
-      <div id="ruteSelectionArea"
-        style="margin-top: 15px; display: none; border-top: 1px solid #eee; padding-top: 15px;">
-        <p style="font-size: 13px; margin-bottom: 8px; font-weight: bold;">
-          Pilih Jalur Rute:
-        </p>
-        <div id="ruteButtons" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
-      </div>
-      <div id="actionArea">
-        <br>
-        <button id="btnScanAction" class="btn-scan">📸 Foto</button>
-        <br>
-        <button id="btnBerangkat" class="btn-blue">Mulai Perjalanan (Berangkat)</button>
-        <br>
-        <button id="btnSampai" class="btn-green">Sampai di Tujuan</button>
-        <br>
-      </div>
-      <div id="gpsStatus">
-        <div class="gps-info-line">
-          <span>📡 <b>Status GPS:</b> <span id="gpsText">Manual Mode</span></span>
-        </div>
-        <div class="gps-stats-row">
-          <div class="stat-group">
-            <span>📍 Lat: <b id="lat">-6.449585</b></span>
-            <span class="separator">|</span>
-            <span>📍 Lng: <b id="lng">107.005443</b></span>
-          </div>
-          <div class="stat-group">
-            <span>Speed: <b id="spdDisplay">0</b> km/h</span>
-          </div>
-        </div>
-      </div>
-      <div class="card map-container-main">
-        <div class="location-header-top">
-          <span class="location-icon">📍</span>
-          <span id="street-name">Mendeteksi Jalan...</span>
-        </div>
-        <div class="map-content">
-          <div id="map"></div>
-          <div class="target">
-            <span><b>Target Sampai</b> <span id="target-text" class="status-value">-</span></span>
-          </div>
-          <button id="btn-recenter" class="btn-center-map">🎯</button>
-        </div>
-      </div>
-      <div class="card" style="padding: 15px;">
-        <div class="search-container">
-          <div class="search-wrapper">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="searchInput" placeholder="Cari SJKB atau Kota Tujuan..."
-              onkeyup="window.filterTable()">
-          </div>
-        </div>
-        <div id="logContainer" class="log-list-container">
-        </div>
-      </div>
-    </div>
-    <div id="loading-overlay">
-      <div id="loading-box">
-        <div class="spinner"></div>
-        <p id="loading-text">Memproses...</p>
-      </div>
-    </div>
-    <div id="offline-screen" class="offline-overlay" style="display: none;">
-      <div class="offline-box">
-        <div class="offline-icon">📡</div>
-        <h2>Koneksi Terputus</h2>
-        <p id="offline-message">
-          Aplikasi sedang berjalan dalam mode offline.<br>
-          Data akan disinkronkan saat koneksi kembali.
-        </p>
-        <div class="signal-loader">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <span class="offline-footer">
-          Menunggu koneksi...<br><br>
-          <button onclick="window.location.reload()" class="reload-btn">
-            Muat Ulang Halaman
-          </button>
-        </span>
-      </div>
-    </div>
+  <!--class container camera-->
+
+
 </body>

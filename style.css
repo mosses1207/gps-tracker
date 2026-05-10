@@ -38,7 +38,7 @@
     box-sizing: border-box;
     text-align: center;
     box-shadow:
-        0 20px 40px rgba(0,0,0,0.15);
+        0 20px 40px rgba(0, 0, 0, 0.15);
     max-height: 90vh;
     overflow-y: auto;
 }
@@ -84,83 +84,8 @@ body {
     color: #1e293b;
 }
 
-.container {
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
-}
 
-.card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-}
 
-.input-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-input {
-    flex: 1;
-    padding: 14px;
-    border-radius: 10px;
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    font-size: 15px;
-    outline: none;
-    transition: 0.3s;
-}
-
-.btn-scan {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 15px;
-    background: #6366f1;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    min-width: 120px;
-    transition: 0.3s;
-}
-
-.btn-scan:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: #94a3b8;
-}
-
-.btn-blue {
-    width: 100%;
-    background: #3b82f6;
-    color: white;
-    padding: 14px;
-    border-radius: 10px;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-green {
-    width: 100%;
-    background: #22c55e;
-    color: white;
-    padding: 14px;
-    border-radius: 10px;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    display: none;
-}
 
 table {
     width: 100%;
@@ -194,16 +119,6 @@ td {
     font-weight: bold;
 }
 
-#gpsStatus {
-    background: #fff;
-    border-radius: 12px;
-    padding: 12px;
-    margin: 10px 0;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    flex-direction: column;
-    gap: 8px;
-}
 
 #loader-overlay {
     display: none;
@@ -239,6 +154,7 @@ td {
 
 .main-header {
     position: sticky;
+    height: clamp(60px, 2vw, 90px);
     top: 0;
     left: 0;
     width: 100%;
@@ -247,7 +163,7 @@ td {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 25px;
+    padding: clamp(1px, 2vw, 25px);
     border-bottom: 1px solid #e2e8f0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     box-sizing: border-box;
@@ -256,67 +172,83 @@ td {
 .brand-section {
     display: flex;
     align-items: center;
-    gap: 18px;
+    /* Gap logo ke tulisan: min 1px (HP), max 18px (Laptop) */
+    gap: clamp(1px, 1.5vw, 18px);
 }
 
 .brand-logo img {
-    height: 38px;
+    /* Tinggi logo: min 20px (HP) biar ngga makan tempat, max 38px (Laptop) */
+    height: clamp(20px, 4vw, 38px);
     width: auto;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .brand-title h1 {
     margin: 0;
-    font-size: 18px;
+    /* Font judul: min 12px (HP), max 18px (Laptop) */
+    font-size: clamp(10px, 2vw, 18px);
     font-weight: 900;
     color: #0f172a;
     letter-spacing: -0.5px;
     text-transform: uppercase;
+    line-height: 1;
+    /* Rapatkan baris biar hemat tempat */
 }
 
 .brand-title p {
     margin: 0;
-    font-size: 10px;
+    /* Font sub-judul: min 7px (HP), max 10px (Laptop) */
+    font-size: clamp(6.5px, 1vw, 10px);
     color: #64748b;
     font-weight: 700;
-    letter-spacing: 1px;
+    letter-spacing: clamp(0.1px, 0.5vw, 1px);
+    /* Spasi antar huruf juga dinamis */
     text-transform: uppercase;
+    line-height: 1;
+}
+
+/* Biar wrapper tulisan ngga ada sisa margin */
+.brand-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(5px, 0.5vw, 5px);
+    /* Jarak antara h1 dan p */
 }
 
 .system-status {
     display: flex;
     align-items: center;
-    gap: 8px;
+    /* Gap antara titik dan teks: min 0px, max 8px */
+    gap: clamp(0px, 1vw, 8px);
     background: #f0fdf4;
-    padding: 6px 12px;
-    border-radius: 20px;
+    /* Padding: Atas-Bawah min 2px, Kiri-Kanan min 0px (HP) ampe 12px (Laptop) */
+    padding: clamp(2px, 0.8vw, 6px) clamp(0px, 1.5vw, 12px);
+    /* Border radius juga kita bikin dinamis dikit biar ngga kaku */
+    border-radius: clamp(1px, 2vw, 20px);
     border: 1px solid #dcfce7;
 }
 
 .status-dot {
-    width: 8px;
-    height: 8px;
+    /* Ukuran titik: min 4px (HP), max 8px (Laptop) */
+    width: clamp(4px, 1vw, 8px);
+    height: clamp(4px, 1vw, 8px);
     background: #22c55e;
     border-radius: 50%;
     animation: pulse 2s infinite;
 }
 
 .system-status span {
-    font-size: 11px;
+    /* Font 'Online/Offline': min 7px (HP), max 11px (Laptop) */
+    font-size: clamp(7px, 1vw, 11px);
     font-weight: 700;
     color: #166534;
+    /* Hilangkan spasi antar huruf kalau di layar sangat kecil */
+    letter-spacing: clamp(0px, 0.2vw, 0.5px);
+    line-height: 1;
 }
 
-.system-status.offline .status-dot {
-    background: #ef4444;
-    /* Merah */
-}
-
-.system-status.offline span {
-    color: #991b1b;
-    /* Merah Tua */
-}
-
+/* Animasi Pulse juga kita kecilin skalanya biar ngga ganggu di layar kecil */
 @keyframes pulse {
     0% {
         transform: scale(1);
@@ -324,28 +256,27 @@ td {
     }
 
     50% {
-        transform: scale(1.2);
+        transform: scale(1.1);
         opacity: 0.7;
     }
 
+    /* Scale turun dari 1.2 ke 1.1 */
     100% {
         transform: scale(1);
         opacity: 1;
     }
 }
 
-#no_sjkb,
-#tujuan_dealer, #lt_input {
-    width: 100%;
-    box-sizing: border-box;
-}
 
 .input-group-wrapper {
     display: flex;
+    padding-top: 20px;
     flex-direction: column;
-    gap: 12px;
-    width: 100%
+    /* Jarak antar baris input: min 4px, max 12px */
+    gap: clamp(4px, 1.5vw, 12px);
+    width: 100%;
 }
+
 .leaflet-marker-icon.custom-pin {
     background: none !important;
     border: none !important;
@@ -356,74 +287,11 @@ td {
     position: relative;
 }
 
-.custom-pin::before {
-    content: '';
-    display: block;
-    width: 12px;
-    height: 12px;
-    background-color: #007bff;
-    border: 2px solid white;
-    border-radius: 50%;
-    z-index: 5;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-    position: absolute;
-}
-
-.custom-pin::after {
-    content: '';
-    display: block;
-    width: 12px;
-    height: 12px;
-    background-color: #007bff;
-    border-radius: 50%;
-    position: absolute;
-    z-index: 1;
-    animation: gps-pulse 2s infinite ease-out !important;
-    pointer-events: none;
-}
-
-/* 🔷 WAJIB ADA: Definisi Animasi Pulse */
-@keyframes gps-pulse {
-    0% {
-        transform: scale(1);
-        opacity: 0.8;
-    }
-
-    100% {
-        transform: scale(4);
-        opacity: 0;
-    }
-}
 
 .mobile-input-row {
     display: flex;
     gap: 10px;
     align-items: center;
-}
-
-#lt_input {
-    max-width: none !important; 
-    min-width: 0;
-}
-
-.mobile-input-row .btn-scan {
-    flex: 1;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-input[readonly] {
-    background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
-    color: #64748b;
-    cursor: not-allowed;
-}
-
-input[readonly]:focus {
-    outline: none;
-    border-color: #e2e8f0;
 }
 
 #camera-container {
@@ -571,16 +439,6 @@ input[readonly]:focus {
     margin-right: 12px;
 }
 
-#gpsStatus b {
-    color: #334155;
-}
-
-#log-container {
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    color: #22c55e;
-}
-
 #debug-log {
     width: 100%;
     height: 150px;
@@ -613,13 +471,6 @@ input[readonly]:focus {
     border-radius: 10px;
 }
 
-.gps-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    font-size: 13px;
-}
 
 .status-value {
     color: #22c55e;
@@ -627,13 +478,6 @@ input[readonly]:focus {
     margin-left: 5px;
 }
 
-.gps-data-grid {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 8px;
-    border-top: 1px dashed #e2e8f0;
-}
 
 .data-item {
     flex: 1;
@@ -660,18 +504,9 @@ input[readonly]:focus {
     margin-left: 1px;
 }
 
-.gps-info-line {
-    font-size: 14px;
-}
 
-.gps-stats-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    font-size: 13px;
-    color: #475569;
-}
 
+/* Tambahkan ini biar tiap item data punya jarak yang enak */
 .stat-group {
     display: flex;
     align-items: center;
@@ -686,10 +521,6 @@ input[readonly]:focus {
 .separator {
     color: #cbd5e1;
     font-weight: 300;
-}
-
-.btn-center-map:hover {
-    background-color: #f4f4f4;
 }
 
 .btn-center-map {
@@ -708,6 +539,16 @@ input[readonly]:focus {
     align-items: center;
     cursor: pointer;
     padding: 0;
+    transition: background-color 0.2s ease;
+}
+
+.btn-center-map:hover {
+    background-color: #f4f4f4;
+}
+
+.btn-center-map:active {
+    background-color: #eee;
+    transform: none;
 }
 
 .btn-center-map span,
@@ -737,53 +578,6 @@ input[readonly]:focus {
     box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
 }
 
-.target {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 1000;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 12px 18px;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    min-width: 220px;
-    pointer-events: none;
-    transition: all 0.3s ease-in-out;
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.target span b {
-    display: block;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #64748b;
-    margin-bottom: 4px;
-}
-
-#target-text {
-    font-size: 15px;
-    font-weight: 700;
-    color: #1e293b;
-    display: inline-block;
-}
-
-#target-text.status-value {
-    color: #2563eb;
-    font-weight: 700;
-}
-
-.target.hidden {
-    opacity: 0;
-    transform: translateY(-20px);
-    pointer-events: none;
-}
-
 .map-container-main {
     padding: 0 !important;
     overflow: hidden;
@@ -791,17 +585,6 @@ input[readonly]:focus {
     flex-direction: column;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-}
-
-.location-header-top {
-    background: #f8fafc;
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border-bottom: 1px solid #e2e8f0;
-    min-width: 0;
 }
 
 .map-content {
@@ -813,15 +596,6 @@ input[readonly]:focus {
 #map {
     height: 100%;
     width: 100%;
-}
-
-#street-name {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1e293b;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .offline-overlay {
@@ -889,40 +663,26 @@ input[readonly]:focus {
 }
 
 .reload-btn {
-  margin-top: 20px;
-  padding: 10px 20px;
-  background-color: #007bff; /* Warna biru, sesuaikan dengan tema Anda */
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.3s ease;
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    /* Warna biru, sesuaikan dengan tema Anda */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
 }
 
 .reload-btn:hover {
-  background-color: #0056b3;
+    background-color: #0056b3;
 }
 
 /* FOOTER */
 .offline-footer {
     font-size: 12px;
     color: #9ca3af;
-}
-
-/* ANIMATIONS */
-@keyframes bounce {
-
-    0%,
-    100% {
-        transform: scaleY(0.6);
-        opacity: 0.5;
-    }
-
-    50% {
-        transform: scaleY(1.2);
-        opacity: 1;
-    }
 }
 
 @keyframes fadeIn {
@@ -1023,134 +783,606 @@ input[readonly]:focus {
     stroke: #1e293b;
 }
 
-
-.log-list-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 10px;
-    max-height: 400px; /* Biar bisa di-scroll kalau banyak */
-    overflow-y: auto;
-}
-
-.log-card {
-    background: #ffffff;
-    border-left: 5px solid #2563eb; /* Aksen warna biru Toyota */
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.log-card .header {
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-    color: #1e293b;
-    border-bottom: 1px solid #f1f5f9;
-    padding-bottom: 5px;
-    margin-bottom: 5px;
-}
-
-.log-card .detail {
-    font-size: 0.9rem;
-    color: #64748b;
-    display: flex;
-    justify-content: space-between;
-}
-
-.log-card .status-time {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    text-align: right;
-}
-
 /* Container Utama */
 .search-container {
-    padding: 15px;
-    background: #f8fafc; /* Warna background kalem */
+    /* Padding Kiri-Kanan: min 1px (HP), max 15px (Laptop) */
+    padding: clamp(1px, 2vw, 15px);
+    background: #f8fafc;
     position: sticky;
     top: 0;
     z-index: 100;
     display: flex;
-    justify-content: center; /* Biar di laptop posisinya di tengah */
+    justify-content: center;
+    /* Pastikan container sendiri narik full */
+    width: 100%;
+    box-sizing: border-box;
 }
 
-/* Wrapper Input */
 .search-wrapper {
     position: relative;
     width: 100%;
-    max-width: 600px; /* Di laptop maksimal lebarnya segini */
+    max-width: none;
     display: flex;
     align-items: center;
 }
 
-/* Ikon di dalem input */
 .search-icon {
     position: absolute;
-    left: 15px;
-    font-size: 1.1rem;
+    left: clamp(5px, 1.5vw, 15px);
+    font-size: clamp(0.9rem, 1.1vw, 1.1rem);
     color: #94a3b8;
 }
 
-/* Inputan Utama */
 #searchInput {
     width: 100%;
-    padding: 14px 15px 14px 45px; /* Kasih space kiri buat ikon */
-    font-size: 16px; /* 16px biar di iPhone nggak auto-zoom pas ngetik */
+    padding: clamp(10px, 1.5vw, 14px) clamp(5px, 1.5vw, 15px) clamp(10px, 1.5vw, 14px) clamp(30px, 4vw, 45px);
+    font-size: clamp(12px, 1.1vw, 16px);
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
+    border-radius: clamp(4px, 1vw, 12px);
     outline: none;
     background: #ffffff;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
+    box-sizing: border-box;
 }
 
 /* Efek pas diklik */
 #searchInput:focus {
-    border-color: #2563eb; /* Biru Toyota */
+    border-color: #2563eb;
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
 }
 
+/* baru */
 
-@media (min-width: 600px) {
-    .input-group-wrapper {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-
-    #no_sjkb,
-    #tujuan_dealer, #lt_input {
-        flex: 2;
-    }
-
-    .mobile-input-row {
-        flex: 1.5;
-        display: flex;
-        gap: 10px;
-        width: 100%; /* Pastiin row-nya penuhin container */
-    }
-
-        .search-container {
-        padding: 10px;
-    }
-    #searchInput {
-        padding: 12px 15px 12px 40px;
-        font-size: 14px;
-    }
-        #lt_input {
-        max-width: none !important; /* Lepas kunci 100px-nya */
-        flex: 1; /* LT bakal ngambil sisa ruang di kiri */
-    }
-
+.input-group-wrapper input[type="text"] {
+    width: 100%;
+    /* Tinggi input: min 40px, max 50px */
+    height: clamp(20px, 4.5vw, 50px);
+    /* Padding dalem: min 8px, max 15px */
+    padding: 0 clamp(8px, 1.5vw, 15px);
+    font-size: clamp(13px, 1.2vw, 15px);
+    border: 1px solid #e2e8f0;
+    border-radius: clamp(4px, 1vw, 10px);
+    background: #f8fafc;
+    /* Warna agak abu biar kelihatan readonly tapi bersih */
+    color: #1e293b;
+    font-weight: 600;
+    box-sizing: border-box;
 }
 
-.input-group-wrapper input {
-    width: 100% !important; /* Paksa ambil lebar penuh */
-    flex: 1 1 auto;
-    box-sizing: border-box; /* Biar padding nggak ngerusak lebar */
-    padding: 14px;
-    min-width: 0;
+.card-btnscan {
+    display: flex;
+    align-items: center;
+    /* Jarak antar tombol dan input LT: min 4px, max 10px */
+    gap: clamp(4px, 1vw, 10px);
+    width: 100%;
 }
+
+.btn-scan {
+    flex: 1;
+    height: clamp(45px, 5vw, 55px);
+
+    /* 1. Warna: Merah Khas Toyota (Mewah & Berani) */
+    /* Dari Merah Solid ke Merah yang agak Gelap biar berdimensi */
+    background: linear-gradient(145deg, #eb0a1e, #b30816);
+    color: #ffffff;
+
+    /* 2. Border & Shadow: Putih transparan di pinggir biar kontras */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: clamp(8px, 1.5vw, 14px);
+
+    /* Bayangan Merah lembut (Glow) biar tombolnya "hidup" */
+    box-shadow:
+        0 3px 6px rgba(235, 10, 30, 0.3),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3);
+
+    /* 3. Typography */
+    font-weight: 800;
+    /* Lebih tebal biar makin tegas */
+    font-size: clamp(13px, 1.2vw, 15px);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-scan:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #94a3b8;
+}
+
+/* Efek cahaya kilat pas ditekan */
+.btn-scan:active {
+    transform: scale(0.95);
+    background: linear-gradient(145deg, #b30816, #eb0a1e);
+    /* Balik gradasinya pas ditekan */
+    box-shadow: 0 2px 8px rgba(235, 10, 30, 0.5);
+}
+
+#lt_input {
+    flex: 2;
+    height: clamp(45px, 5vw, 55px);
+
+    /* Background & Border disamain biar seragam */
+    background: #f1f5f9;
+    border: 1.5px solid #cbd5e1;
+    border-radius: clamp(8px, 1.5vw, 14px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+
+    /* --- PERUBAHAN TEXT BIAR SOFT --- */
+    /* Kita pake font yang lebih 'bulat' dan modern */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    /* Font size pas, ngga kegedean */
+    font-size: clamp(13px, 1.2vw, 15px);
+
+    /* Weight-nya kita bikin Medium (500-600), jangan Bold (800) */
+    font-weight: 500;
+
+    /* Warna abu tua biar ngga sekeras hitam pekat */
+    color: #475569;
+
+    /* Jarak antar huruf kita normalin biar ngga kaku */
+    letter-spacing: 0.2px;
+    text-align: left;
+    text-transform: none;
+    /* Biar ngga dipaksa huruf gede semua (biar soft) */
+
+    outline: none;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+/* Pas supir dapet data (Aksen Toyota Red Soft) */
+#lt_input:not(:placeholder-shown),
+#lt_input:focus {
+    background: #ffffff;
+    border-color: rgba(235, 10, 30, 0.35);
+
+    /* Pas ada isi, font-nya boleh naik dikit ketebalannya biar jelas */
+    font-weight: 600;
+    color: #1e293b;
+    /* Balik ke warna utama */
+}
+
+.btn-scan::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+/* Kita gabungkan ID No SJKB dan Tujuan Dealer */
+#no_sjkb,
+#tujuan_dealer {
+    width: 100%;
+    /* Tinggi disamakan dengan tombol scan dan LT */
+    height: clamp(45px, 5vw, 55px);
+
+    /* Warna background abu muda biar kesan tertanam */
+    background: #f1f5f9;
+    color: #1e293b;
+
+    /* Border kalem yang tidak menyiksa mata */
+    border: 1.5px solid #cbd5e1;
+    border-radius: clamp(8px, 1.5vw, 14px);
+
+    /* Efek mendelep/masuk ke dalam */
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+
+    /* Spasi teks */
+    padding: 0 clamp(12px, 2vw, 20px);
+    font-size: clamp(14px, 1.2vw, 15px);
+    font-weight: 700;
+
+    outline: none;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+/* Efek pas dapet data atau aktif (Soft Toyota Red) */
+#no_sjkb:not(:placeholder-shown),
+#tujuan_dealer:not(:placeholder-shown),
+#no_sjkb:focus,
+#tujuan_dealer:focus {
+    background: #ffffff;
+    /* Merah samar yang tadi kita racik buat LT */
+    border-color: rgba(235, 10, 30, 0.35);
+
+    /* Glow merah tipis biar tegas tapi lembut */
+    box-shadow:
+        inset 0 1px 4px rgba(0, 0, 0, 0.03),
+        0 0 0 3px rgba(235, 10, 30, 0.05);
+}
+
+/* Khusus buat placeholder biar ngga terlalu kontras */
+#no_sjkb::placeholder,
+#tujuan_dealer::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+.btnActive {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    margin-top: clamp(10px, 2vw, 20px);
+}
+
+.btnActive button {
+    /* Tetep Grid biar numpuk di satu titik */
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    height: clamp(50px, 6vw, 60px);
+    border-radius: clamp(8px, 1.5vw, 14px);
+    font-size: clamp(14px, 1.5vw, 16px);
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- TOMBOL BERANGKAT (Blue Concept) --- */
+.btn-blue {
+    background: linear-gradient(145deg, #1e40af, #1e3a8a);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.3),
+        0 4px 10px rgba(30, 64, 175, 0.2);
+}
+
+/* --- TOMBOL SAMPAI (Green Concept) --- */
+.btn-green {
+    background: linear-gradient(145deg, #15803d, #166534);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.3),
+        0 4px 10px rgba(21, 128, 61, 0.2);
+}
+
+/* Efek Klik */
+.btnActive button:active {
+    transform: scale(0.97);
+    filter: brightness(1.1);
+}
+
+#gpsStatus {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 14px;
+    border: 1.5px solid #e2e8f0;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+/* Status & Ping Line */
+.gps-info-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed #cbd5e1;
+}
+
+.status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+}
+
+/* Indikator Titik Hijau (Bisa kedip pake animasi kalau mau) */
+.dot-active {
+    width: 8px;
+    height: 8px;
+    background-color: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.ping-info {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.ping-info b {
+    color: #0f172a;
+}
+
+/* Speed Area - Dibuat Stand Out */
+.gps-speed-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.speed-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 1.5px;
+}
+
+.speed-value b {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.speed-value small {
+    font-size: 14px;
+    font-weight: 700;
+    margin-left: -5px;
+}
+
+/* Warna default (Hitam/Gelap) untuk 0-40 km/h */
+.speed-normal {
+    color: #1e293b; 
+    transition: color 0.3s ease;
+}
+
+/* 40-60 km/h: Hijau (Zona Aman/Ekonomis) */
+.speed-safe {
+    color: #22c55e !important;
+}
+
+/* 60-80 km/h: Kuning (Peringatan/Waspada) */
+.speed-warning {
+    color: #eab308 !important;
+}
+
+/* > 80 km/h: Merah (Bahaya/Over speed) */
+.speed-danger {
+    color: #eb0a1e !important;
+    /* Tambahin efek pulse biar supir sadar kalau terlalu kencang */
+    animation: pulse-danger 1s infinite;
+}
+
+@keyframes pulse-danger {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.speed-bar {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+    justify-content: center;
+}
+
+.speed-bar span {
+    width: 15px;
+    height: 6px;
+    background: #e2e8f0; /* Warna dasar pas mati */
+    border-radius: 2px;
+    transition: all 0.2s ease;
+}
+
+/* Warna-warna pas nyala (didapat dari JS nanti) */
+.bar-safe { background: #22c55e !important; box-shadow: 0 0 5px rgba(34, 197, 94, 0.5); }
+.bar-warning { background: #eab308 !important; box-shadow: 0 0 5px rgba(234, 179, 8, 0.5); }
+.bar-danger { background: #eb0a1e !important; box-shadow: 0 0 8px rgba(235, 10, 30, 0.6); }
+
+.location-header-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 14px 14px 0 0; /* Melengkung di atas saja biar nempel sama map */
+}
+
+.location-icon {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    animation: bounce 2s infinite; /* Efek membal biar interaktif */
+}
+
+#street-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Biar kalau nama jalan kepanjangan nggak berantakan */
+    letter-spacing: -0.3px;
+}
+
+/* Animasi icon pin biar lebih hidup */
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+/* Container Map agar header dan map jadi satu kesatuan */
+.card.map-container-main {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.target {
+    position: absolute;
+    top: 20px; /* Jarak dari bawah peta */
+    left: 50%;
+    transform: translateX(-50%); /* Biar presisi di tengah-tengah map */
+    z-index: 1000; /* Wajib di atas layer Leaflet */
+    background: rgba(255, 255, 255, 0.95); /* Dark Slate dengan transparansi */
+    backdrop-filter: blur(8px); /* Efek kaca buram (Glassmorphism) */
+    color: #ffffff;
+    padding: 7px;
+    border-radius: 12px; /* Lonjong biar manis */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    pointer-events: none; /* Biar supir tetep bisa nge-drag map di balik box ini */
+    border: 1px solid #e2e8f0;
+    border-bottom: 4px solid #eb0a1e;
+}
+
+.target span {
+    font-size: clamp(8px, 2vw, 14px);
+    display: flex;
+    gap: 8px;
+}
+
+.target b {
+    color: #64748b; /* Kita gelapkan ke Slate-500 agar label "Target Sampai" terbaca jelas */
+    font-weight: 700; /* Dibuat lebih tebal */
+    font-size: clamp(8px, 2vw, 14px);
+    letter-spacing: 0.5px;
+}
+
+/* Nilai Jam / Estimasi */
+.status-value {
+    color: #eb0a1e; /* MERAH TOYOTA - Langsung kontras di atas putih */
+    font-weight: 900; /* Extra Bold */
+    font-size: 22px; /* Sedikit diperbesar agar jadi fokus utama */
+    font-family: 'Inter', sans-serif;
+    /* Tambahkan sedikit text-shadow halus agar angka lebih 'keluar' */
+    text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Container Utama Log */
+#logContainer {
+    padding: 10px;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Kartu Riwayat Perjalanan */
+.log-card {
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease;
+}
+
+/* Header: SJKB & Status */
+.header-log {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #cbd5e1;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+}
+
+.sjkb {
+    font-weight: 800;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.header-log span:last-child {
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+/* Detail Baris (Tujuan, Depart, Target, Update) */
+.logdetail-tujuan, 
+.logdetail-depart, 
+.logdetail-target, 
+.lastupdatelog {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #475569;
+}
+
+/* Label sebelah kiri (📍 Tujuan:, Depart:, dll) */
+.logdetail-tujuan span:first-child,
+.logdetail-depart span:first-child,
+.logdetail-target span:first-child,
+.lastupdatelog span:first-child {
+    font-weight: 600;
+    color: #64748b;
+}
+
+/* Nilai sebelah kanan */
+.logdetail-tujuan span:last-child,
+.logdetail-depart span:last-child,
+.logdetail-target span:last-child,
+.lastupdatelog span:last-child {
+    text-align: right;
+    max-width: 60%;
+    word-wrap: break-word;
+    color: #1e293b;
+}
+
+/* Khusus Baris Update (dibuat lebih kecil/muted) */
+.lastupdatelog {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+/* Navigasi Pagination */
+.pagination {
+    background: #f1f5f9;
+    padding: 10px;
+    border-radius: 50px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.pagination button {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    font-weight: bold;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.pagination button:active {
+    transform: scale(0.95);
+    background-color: #e2e8f0;
+}
+
+.pagination button:disabled {
+    background-color: #f8fafc;
+    color: #cbd5e1;
+    cursor: not-allowed;
+    border: 1px solid #f1f5f9;
+}
+
+.pages {
+    color: #475569;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+

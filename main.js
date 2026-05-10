@@ -12,21 +12,19 @@ if ('serviceWorker' in navigator) {
                     };
                 };
             })
-            .catch(err => console.log("SW Error:", err));
+            .catch(err => console.error("SW Error:", err));
     });
 }
-
 import './style.css'
 import { createClient } from '@supabase/supabase-js'
-import L from 'leaflet'
+import L, { control } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import Tesseract from 'tesseract.js'
-import Dexie from 'dexie'
+import { db } from './db.js'
 import CryptoJS from 'crypto-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-const db = new Dexie('logistic_db');
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const MAX_RADIUS_KM = 1;
 let isFirstLocation = true;
@@ -35,6 +33,9 @@ let isTrackingActive = false;
 let lastAddressLat = 0;
 let lastAddressLng = 0;
 let currentPos = { lat: 0, lng: 0 };
+let currentChannel = null;
+let currentPage = 0;
+const itemsPerPage = 1;
 const loaderSatpam = document.getElementById('loading-satpam');
 const loadProgress = document.getElementById('load-progress');
 const geoOptions = {
@@ -82,40 +83,34 @@ let finishMarker = null;
 let initialBody = "";
 
 if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-    console.log = () => {};
-    console.warn = () => {};
-    console.debug = () => {};
-    console.info = () => {};
+    console.log = () => { };
+    console.warn = () => { };
+    console.debug = () => { };
+    console.info = () => { };
     // console.error = () => {}; 
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+    currentPage = 0;
     await hideAllOverlays();
-    console.log("Ambil inital body");
     await ambildatahtml();
-    console.log("Merubah flag tracking menjadi off");
     await stopTracking();
-    console.log("merubah flag istracking");
     isTrackingActive = false;
-    console.log("check session gate");
     await checkSessionGate();
-    console.log("reinit event listener");
     await re_initEventListeners();
-    console.log("hideofline screen");
     await hideOfflineScreen();
-    console.log("check status online");
     await updateOnlineStatus();
     const sessionRaw = localStorage.getItem('user_session');
     if (sessionRaw) {
         const sessionData = JSON.parse(sessionRaw);
         const uid = sessionData.uid;
         if (uid) {
-            console.log("UID ditemukan:", uid);
-            await startTunnelListener(uid);
+                        await startTunnelListener(uid);
         }
     } else {
         console.warn("User belum login (user_session kosong)");
     }
+    await renderToUI();
     //hideTargetInfo();
     //loadTargetFromDexie();
 });
@@ -131,41 +126,59 @@ function hideAllOverlays() {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function ambildatahtml() {
-    function resetAppToDefault() {
-        console.log("Cleaning up system...");
-        const inputs = ['no_sjkb', 'tujuan_dealer', 'lt_input'];
-        inputs.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = "";
-        });
-        const toHide = [
-            'camera-container',
-            'area-admin',
-            'login-overlay',
-            'area-google',
-            'ruteSelectionArea',
-            'btnSampai'
-        ];
-        toHide.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-        });
-        const btnBerangkat = document.getElementById('btnBerangkat');
-        if (btnBerangkat) btnBerangkat.style.display = 'block';
-        const btnScan = document.getElementById('btnScanAction');
-        if (btnScan) {
-            btnScan.style.opacity = "1";
-            btnScan.style.backgroundColor = "#2563eb";
-            btnScan.style.cursor = "pointer";
-            btnScan.disabled = false;
-            btnScan.style.transform = "scale(1)";
+    // 1. Ambil SEMUA elemen input bertipe text, number, dll.
+    // Selector 'input' akan mengambil semua tag <input>
+    const allInputs = document.querySelectorAll('input');
+
+    console.group("📝 [Auto Input Reset]", allInputs);
+
+    allInputs.forEach(input => {
+        // Cek tipe input agar tidak salah hapus (misal tombol atau checkbox)
+        const tipeBolehDihapus = ['text', 'number', 'date', 'hidden', 'tel'];
+
+        if (tipeBolehDihapus.includes(input.type)) {
+            input.value = ""; // RESET DI SINI
         }
-        if (currentPolyline) {
-            map.removeLayer(currentPolyline);
-            currentPolyline = null;
-        }
-        console.log("System Clean! Siap rute baru.");
+    });
+
+    // 2. Jika ada <textarea> (catatan tambahan), bersihkan juga
+    const allTextAreas = document.querySelectorAll('textarea');
+    allTextAreas.forEach(txt => {
+        txt.value = "";
+    });
+
+    console.groupEnd();
+
+    console.group("🔘 [Button Reset]");
+
+    const btnBerangkat = document.getElementById('btnBerangkat');
+    if (btnBerangkat) {
+        btnBerangkat.style.display = 'block';
     }
+    const btnSampai = document.getElementById('btnSampai');
+    if (btnSampai) {
+        btnSampai.style.display = 'none';
+    }
+
+    const btnScan = document.getElementById('btnScanAction');
+    if (btnScan) {
+        btnScan.style.cursor = "pointer";
+        btnScan.disabled = false;
+    }
+
+    const ruteSelectionArea = document.getElementById('ruteSelectionArea');
+    if (ruteSelectionArea) {
+        ruteSelectionArea.style.display = "none";
+    }
+
+    if (currentPolyline) {
+        map.removeLayer(currentPolyline);
+        currentPolyline = null;
+    }
+
+    console.groupEnd();
+
+    
 }
 
 async function checkSessionGate() {
@@ -178,17 +191,12 @@ async function checkSessionGate() {
     if (isOnline) {
         if (!isSessionValid) {
             await initSystem();
-            console.log("Sesi expired/kosong. Meminta login ulang (Online)...");
             return;
         }
-        console.log("Sesi valid. Memuat sistem online...");
-        await initSatpam();
         await resetTampilan();
         await checkActiveSessiononline();
     } else {
         if (isSessionValid) {
-            console.log("Sesi valid. Memuat sistem offline...");
-            await initSatpam();
             await resetTampilan();
             await checkActiveSessionoffline();
         } else {
@@ -206,7 +214,6 @@ async function initSystem() {
     try {
         updateLoading(20, "Mengecek Hak Akses...");
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.log("Hasil getSession:", { session, error });
         if (error) throw error;
         if (session) {
             localStorage.removeItem('google_sdk_retry');
@@ -221,16 +228,13 @@ async function initSystem() {
             };
             localStorage.setItem('user_session', JSON.stringify(userData));
             updateLoading(100, "Berhasil masuk");
-            console.log("Sesi ditemukan, user sudah login:", userData);
         } else {
-            console.log("Tidak ada sesi aktif. Meminta login...");
             handleUnauthenticated();
         }
     } catch (error) {
         console.error("Gagal percobaan:", error);
         if (retryCount < 3) {
             retryCount++;
-            console.log("Mencoba lagi (Percobaan ke-" + retryCount + ")");
             setTimeout(initSystem, 2000);
         } else {
             showOfflineScreen("Gagal memuat sistem. Periksa koneksi internet Anda.");
@@ -248,12 +252,10 @@ function handleUnauthenticated() {
         if (btn && btn.innerHTML.trim() === "") {
             console.error("Authentication Timeout: Tombol Google gagal dimuat.");
             showOfflineScreen("<b>Gagal Memuat Sistem Login</b><br>Layanan otentikasi ditolak (Error 403) atau koneksi terganggu.");
-            console.log("Emergency Timer Triggered: Google Login button failed to load within expected time.");
             stopAllSystem();
         }
     }, 6000);
     if (typeof google !== 'undefined' && google.accounts) {
-        console.log("Google SDK terdeteksi, menampilkan tombol login...");
         renderGoogleButton();
     } else {
         console.warn("Google SDK tidak terdeteksi saat inisialisasi.");
@@ -263,7 +265,6 @@ function handleUnauthenticated() {
 }
 
 function renderGoogleButton() {
-    console.log("Menginisialisasi Google Sign-In...");
     google.accounts.id.initialize({
         client_id: googleClientId,
         callback: handleCredentialResponse,
@@ -273,19 +274,16 @@ function renderGoogleButton() {
     const googleBtnDiv = document.getElementById("google-login-btn");
     const googlearea = document.getElementById("area-google");
     if (loginoverlay) {
-        console.log("Menampilkan overlay login...");
         loginoverlay.style.display = "flex";
     } else {
         console.warn("Elemen login-overlay tidak ditemukan. Pastikan elemen dengan id 'login-overlay' ada di HTML.");
     }
     if (googlearea) {
-        console.log("Menampilkan area Google Sign-In...");
         document.getElementById("area-google").style.display = "block";
     } else {
         console.warn("Elemen area-google tidak ditemukan. Pastikan elemen dengan id 'area-google' ada di HTML.");
     }
     if (googleBtnDiv) {
-        console.log("Merender tombol Google Sign-In...");
         const parentWidth = googleBtnDiv.offsetWidth || 350;
         google.accounts.id.renderButton(googleBtnDiv, {
             theme: "outline",
@@ -408,6 +406,19 @@ async function initSatpam() {
     }
 }
 
+async function offSatpam() {
+    console.group("🛑 [OCR Shutdown]");
+    try {
+        if (worker) {
+            await worker.terminate(); // Ini perintah utamanya
+            worker = null; // Kosongkan variabel agar bisa di-init ulang nanti
+        }
+    } catch (e) {
+        console.error("❌ Gagal mematikan worker:", e);
+    }
+    console.groupEnd();
+}
+
 function initMap() {
     if (map) {
         return;
@@ -446,12 +457,10 @@ function updateOnlineStatus() {
         container.classList.remove('status-offline');
         text.innerText = "SYSTEM ONLINE";
         dot.style.backgroundColor = "#28a745";
-        console.log("App is Online");
     } else {
         container.classList.add('status-offline');
         text.innerText = "SYSTEM OFFLINE";
         dot.style.backgroundColor = "#dc3545";
-        console.log("App is Offline");
     }
 }
 
@@ -477,7 +486,6 @@ async function checkActiveSessionoffline() {
             isAutoCenter = true;
             startTracking();
             //stopTracking();
-            console.log("Sesi aktif ditemukan di Dexie:", sessionId);
             const noSJKB = decryptData(activeSession.sjkb);
             if (noSJKB) {
                 const inputSJKB = document.getElementById('no_sjkb');
@@ -535,7 +543,6 @@ async function checkActiveSessionoffline() {
                             ? { lat: parseFloat(decryptData(activeSession.lat)), lng: parseFloat(decryptData(activeSession.lng)) }
                             : null;
                         if (lastPos && lastPos.lat !== 0 && lastPos.lng !== 0) {
-                            console.log("Terbang ke lokasi terakhir dari DB:", lastPos);
                             map.flyTo([lastPos.lat, lastPos.lng], 18, {
                                 animate: true,
                                 duration: 2
@@ -565,7 +572,6 @@ async function checkActiveSessionoffline() {
                 }
             }, 1500);
             if (typeof requestWakeLock === 'function') requestWakeLock();
-            console.log("Sesi aktif berhasil dimuat dari Dexie, sistem siap melanjutkan tracking.");
             retryCount = 0;
         } else {
             console.error("Tidak ada sesi aktif di Dexie.");
@@ -580,7 +586,6 @@ async function checkActiveSessionoffline() {
         console.error("Gagal memuat sesi aktif, percobaan ke-", retryCount + 1, ":", error);
         if (retryCount < 3) {
             retryCount++;
-            console.log("Mencoba lagi untuk memuat sesi aktif... (Percobaan ke-" + retryCount + ")");
             setTimeout(checkActiveSessionoffline, 2000);
         } else {
             alert("Gagal memuat sesi aktif setelah beberapa percobaan. Silakan muat ulang halaman.");
@@ -646,32 +651,46 @@ function updateUIFromSession(session) {
 }
 
 async function checkActiveSessiononline() {
-    const userSession = JSON.parse(localStorage.getItem('user_session'));
+
+    // 1. Ambil & Validasi LocalStorage
+    let userSession;
+    try {
+        userSession = JSON.parse(localStorage.getItem('user_session'));
+    } catch (e) {
+        console.error("❌ [CheckSession] Gagal parse user_session dari localStorage:", e);
+    }
+
     const uid = userSession ? userSession.uid : null;
     if (!uid) {
-        console.warn("Sesi tidak ditemukan di localstorage. User harus login ulang.");
+        console.warn("⚠️ [CheckSession] UID tidak ditemukan. Mengarahkan ke login...");
         location.reload();
         return;
     }
     try {
+        // 1. Ambil & Validasi LocalStorage
         const { data: activeSession, error } = await supabase
             .from('path_history')
             .select('*')
             .eq('user_id', uid)
             .eq('status', 'Active')
             .maybeSingle();
-        if (error) throw error;
+        if (error) {
+            console.error("❌ [Supabase Error]:", error);
+            throw error;
+        }
+
         if (activeSession) {
-            console.log("Sesi aktif ditemukan di server:", activeSession.idseason);
+
+            // 3. Bandingkan dengan data di Dexie
             const localSessions = await db.travel_sessions.toArray();
             const localData = localSessions.length > 0 ? localSessions[0] : null;
+
             if (localData && localData.idseason === activeSession.idseason) {
-                console.log("Sesi sama dengan lokal, gunakan data Dexie.");
-                updateUIFromSession(localData);  // Update UI menggunakan data lokal
+                updateUIFromSession(localData);
             } else {
-                console.warn("ID berbeda atau lokal kosong! Overwrite Dexie dengan data Server...");
                 await db.travel_sessions.clear();
-                await db.travel_sessions.put({
+
+                const dataToSave = {
                     sjkb: activeSession.sjkb,
                     dest: activeSession.dest,
                     lat_start: activeSession.lat_start,
@@ -686,19 +705,24 @@ async function checkActiveSessiononline() {
                     status: "Active",
                     user_id: activeSession.user_id,
                     idseason: activeSession.idseason
-                });
+                };
+
+                await db.travel_sessions.put(dataToSave);
                 updateUIFromSession(activeSession);
             }
-            if (typeof requestWakeLock === 'function') requestWakeLock();
+
+            if (typeof requestWakeLock === 'function') {
+                requestWakeLock();
+            }
             return activeSession.idseason;
+
         } else {
-            console.log("Tidak ada sesi aktif di server.");
             ambildatahtml();
             isTrackingActive = true;
             isAutoCenter = true;
             //startTracking();
             stopTracking();
-            return;
+            return null;
         }
 
     } catch (error) {
@@ -710,7 +734,10 @@ async function checkActiveSessiononline() {
 }
 
 function updateMapDisplay(lat, lng) {
-    if (!map || !userMarker) return;
+    if (!map || !userMarker) {
+        console.warn("⚠️ updateMapDisplay: map atau userMarker tidak tersedia");
+        return;
+    }
     const newPos = [lat, lng];
     userMarker.setLatLng(newPos);
     if (isFirstLocation || isAutoCenter) {
@@ -776,40 +803,6 @@ async function updateLocationSuccess(position) {
         gpsEl.style.color = "#22c55e";
     }
 
-    // --- LOGIC TRACKING & SIMPAN KE DEXIE ---
-    if (typeof isTrackingActive !== 'undefined' && isTrackingActive === true) {
-        try {
-            const sessions = await db.travel_sessions.toArray();
-            
-            // JIKA TIDAK ADA SESI, JANGAN SIMPAN APAPUN
-            if (sessions.length === 0) {
-                console.warn("⚠️ No active session, location not saved to path_hist.");
-            } else {
-                const currentSession = sessions[0];
-                let path = [];
-
-                if (currentSession.path_hist) {
-                    try {
-                        path = typeof currentSession.path_hist === 'string'
-                            ? JSON.parse(currentSession.path_hist)
-                            : currentSession.path_hist;
-                    } catch (e) {
-                        path = [];
-                    }
-                }
-
-                path.push([latitude, longitude, speedKmH, new Date().toISOString()]);
-                
-                await db.travel_sessions.update(currentSession.idseason, {
-                    path_hist: JSON.stringify(path),
-                });
-                console.log("✅ Path updated in Dexie");
-            }
-        } catch (err) {
-            console.error("Gagal update path ke Dexie:", err);
-        }
-    }
-
     // --- LOGIC ALAMAT & MAP ---
     const isMovedFarEnough = (latitude.toFixed(3) !== lastAddressLat || longitude.toFixed(3) !== lastAddressLng);
     const isTimePassed = (now - lastAddressRequestTime > ADDRESS_DEBOUNCE_MS);
@@ -819,9 +812,47 @@ async function updateLocationSuccess(position) {
         lastAddressLat = latitude.toFixed(3);
         lastAddressLng = longitude.toFixed(3);
         lastAddressRequestTime = now;
+        if (typeof isTrackingActive !== 'undefined' && isTrackingActive === true) {
+            try {
+                const sessions = await db.travel_sessions.toArray();
+
+                // JIKA TIDAK ADA SESI, JANGAN SIMPAN APAPUN
+                if (sessions.length === 0) {
+                    console.warn("⚠️ No active session, location not saved to path_hist.");
+                } else {
+                    const currentSession = sessions[0];
+                    let path = [];
+
+                    if (currentSession.path_hist) {
+                        try {
+                            path = typeof currentSession.path_hist === 'string'
+                                ? JSON.parse(currentSession.path_hist)
+                                : currentSession.path_hist;
+                        } catch (e) {
+                            path = [];
+                        }
+                    }
+
+                    path.push([latitude, longitude, speedKmH, new Date().toISOString()]);
+
+                    await db.travel_sessions.update(currentSession.idseason, {
+                        path_hist: JSON.stringify(path),
+                    });
+                }
+            } catch (err) {
+                console.error("Gagal update path ke Dexie:", err);
+            }
+        }
     }
 
     updateMapDisplay(latitude, longitude);
+    const sessionData = localStorage.getItem('active_session');
+    if (sessionData) {
+        let session = JSON.parse(sessionData);
+        session.last_update = { lat: latitude, lng: longitude };
+        session.last_update_time = new Date().toISOString();
+        localStorage.setItem('active_session', JSON.stringify(session));
+    }
 }
 
 
@@ -852,25 +883,26 @@ function updateLocationError(error) {
 }
 
 async function updateStreetName(lat, lng) {
+    if (isFetchingAddress) return;
     const streetElement = document.getElementById('street-name');
-    if (!streetElement || isFetchingAddress) return;
+    if (!streetElement) {
+        console.warn("⚠️ updateStreetName: elemen street-name tidak ditemukan");
+        return;
+    }
+
     const cacheKey = `addr_${lat.toFixed(3)}_${lng.toFixed(3)}`;
     const cachedAddress = localStorage.getItem(cacheKey);
+
+    // PINTU 1: Ambil dari Cache (Irit Bandwidth)
     if (cachedAddress) {
         streetElement.innerText = cachedAddress;
         return;
     }
+
     try {
         isFetchingAddress = true;
-        const allKeys = Object.keys(localStorage);
-        const addrKeys = allKeys.filter(key => key.startsWith('addr_'));
-        if (addrKeys.length > 300) {
-            addrKeys.sort();
-            for (let i = 0; i < 100; i++) {
-                localStorage.removeItem(addrKeys[i]);
-                console.log("🧹 Membersihkan cache alamat lama...");
-            }
-        }
+
+        // PINTU 2: Tanya Internet (Hanya jika tidak ada di cache)
         const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
         const response = await fetch(url, {
             headers: {
@@ -878,26 +910,47 @@ async function updateStreetName(lat, lng) {
                 'User-Agent': 'SatpamAsetApp/1.0'
             }
         });
+
         if (!response.ok) throw new Error("Respons server gagal");
         const data = await response.json();
         const address = data.address;
+
         if (address) {
             const street = address.road || address.residential || address.suburb || address.village || "Area tidak teridentifikasi";
+
+            // 1. Simpan alamat ke localStorage
             localStorage.setItem(cacheKey, street);
+
+            // 2. Kelola Antrian (Queue)
+            let queue = JSON.parse(localStorage.getItem('addr_queue') || '[]');
+
+            // Tambah ke antrian jika belum ada
+            if (!queue.includes(cacheKey)) {
+                queue.push(cacheKey);
+            }
+
+            // 3. Bersihkan cache terlama JIKA sudah lebih dari 1000
+            if (queue.length > 1000) {
+                const toDelete = queue.splice(0, 100); // Ambil 100 yang paling depan
+                toDelete.forEach(key => localStorage.removeItem(key));
+            }
+
+            // 4. Simpan kembali antrian yang sudah diupdate
+            localStorage.setItem('addr_queue', JSON.stringify(queue));
+
+            // 5. Update Tampilan
             streetElement.innerText = street;
         }
     } catch (error) {
         console.error("Gagal ambil alamat:", error);
-        streetElement.innerText = "Gagal memuat alamat...";
+        // Jangan tampilkan error jika hanya masalah koneksi, biarkan teks lama/default
     } finally {
         isFetchingAddress = false;
     }
 }
-
 window.addEventListener('online', async () => {
     const savedUid = localStorage.getItem('user_id_login');
     if (savedUid) {
-        console.log("Sinyal kembali, menghubungkan ulang...");
         await startTunnelListener(savedUid);
         updateOnlineStatus();
     }
@@ -969,6 +1022,14 @@ function togglePassword() {
 
 async function re_initEventListeners() {
 
+
+    const dashboard = document.getElementById('btn-dashboard');
+    if (dashboard) {
+        dashboard.onclick = async () => {
+            window.location.href = 'dashboard.html';
+        };
+    }
+
     const theButton = document.getElementById("eyebuton");
     if (theButton) {
         theButton.onclick = async () => {
@@ -988,6 +1049,9 @@ async function re_initEventListeners() {
             }
         };
     }
+
+    /*
+
     const btnAreaAdmin = document.getElementById('btn-area-admin');
     if (btnAreaAdmin) {
         btnAreaAdmin.onclick = async () => {
@@ -999,6 +1063,7 @@ async function re_initEventListeners() {
             }
         };
     }
+    */
     const btnrecenter = document.getElementById('btn-recenter');
     if (btnrecenter) {
         btnrecenter.onclick = async () => {
@@ -1015,7 +1080,7 @@ async function re_initEventListeners() {
             setTimeout(() => btnScanAction.style.transform = "scale(1)", 100);
         };
     }
-    const btnCloseCamera = document.getElementById('BtnCloseCamera');
+    const btnCloseCamera = document.getElementById('btnCloseCamera');
     if (btnCloseCamera) {
         btnCloseCamera.onclick = async () => {
             await closeCamera();
@@ -1058,7 +1123,11 @@ function resetScannerUI() {
 }
 
 async function openScanner() {
-    if (isLocked || isCameraActive) return;
+    if (isLocked || isCameraActive) {
+        console.warn("⚠️ openScanner: sistem terkunci atau kamera aktif");
+        return;
+    }
+    await initSatpam();
     const video = document.getElementById('video');
     const container = document.getElementById('camera-container');
     const btnScan = document.getElementById('btnScanAction');
@@ -1259,7 +1328,7 @@ function isiHasilScan(data) {
     if (inputTujuan) inputTujuan.value = data.tujuan || "";
 }
 
-function closeCamera() {
+async function closeCamera() {
     const btnScan = document.getElementById('btnScanAction');
     if (btnScan) btnScan.disabled = false;
     const video = document.getElementById('video');
@@ -1269,7 +1338,8 @@ function closeCamera() {
         video.srcObject = null;
     }
     container.style.display = 'none';
-    resetScannerUI()
+    await offSatpam();
+    await resetScannerUI();
 }
 
 function toggleUIBerangkat(isStarting) {
@@ -1302,9 +1372,10 @@ function resetberangkatUI() {
     toggleUIBerangkat(false);
 }
 
-const AES_SECRET = import.meta.env.VITE_AES_KEY;
+
 
 function encryptData(data) {
+    const AES_SECRET = import.meta.env.VITE_AES_KEY;
     if (!AES_SECRET) {
         console.error("VITE_AES_KEY nggak ketemu di .env");
         return data;
@@ -1319,6 +1390,7 @@ function encryptData(data) {
 }
 
 function decryptData(ciphertext) {
+    const AES_SECRET = import.meta.env.VITE_AES_KEY;
     if (!AES_SECRET) {
         console.error("VITE_AES_KEY nggak ketemu di .env");
         return ciphertext;
@@ -1327,7 +1399,10 @@ function decryptData(ciphertext) {
         const bytes = CryptoJS.AES.decrypt(ciphertext, AES_SECRET);
         const originalText = bytes.toString(CryptoJS.enc.Utf8);
 
-        if (!originalText) return null;
+        if (!originalText) {
+            console.warn("⚠️ decryptData: hasil decrypt kosong");
+            return null;
+        }
 
         try {
             return JSON.parse(originalText);
@@ -1382,12 +1457,14 @@ function stopAllSystem() {
     isCameraActive = false;
     isProcessing = false;
     isInitRunning = false;
-    console.log("Semua sistem dihentikan, state reset ke default.");
 }
 
 function showOfflineScreen(message = null) {
     const el = document.getElementById('offline-screen');
-    if (!el) return;
+    if (!el) {
+        console.warn("⚠️ showOfflineScreen: elemen offline-screen tidak ditemukan");
+        return;
+    }
     el.style.display = 'flex';
     if (message) {
         const msg = document.getElementById('offline-message');
@@ -1397,7 +1474,10 @@ function showOfflineScreen(message = null) {
 
 function hideOfflineScreen() {
     const el = document.getElementById('offline-screen');
-    if (!el) return;
+    if (!el) {
+        console.warn("⚠️ hideOfflineScreen: elemen offline-screen tidak ditemukan");
+        return;
+    }
     el.style.display = 'none';
 }
 
@@ -1449,7 +1529,6 @@ async function fetchSpreadsheetData(tujuanGemini) {
         .toUpperCase()
         .replace(/[^A-Z0-9\s]/g, "")
         .trim();
-    console.log(tujuanClean);
     try {
         const response = await fetch("https://script.google.com/macros/s/AKfycbxwMg2ne9r7ViTTppPhV5qPrb-S35kQf_xEH_R7VZllP_uuTiwV6TM-p7vyw8gME1zn/exec", {
             method: "POST",
@@ -1496,7 +1575,6 @@ function updateRuteUI(data) {
     if (!container || !area) {
         return;
     }
-    ambildatahtml();
     const targetData = data || deliveryData;
     if (!targetData) {
         return;
@@ -1589,10 +1667,6 @@ function decodePolyline(encoded) {
     return points;
 }
 
-db.version(1).stores({
-    travel_sessions: 'idseason, status, waktu_berangkat'
-});
-
 function generateUniqueId(emailSesi) {
     if (!emailSesi) {
         console.warn("generateUniqueId: Email kosong, menggunakan fallback timestamp.");
@@ -1665,6 +1739,22 @@ async function handleBerangkat() {
             user_id: session.uid,
             idseason: travelId
         });
+        await db.all_logs.put({
+            sjkb: encryptData(noSJKB),
+            dest: encryptData(tujuan),
+            lat_start: encryptData(currentPos.lat.toString()),
+            lng_start: encryptData(currentPos.lng.toString()),
+            lat: encryptData(currentPos.lat.toString()),
+            lng: encryptData(currentPos.lng.toString()),
+            depart_at: encryptData(waktuBerangkat.toISOString()),
+            arrive_target: encryptData(targetSampai.toISOString()),
+            updated_at: encryptData(new Date().toISOString()),
+            route_master: encryptData(currentPolylineString),
+            path_hist: null,
+            status: "Active",
+            user_id: session.uid,
+            idseason: travelId
+        });
         localStorage.setItem('current_session_id', travelId);
         const { error: supabaseError } = await supabase
             .from('path_history')
@@ -1712,6 +1802,8 @@ async function handleBerangkat() {
         const targetEl = document.querySelector('.target');
         if (targetEl) targetEl.classList.remove('hidden');
         if (typeof requestWakeLock === 'function') requestWakeLock();
+        await startTunnelListener();
+        await renderToUI();
     } catch (err) {
         console.error("Gagal simpan sesi PouchDB:", err);
         alert("Gagal memulai perjalanan Coba Lagi.");
@@ -1719,70 +1811,106 @@ async function handleBerangkat() {
     }
 }
 
+
 async function handleSampai() {
     if (!confirm("Apakah Anda sudah sampai di lokasi tujuan?")) return;
+    showLoading("Menyelesaikan perjalanan...");
     try {
-        await syncPathToSupabase();
+        console.group("log_handle_sampai");
+        let id_final = "";
+        const id_storage = localStorage.getItem('current_session_id');
+        if (id_storage) {
+            id_final = id_storage;
+        } else {
+            const activesession = await db.travel_sessions
+                .where('status')
+                .equals('Active') // Pastikan di handleberangkat statusnya 'active' kecil
+                .first();
+            if (activesession) {
+                id_final = activesession.idseason;
+                localStorage.setItem('current_session_id', id_final);
+            }
+        }
+        if (!id_final) {
+            alert("data sesi tidak ditemukan. pastikan perjalanan sudah dimulai.");
+            console.groupEnd();
+            return;
+        }
+        const activedata = await db.travel_sessions.get(id_final);
+        if (!activedata) {
+            alert("data sesi tidak ditemukan di database lokal.");
+            console.groupEnd();
+            return;
+        }
+        console.log("hostname_saat_ini:", location.hostname);
+        if (activedata) {
+            activedata.path_hist = [
+                [-6.402484, 106.894412, 40, new Date().toISOString()],
+                [-6.402500, 106.894500, 45, new Date().toISOString()]
+            ];
+        } else {
+            console.error("waduh_activedata_null_ngga_bisa_suntik");
+        }
+        const pathhistraw = activedata.path_hist;
+        const historyarray = typeof pathhistraw === 'string'
+            ? JSON.parse(pathhistraw)
+            : pathhistraw;
+
+        if (!historyarray || !Array.isArray(historyarray) || historyarray.length < 2) {
+            console.warn("history_perjalanan_minim:", historyarray);
+            alert("perjalanan tidak dapat diselesaikan karena history perjalanan anda tidak ada.");
+            console.groupEnd();
+            return;
+        }
+        await syncPathToSupabaseWithStatus(id_final, "arrival");
+        console.log("sinkron_ke_all_log_id:", id_final);
+        await moveSessionToHistory(id_final);
+        console.log("hapus_storage_dan_dexie");
         localStorage.removeItem('current_session_id');
         await db.travel_sessions.clear();
+        console.groupEnd();
         isTrackingActive = false;
         isAutoCenter = true;
         stopTracking();
-        if (currentPos && currentPos.lat !== 0) {
-            if (typeof map !== "undefined" && map) {
-                map.flyTo([currentPos.lat, currentPos.lng], 18);
-            }
+        if (currentPos && currentPos.lat !== 0 && typeof map !== "undefined" && map) {
+            map.flyTo([currentPos.lat, currentPos.lng], 18);
         }
         if (document.getElementById('no_sjkb')) document.getElementById('no_sjkb').value = "";
         if (document.getElementById('tujuan_dealer')) document.getElementById('tujuan_dealer').value = "";
-        if (document.getElementById('lt_input')) document.getElementById('lt_input').value = "";
         if (document.getElementById('target-text')) document.getElementById('target-text').innerText = "--:--";
-        const targetEl = document.querySelector('.target');
-        if (targetEl) targetEl.classList.add('hidden');
+        const targetel = document.querySelector('.target');
+        if (targetel) targetel.classList.add('hidden');
+        if (currentPolyline && map) map.removeLayer(currentPolyline);
+        if (finishMarker && map) map.removeLayer(finishMarker);
         currentPolylineString = "";
-        const btn = document.getElementById('btnBerangkat');
-        if (btn) btn.style.display = 'block';
-        const btnSampai = document.getElementById('btnSampai');
-        if (btnSampai) btnSampai.style.display = 'none';
-        if (document.getElementById('ruteSelectionArea')) {
-            document.getElementById('ruteSelectionArea').style.display = 'block';
+        const btnberangkat = document.getElementById('btnBerangkat');
+        const btnsampai = document.getElementById('btnSampai');
+        if (btnberangkat) btnberangkat.style.display = 'block';
+        if (btnsampai) btnsampai.style.display = 'none';
+        const btnscan = document.getElementById('btnScanAction');
+        if (btnscan) {
+            btnscan.disabled = false;
+            btnscan.style.opacity = "1";
+            btnscan.style.cursor = "pointer";
         }
-        ambildatahtml();
-        if (currentPolyline && map) {
-            map.removeLayer(currentPolyline);
-        }
-        if (typeof map !== "undefined" && map && finishMarker) {
-            map.removeLayer(finishMarker);
-        }
-        if (typeof releaseWakeLock === 'function') releaseWakeLock();
-        deliveryData = null;
-        currentPolyline = null;
-        finishMarker = null;
-        const btnScan = document.getElementById('btnScanAction');
-        stopTracking();
-        if (btnScan) {
-            btnScan.disabled = false;
-            btnScan.style.opacity = "1"; // Opsional: biar kelihatan redup/mati
-            btnScan.style.cursor = "pointer";
-        }
-        console.log("berhasil menyelesaikan perjalanan");
+        if (typeof releasewakelock === 'function') releasewakelock();
+        hideLoading();
         alert("perjalanan selesai");
-        //hideTargetInfo();
-        //loadTargetFromDexie();
+        renderToUI();
     } catch (e) {
-        console.error("Fatal Error saat Finish:", e);
-        // Tampilkan modal/alert yang lebih informatif
-        const pesanError = e.message || "Koneksi terputus";
-        const konfirmasiUlang = confirm(
-            "Gagal Mengirim Laporan Ke Server!" +
-            "Data perjalanan masih aman di HP. Pastikan internet aktif dan coba klik 'Selesai' lagi.\n\n" +
+        console.groupEnd();
+        console.error("fatal_error_saat_finish:", e);
+        const konfirmasiulang = confirm(
+            "Gagal Mengirim Laporan Ke Server!\n" +
+            "Data perjalanan masih aman di HP. Pastikan internet aktif.\n\n" +
             "Coba kirim ulang sekarang?"
         );
-        if (konfirmasiUlang) {
+        if (konfirmasiulang) {
             handleSampai();
         }
     }
 }
+
 
 async function handleUpdate5menit() {
     try {
@@ -1860,9 +1988,9 @@ function stopTracking() {
 }
 
 
-async function syncPathToSupabase() {
+async function syncPathToSupabaseWithStatus(idseason, status = "Arrive") {
     try {
-        console.log("1. Ambil data dari Dexie...");
+        console.log("1. Ambil data dari Dexie untuk session:", idseason);
         const rawSession = localStorage.getItem('user_session');
         if (!rawSession) {
             console.error("⚠️ user_session tidak ditemukan di Local Storage!");
@@ -1870,46 +1998,47 @@ async function syncPathToSupabase() {
         }
         const userSession = JSON.parse(rawSession);
         console.log("User UID ditemukan:", userSession.uid);
-        const sessions = await db.travel_sessions.toArray();
-        if (sessions.length === 0) {
-            console.warn("⚠️ Sync batal: Tidak ada session di Dexie!");
+
+        const currentSession = await db.travel_sessions.get(idseason);
+        if (!currentSession) {
+            console.warn("⚠️ Sync batal: Session tidak ditemukan!");
             return;
         }
-        const currentSession = sessions[0];
+
         console.log("2. Data session:", currentSession);
         if (!currentSession.path_hist) {
             console.warn("⚠️ Sync batal: path_hist kosong!");
             return;
         }
         // Cek apakah perlu di-parse atau sudah jadi object
-        const fullPath = typeof currentSession.path_hist === 'string' 
-            ? JSON.parse(currentSession.path_hist) 
+        const fullPath = typeof currentSession.path_hist === 'string'
+            ? JSON.parse(currentSession.path_hist)
             : currentSession.path_hist;
 
         console.log("3. Menyiapkan data enkripsi...");
         const encPoly = encryptData(encodePolyline(fullPath.map(p => [p[0], p[1]])));
         const encSpeeds = encryptData(JSON.stringify(fullPath.map(p => p[2])));
         const encTimes = encryptData(JSON.stringify(fullPath.map(p => p[3])));
-        
+
         const pathData = [encPoly, encSpeeds, encTimes];
 
-        console.log("4. Mengirim ke Supabase...");
+        console.log("4. Mengirim ke Supabase dengan status:", status);
         const { error } = await supabase
             .from('path_history')
             .update({
                 path_hist: JSON.stringify(pathData),
                 updated_at: encryptData(new Date().toISOString()),
-                status: "Arrive"
+                status: status
             })
             .eq('idseason', currentSession.idseason)
-            .eq('user_id', userSession.uid); // Pakai optional chaining biar gak crash
+            .eq('user_id', userSession.uid);
 
         if (error) {
             console.error("❌ Error dari Supabase:", error.message);
             throw error;
         }
 
-        console.log("✅ Berhasil Update Supabase!");
+        console.log(`✅ Berhasil Update Supabase dengan status: ${status}!`);
 
     } catch (err) {
         console.error("💥 ERROR TOTAL:", err);
@@ -1939,57 +2068,130 @@ function encodePolyline(points) {
     return str;
 }
 
-let allLogs = []; // Penampung log selama sesi berjalan
-let currentChannel = null; // Penampung channel aktif
+let allLogs = null;
 
 async function startTunnelListener(uid) {
-    // 0. Safety Check: Tutup terowongan lama kalau ada (mencegah duplikasi notif)
+    let targetUid = uid; // 1. Tampung dulu dari parameter
+
+    // 2. Kalau parameter kosong, baru bongkar LocalStorage
+    if (!targetUid) {
+        try {
+            const sessionRaw = localStorage.getItem('user_session');
+            if (sessionRaw) {
+                const parsed = JSON.parse(sessionRaw);
+                targetUid = parsed.uid;
+            }
+        } catch (e) {
+            console.log("Gagal parsing session:", e);
+        }
+    }
+
+    // 3. VALIDASI KRUSIAL: Kalau tetep nggak ada UID, stop di sini!
+    if (!targetUid || targetUid === "undefined") {
+        console.warn("Tunnel Listener dibatalkan: UID kosong.");
+        return;
+    }
     if (currentChannel) {
         console.log("Menutup terowongan lama...");
         await supabase.removeChannel(currentChannel);
+        currentChannel = null;
     }
 
-    // 1. Initial Load: Ambil 5 data terakhir (Irit Bandwidth)
+    try {
+        allLogs = await db.all_logs
+            .orderBy('created_at')
+            .reverse()
+            .toArray();
+        if (allLogs.length > 0) {
+            renderToUI(allLogs);
+            console.log("Menampilkan history lama dari lokal...");
+        }
+    } catch (err) {
+        console.error("Gagal ambil data awal Dexie:", err);
+    }
+
     const { data, error } = await supabase
         .from('path_history')
-        .select('*')
-        .eq('user_id', uid)
+        .select('arrive_target, status, sjkb, depart_at, created_at, idseason, dest, updated_at')
+        .eq('user_id', targetUid)
+        .eq('status', 'Active')
         .order('created_at', { ascending: false })
-        .limit(5);
 
-    if (!error) {
-        allLogs = data;
-        renderToUI(allLogs);
+    if (error) {
+        console.error(error);
+        return;
     }
 
-    // 2. Buka Terowongan Realtime
+    if (!data || data.length === 0) {
+        console.log('Tidak ada sesi aktif');
+        return;
+    }
+
+    if (!error && data) {
+        const logsWithTimestamp = data.map(row => ({
+            ...row,
+            saved_at: new Date().toISOString()
+        }));
+
+        try {
+            await db.all_logs.bulkPut(logsWithTimestamp);
+            const count = await db.all_logs.count();
+            if (count > 100) {
+                const extraCount = count - 100;
+                const oldDataIds = await db.all_logs
+                    .orderBy('created_at')
+                    .limit(extraCount)
+                    .primaryKeys();
+                await db.all_logs.bulkDelete(oldDataIds);
+                console.log(`Bersih-bersih: ${extraCount} data lama dihapus.`);
+            }
+            allLogs = await db.all_logs
+                .orderBy('created_at')
+                .reverse()
+                .toArray();
+
+            renderToUI(allLogs);
+        } catch (err) {
+            console.error("Gagal kelola data di Dexie:", err);
+        }
+    }
+    const idseason = data[0]?.idseason;
+    if (!idseason) {
+        console.log('ID Session tidak ditemukan');
+        return;
+    }
     currentChannel = supabase
-        .channel('db-changes')
+        .channel(`db-changes-${idseason}`)
         .on(
             'postgres_changes',
             {
-                event: 'INSERT',
+                event: 'UPDATE',
                 schema: 'public',
                 table: 'path_history',
-                filter: `user_id=eq.${uid}`
+                filter: `idseason=eq.${idseason}`
             },
-            (payload) => {
-                console.log('Data Masuk:', payload.new);
-
-                // Tambahkan ke daftar (paling atas)
-                allLogs.unshift(payload.new);
-
-                // Update Tampilan UI
-                renderToUI(allLogs);
-
-                // --- PANGGIL NOTIF DI SINI ---
-                const waktu = new Date(payload.new.created_at).toLocaleTimeString('id-ID', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                // Contoh pesan: "Update Lokasi Berhasil: 14:05 WIB"
-                showPushNotif(`Update Lokasi Berhasil: ${waktu} WIB`);
+            async (payload) => {
+                if (payload.new.status === 'Arrive') {
+                    console.log('Data Update Masuk:', payload.new);
+                    try {
+                        await db.all_logs.put({
+                            ...payload.new,
+                            saved_at: new Date().toISOString()
+                        });
+                        allLogs = await db.all_logs
+                            .orderBy('created_at')
+                            .reverse()
+                            .toArray();
+                        renderToUI(allLogs);
+                        const waktu = new Date(payload.new.created_at).toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        showPushNotif(`Update Lokasi Berhasil: ${waktu} WIB`);
+                    } catch (err) {
+                        console.error("Gagal sinkron Realtime ke Dexie:", err);
+                    }
+                }
             }
         )
         .subscribe((status) => {
@@ -2004,7 +2206,6 @@ function showPushNotif(msg) {
     const notif = document.createElement('div');
     notif.className = 'toast-notif';
     notif.innerText = msg;
-    // Styling dikit biar nggak malu-maluin
     Object.assign(notif.style, {
         position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
         background: '#10b981', color: 'white', padding: '10px 20px',
@@ -2019,90 +2220,196 @@ function showPushNotif(msg) {
     }, 3000);
 }
 
-function renderToUI(items) {
+async function renderToUI(items = null) {
     const container = document.getElementById('logContainer');
-    if (!container) return;
-    if (items.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">Belum ada riwayat perjalanan.</div>';
+    if (!container) {
+        console.error("❌ logContainer tidak ditemukan!");
         return;
     }
-    container.innerHTML = items.map(item => {
+    let dataToRender;
+    if (items) {
+        dataToRender = items;
+    } else {
+        try {
+            // Ambil semua data tanpa sorting
+            const allData = await db.all_logs.toArray();
+            
+            if (allData.length === 0) {
+                dataToRender = [];
+            } else {
+                // Decrypt created_at dan sorting manual
+                dataToRender = allData.map(item => {
+                    try {
+                        const decryptedCreatedAt = item.created_at ? decryptData(item.created_at) : new Date().toISOString();
+                        return {
+                            ...item,
+                            decrypted_created_at: new Date(decryptedCreatedAt)
+                        };
+                    } catch (err) {
+                        console.warn("Gagal decrypt created_at untuk item:", item.idseason, err);
+                        return {
+                            ...item,
+                            decrypted_created_at: new Date(0) // fallback ke oldest date
+                        };
+                    }
+                });
+                
+                // Sorting berdasarkan decrypted_created_at (terbaru dulu)
+                dataToRender.sort((a, b) => b.decrypted_created_at - a.decrypted_created_at);
+            }
+        } catch (err) {
+            console.error("❌ Gagal ambil data dari all_logs:", err);
+            return;
+        }
+    }
+    const totalItems = dataToRender.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+    if (totalItems === 0) {
+        container.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:20px;">Belum ada riwayat perjalanan.</div>`;
+        console.warn("⚠️ Tidak ada data yang dirender di renderToUI()");
+        return;
+    }
+
+    // Logic Slicing buat 1 item
+    const start = currentPage * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginatedItems = dataToRender.slice(start, end);
+
+    container.innerHTML = paginatedItems.map(item => {
         const options = {
-            year: 'numeric',
-            month: 'long',
             day: 'numeric',
+            month: 'long',
+            year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
         };
 
-        // 1. Dekripsi & Logika Waktu
-        const targetDate = new Date(decryptData(item.arrive_target));
-        const isDelay = new Date() > targetDate ? "Delay" : "On Schedule";
-
-        let statusBase = item.status; // Biar status asli nggak rusak buat pengecekan warna
-        let statusTampil = statusBase;
-
-        // 2. Gabungkan status jika Active
-        if (statusBase === "Active") {
-            statusTampil = isDelay;
-        }
-
-        // 3. Logika Warna (Disederhanakan biar nggak salah)
-        let warna = "#2563eb";   // Default Biru (Border)
-        let warnaBG = "#ffffff"; // Default Putih (Background)
-        if (statusBase === "Active") {
-            warna = (isDelay === "Delay") ? "#ef4444" : "#22c55e"; // Merah vs Hijau
-        }
-
-        // 4. Dekripsi Field Lainnya
+        // Dekripsi data logistics
         const noSJKB = decryptData(item.sjkb) || '-';
         const tujuan = decryptData(item.dest) || '-';
-        const berangkat = item.depart_at ? new Date(decryptData(item.depart_at)).toLocaleString('id-ID', options) : '-';
-        const sampaiTarget = item.arrive_target ? new Date(decryptData(item.arrive_target)).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+        
+        // Warning jika decrypt gagal
+        if (noSJKB === '-' && item.sjkb) {
+            console.warn("⚠️ Gagal decrypt SJKB untuk item:", item.idseason);
+        }
+        if (tujuan === '-' && item.dest) {
+            console.warn("⚠️ Gagal decrypt tujuan untuk item:", item.idseason);
+        }
+        
+        const depart = new Date(decryptData(item.depart_at));
+        const targetDate = new Date(decryptData(item.arrive_target));
+        const update = new Date(decryptData(item.updated_at));
+        
+        // Warning jika date invalid
+        if (isNaN(depart.getTime())) {
+            console.warn("⚠️ Invalid depart_at date untuk item:", item.idseason);
+        }
+        if (isNaN(targetDate.getTime())) {
+            console.warn("⚠️ Invalid arrive_target date untuk item:", item.idseason);
+        }
+        if (isNaN(update.getTime())) {
+            console.warn("⚠️ Invalid updated_at date untuk item:", item.idseason);
+        }
+        let statusBase = item.status;
+        const isSelesai = statusBase === "Arrive";
+        // Status & Warna (Logic Toyota Merah/Hijau lu)
+        const isDelay = new Date() > targetDate ? "Delay" : "On Schedule";
+        let statusTampil = statusBase === "Active" ? isDelay : statusBase;
+
+        let warna = "#2563eb";
+        let warnaBG = "#ffffff";
 
         if (statusBase === "Active") {
             if (isDelay === "Delay") {
-                console.log(isDelay);
-                warna = "#ef4444";   // Merah
-                warnaBG = "#fef2f2"; // Merah Muda
+                warna = "#eb0a1e"; // Merah Toyota
+                warnaBG = "#fef2f2";
             } else {
-                warna = "#22c55e";   // Hijau
-                warnaBG = "#f0fdf4"; // Hijau Muda
+                warna = "#22c55e"; // Green
+                warnaBG = "#f0fdf4";
             }
-        } else if (statusBase === "Arrival") {
-            warna = "#64748b";   // Abu-abu (Selesai)
-            warnaBG = "#f8fafc"; // Abu-abu sangat muda
+        } else if (statusBase === "Arrive") {
+            warna = "#64748b";
+            warnaBG = "#f8fafc";
         }
 
         return `
-            <div class="log-card" style="background-color: ${warnaBG}; border-left: 6px solid ${warna};">
-                <div class="header">
-                    <span>📄 ${noSJKB}</span>
-                    <span style="color:${warna}; font-weight:bold;">${statusTampil}</span>
-                </div>
-                <div class="detail">
-                    <span>📍 Tujuan:</span>
-                    <span style="font-weight:500; color:#334155;">${tujuan}</span>
-                </div>
-                <div class="detail">
-                    <span>⏱️ Estimasi:</span>
-                    <span>${berangkat} - ${sampaiTarget} WIB</span>
-                </div>
-                <div class="status-time">
-                    Dibuat: ${new Date(item.created_at).toLocaleString('id-ID', options)}
-                </div>
+        <div class="log-card" style="background-color:${warnaBG}; solid ${warna}">
+            <div class="header-log"">
+                <span class="sjkb">📄 ${noSJKB}</span>
+                <span style="color:${warna}">${statusTampil}</span>
             </div>
-        `;
-    }).join('');
+            <div class="logdetail-tujuan" style="margin-bottom:5px;">
+                <span>📍 Tujuan:</span>
+                <span>${tujuan}</span>
+            </div>
+            <div class="logdetail-depart">
+                <span>Depart :</span>
+                <span>${depart.toLocaleString('id-ID', options)} WIB</span>
+            </div>
+            <div class="logdetail-target">
+                <span>Target :</span>
+                <span>${targetDate.toLocaleString('id-ID', options)} WIB</span>
+            </div>
+            <div class="lastupdatelog">
+                <span>Update :</span>
+                <span>${update.toLocaleString('id-ID', options)} WIB</span>
+            </div>
+
+
+        </div>`;
+    }).join('') + `
+    <div class="pagination" style="display:flex; justify-content:center; align-items:center; gap:20px; margin-top:15px;">
+        <button id="btprev" ${currentPage === 0 ? 'disabled' : ''} style="padding:8px 16px; border-radius:5px; cursor:pointer;">Prev</button>
+        <span class="pages" style="font-weight:bold; font-family:sans-serif;">${currentPage + 1} / ${totalPages}</span>
+        <button id="btnext" ${currentPage >= totalPages - 1 ? 'disabled' : ''} style="padding:8px 16px; border-radius:5px; cursor:pointer;">Next</button>
+    </div>`;
+    re_initEventListeners();
+    re_initpaginationEventListeners();
 }
+
+async function re_initpaginationEventListeners() {
+
+    const btnext = document.getElementById('btnext');
+    if (btnext) {
+        btnext.onclick = async () => {
+            const data = await db.all_logs.toArray();
+            const totalPages = Math.ceil(data.length / itemsPerPage);
+            console.log(`📄 Pagination: Current page ${currentPage + 1}/${totalPages}, Total items: ${data.length}`);
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                console.log(`➡️ Moving to page ${currentPage + 1}`);
+                renderToUI();
+            } else {
+                console.warn("⚠️ Already on last page, cannot go next");
+            }
+        };
+    }
+
+    const btnprev = document.getElementById('btprev');
+    if (btprev) {
+        btprev.onclick = async () => {
+            if (currentPage > 0) {
+                console.log(`⬅️ Moving to page ${currentPage}`);
+                currentPage--;
+                renderToUI();
+            } else {
+                console.warn("⚠️ Already on first page, cannot go back");
+            }
+        };
+    }
+}
+
 
 window.filterTable = function () {
     const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+    console.log(`🔍 Searching for keyword: "${keyword}" in ${allLogs.length} items`);
     const filteredData = allLogs.filter(item => {
         const sjkb = decryptData(item.sjkb).toLowerCase();
         const tujuan = decryptData(item.dest).toLowerCase();
         return sjkb.includes(keyword) || tujuan.includes(keyword);
     });
+    console.log(`📊 Filter result: ${filteredData.length} items found`);
     renderToUI(filteredData);
 };
 
@@ -2117,7 +2424,11 @@ async function loadTargetFromDexie() {
                     hour: '2-digit',
                     minute: '2-digit'
                 });
+            } else {
+                console.warn("⚠️ arrive_target tidak ditemukan di lastSession");
             }
+        } else {
+            console.warn("⚠️ Tidak ada session di travel_sessions saat loadTargetFromDexie()");
         }
     } catch (error) {
         console.error("Gagal load target dari Dexie:", error);
@@ -2127,3 +2438,81 @@ async function loadTargetFromDexie() {
 function goToCamera() {
     window.location.href = 'camera.html';
 }
+
+function updateSpeedUI(speed) {
+    const spdDisplay = document.getElementById('spdDisplay');
+    const bars = document.querySelectorAll('#speedBar span');
+    spdDisplay.innerText = Math.round(speed);
+    spdDisplay.className = ''; // Reset class
+    if (speed > 80) spdDisplay.classList.add('speed-danger');
+    else if (speed >= 60) spdDisplay.classList.add('speed-warning');
+    else if (speed >= 40) spdDisplay.classList.add('speed-safe');
+    else spdDisplay.classList.add('speed-normal');
+    const activeCount = Math.min(Math.floor(speed / 10), 10);
+    bars.forEach((bar, index) => {
+        bar.className = ''; // Reset bar
+        if (index < activeCount) {
+            if (speed > 80) bar.classList.add('bar-danger');
+            else if (speed >= 60) bar.classList.add('bar-warning');
+            else if (speed >= 40) bar.classList.add('bar-safe');
+            else bar.classList.add('bar-normal');
+        }
+    });
+}
+
+async function moveSessionToHistory(idseason) {
+    try {
+        const activeData = await db.travel_sessions.get(idseason);
+        if (!activeData) {
+            return;
+        }
+        const rawPath = typeof activeData.path_hist === 'string'
+            ? JSON.parse(activeData.path_hist)
+            : activeData.path_hist;
+        const encPoly = encryptData(encodePolyline(rawPath.map(p => [p[0], p[1]])));
+        const encSpeeds = encryptData(JSON.stringify(rawPath.map(p => p[2])));
+        const encTimes = encryptData(JSON.stringify(rawPath.map(p => p[3])));
+        const pathData = [encPoly, encSpeeds, encTimes];
+
+        try {
+            const hasil = await db.all_logs.put({
+
+                sjkb: activeData.sjkb,
+                dest: activeData.dest,
+                lat_start: activeData.lat_start,
+                lng_start: activeData.lng_start,
+                lat: activeData.lat,
+                lng: activeData.lng,
+                depart_at: activeData.depart_at,
+                arrive_target: activeData.arrive_target,
+                updated_at: activeData.updated_at,
+                route_master: activeData.route_master,
+                path_hist: pathData,
+                status: "Arrive",
+                user_id: activeData.user_id,
+                idseason: activeData.idseason
+
+            });
+
+            console.log(`%c sukses simpan history: ${hasil}`, "color: green; font-weight: bold;");
+        } catch (err) {
+
+            console.group("error_simpan_dexie");
+            console.error("pesan_error:", err.message);
+            console.error("detail_data_gagal:", activeData.idseason);
+            console.groupEnd();
+
+            alert("gagal simpan history lokal, cek koneksi atau memori hp");
+        }
+
+        console.log(`History ID ${idseason} aman tersimpan.`);
+        if (typeof renderToUI === "function") {
+            renderToUI();
+        }
+        console.groupEnd();
+    } catch (err) {
+        console.error("Gagal mindahin ke history:", err);
+    }
+}
+
+
