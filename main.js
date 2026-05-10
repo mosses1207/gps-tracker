@@ -1,6 +1,6 @@
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=10')
+        navigator.serviceWorker.register('/sw.js?v=12')
             .then(reg => {
                 console.log("SW Terdaftar!");
                 reg.onupdatefound = () => {
@@ -1026,7 +1026,7 @@ async function re_initEventListeners() {
     const dashboard = document.getElementById('btn-dashboard');
     if (dashboard) {
         dashboard.onclick = async () => {
-            window.location.href = '/dashboard.html';
+            window.location.href = 'dashboard.html';
         };
     }
 
