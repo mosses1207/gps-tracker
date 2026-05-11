@@ -1,20 +1,3 @@
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=12')
-            .then(reg => {
-                console.log("SW Terdaftar!");
-                reg.onupdatefound = () => {
-                    const installingWorker = reg.installing;
-                    installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            location.reload();
-                        }
-                    };
-                };
-            })
-            .catch(err => console.error("SW Error:", err));
-    });
-}
 import './style.css'
 import { createClient } from '@supabase/supabase-js'
 import L, { control } from 'leaflet'
