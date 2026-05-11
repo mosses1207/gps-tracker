@@ -1,15 +1,16 @@
 {
   "name": "NVDC Delivery Monitoring",
   "short_name": "NVDC App",
-  "start_url": "index.html",
+  "start_url": "/", 
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ff0000",
   "icons": [
     {
-      "src": "https://www.pngall.com/wp-content/uploads/2016/04/Toyota-Logo-Free-Download-PNG.png",
+      "src": "/Toyota-Logo-Free.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
