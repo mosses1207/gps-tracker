@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nvdc-cache-v20';
+const CACHE_NAME = 'nvdc-cache-v21';
 const assets = [
   '/',
   '/index.html',
