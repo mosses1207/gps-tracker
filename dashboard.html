@@ -76,25 +76,6 @@
     </div>
 
     <!-- end hiden container-->
-
-    <script>if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/public/sw.js?v=21', { scope: '/' })
-            .then(reg => {
-                console.log("SW Terdaftar!");
-                reg.onupdatefound = () => {
-                    const installingWorker = reg.installing;
-                    installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            location.reload();
-                        }
-                    };
-                };
-            })
-            .catch(err => console.error("SW Error:", err));
-    });
-}
-    </script>
     
     <script type="module" src="/mainmap.js"></script>
 
