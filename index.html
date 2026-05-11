@@ -289,7 +289,7 @@
   <!--class container camera-->
 <script>if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=20')
+        navigator.serviceWorker.register('/public/sw.js?v=20', { scope: '/' })
             .then(reg => {
                 console.log("SW Terdaftar!");
                 reg.onupdatefound = () => {
