@@ -185,6 +185,7 @@ function setupPathHistoryListener() {
             'postgres_changes',
             { event: '*', schema: 'public', table: 'path_history' },
             async (payload) => {
+                console.log("Listener On");
                 const { eventType, new: newData, old: oldData } = payload;
                 try {
                     if (eventType === 'DELETE') {
