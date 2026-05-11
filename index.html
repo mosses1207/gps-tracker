@@ -287,6 +287,22 @@
     </div>
   </div>
   <!--class container camera-->
-
+<script>if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js?v=20')
+            .then(reg => {
+                console.log("SW Terdaftar!");
+                reg.onupdatefound = () => {
+                    const installingWorker = reg.installing;
+                    installingWorker.onstatechange = () => {
+                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            location.reload();
+                        }
+                    };
+                };
+            })
+            .catch(err => console.error("SW Error:", err));
+    });
+}</script>
 
 </body>
