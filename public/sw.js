@@ -1,7 +1,11 @@
-const CACHE_NAME = 'nvdc-cache-v12';
+const CACHE_NAME = 'nvdc-cache-v20';
 const assets = [
   '/',
   '/index.html',
+  '/db.js',
+  '/mainmap.js',
+  '/stylemap.css',
+  '/dashboard.html',
   '/main.js',
   '/manifest.json', 
   '/style.css',
