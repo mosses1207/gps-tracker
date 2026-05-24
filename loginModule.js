@@ -181,21 +181,31 @@ function renderGoogleButton(emergencyTimer = null) {
 async function handleCredentialResponse(response) {
     try {
         showLoading('Memproses login Google...');
-        const { data, error } = await supabase.auth.signInWithIdToken({
+
+        // Deteksi apakah dijalankan di dalam WebView Android
+        const isAndroidWebView = typeof window.ReactNativeWebView !== 'undefined';
+
+        // Gunakan signInWithOAuth agar lebih kompatibel dan bisa pakai redirectTo
+        const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            token: response.credential,
+            options: {
+                id_token: response.credential, // Tetap kirim tokennya
+                redirectTo: isAndroidWebView ? 'com.trackingapp://' : window.location.origin,
+            },
         });
-        console.log('Data dari Supabase:', data); // ← tambah ini
-        console.log('Error dari Supabase:', error); // ← tambah ini
+
         if (error) throw error;
+
+        // Catatan: Jika menggunakan signInWithOAuth, biasanya redirect otomatis 
+        // sehingga baris di bawah ini mungkin tidak sempat tereksekusi.
+        // Itu normal karena halaman akan reload sendiri ke arah redirect.
         saveLocalSession(data.user);
         hideLoginOverlay();
         showLoading('Memuat ulang...');
         setTimeout(() => location.reload(), 800);
+
     } catch (error) {
-        console.error('Detail error:', error); // ← tambah ini
-        console.error('Error message:', error.message);
-        console.error('Error status:', error.status);
+        console.error('Detail error:', error);
         hideLoading();
         alert('Gagal Login Google: ' + error.message);
         hideLoginOverlay();
