@@ -118,6 +118,19 @@ async function initSystem() {
 
 function handleUnauthenticated() {
     localStorage.removeItem('user_session');
+    showLoginOverlay();
+    hideLoading();
+    const passInput = document.getElementById('login-password');
+    if (passInput) {
+        passInput.onkeydown = (e) => {
+            if (e.key === 'Enter') handleManualLogin();
+        };
+    }
+}
+
+/*
+function handleUnauthenticated() {
+    localStorage.removeItem('user_session');
     const emergencyTimer = setTimeout(() => {
         const btn = document.getElementById('google-login-btn');
         if (btn && btn.innerHTML.trim() === '') {
@@ -136,7 +149,7 @@ function handleUnauthenticated() {
     clearTimeout(emergencyTimer);
     handleSDKLoadFailure();
 }
-
+*/
 function renderGoogleButton(emergencyTimer = null) {
     google.accounts.id.initialize({
         client_id: googleClientId,
