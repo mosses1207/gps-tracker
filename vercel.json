@@ -1,29 +1,8 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "routes": [
-    {
-      "src": "/dashboard",
-      "dest": "/dashboard.html"
-    },
-    {
-      "src": "/index",
-      "dest": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/sw.js",
-      "headers": [
+    "rewrites": [
         {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+            "source": "/dashboard",
+            "destination": "/dashboard.html"
         }
-      ]
-    }
-  ]
+    ]
 }
