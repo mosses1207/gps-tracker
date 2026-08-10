@@ -134,7 +134,7 @@ function applyGroupToForm(group) {
             const item = items[i];
             document.getElementById(id).value = item?.frame_number || '';
             document.getElementById(TYPE_FIELD_IDS[i]).value = item?.type || '';
-            document.getElementById(MODEL_FIELD_IDS[i]).value = item?.model || '';
+            document.getElementById(MODEL_FIELD_IDS[i]).value = item?.warna || item?.model || '';
             document.getElementById(ALAMAT_FIELD_IDS[i]).value = item?.alamat || '';
             setFmStatus(i, item ? 'Terisi otomatis dari data python' : '', item ? 'ok' : '');
         });
