@@ -18,13 +18,16 @@
     font) sebelum bener-bener diandalkan di production, siapa tau ada
     domain yang kelewat.
 
-    Tambahan: connect-src dikasih scheme-source "http:" dan "ws:" (bukan
+    Tambahan: connect-src dikasih scheme-source "https:" dan "wss:" (bukan
     host tertentu) supaya PWA bisa fetch + buka WebSocket ke bridge lokal
     (aplikasi desktop Helper Push Data) yang jalan di
-    http://<IP LAN>:<port http> dan ws://<IP LAN>:<port ws> — IP-nya
+    https://<IP LAN>:<port http> dan wss://<IP LAN>:<port ws> — IP-nya
     beda-beda tiap device/jaringan jadi gak bisa di-whitelist per host.
-    Scheme http:/ws: dipilih (bukan wildcard host di https) biar traffic
-    HTTPS/WSS ke luar tetap kebatasi ke domain yang sudah didaftar di atas.
+    Bridge WAJIB https/wss (lihat cert_service.py di sisi Python — self
+    signed cert), karena browser blokir mixed content kalau halaman https
+    (Vercel) fetch ke http:// biasa selain localhost. Scheme https:/wss:
+    dipilih (bukan wildcard host) biar traffic tetap kebatasi ke scheme
+    yang sudah dipakai bridge, bukan ke sembarang host https lain.
   -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
@@ -32,7 +35,7 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://accounts.google.com;
     font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
     img-src 'self' data: https://*.tile.openstreetmap.org;
-    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.gstatic.com https://accounts.google.com http: ws:;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.gstatic.com https://accounts.google.com https: wss:;
     frame-src https://accounts.google.com;
     object-src 'none';
     base-uri 'self';
@@ -276,7 +279,7 @@
                 <div class="settings-divider"></div>
                 <p class="settings-panel-title">Bridge Data (Python)</p>
                 <div class="settings-bridge-row">
-                  <input type="text" id="bridgeUrlInput" placeholder="http://192.168.1.5:8877" />
+                  <input type="text" id="bridgeUrlInput" placeholder="https://192.168.1.5:8877" />
                   <button id="bridgeUrlSaveBtn" type="button" class="settings-bridge-save-btn" title="Simpan alamat bridge">
                     <i class="fa-solid fa-check"></i>
                   </button>
@@ -359,11 +362,11 @@
       <button class="btn-close" id="bridgeSetupCloseBtn" title="Tutup, sambungkan nanti">✕</button>
       <p class="login-eyebrow"><i class="fa-solid fa-tower-broadcast"></i> Sambungkan Helper Bridge</p>
       <p class="login-subtitle">PWA belum terhubung ke aplikasi Helper Bridge di komputer admin. Buka tab "Bridge" di
-        Helper, klik Start, lalu masukkan alamat HTTP dari helper di bawah ini.</p>
+        Helper, klik Start, lalu masukkan alamat HTTPS dari helper di bawah ini.</p>
       <div class="login-form-wrap">
         <div class="form-group-light">
-          <label class="login-label">Alamat Bridge (HTTP)</label>
-          <input type="text" id="bridgeSetupUrlInput" class="login-input" placeholder="http://192.168.1.10:8877" />
+          <label class="login-label">Alamat Bridge (HTTPS)</label>
+          <input type="text" id="bridgeSetupUrlInput" class="login-input" placeholder="https://192.168.1.10:8877" />
         </div>
         <button id="bridgeSetupSaveBtn" type="button" class="btn-login">Simpan &amp; Sambungkan</button>
         <span class="bridge-setup-hint" id="bridgeSetupHint">PWA dan komputer admin harus ada di jaringan WiFi/LAN

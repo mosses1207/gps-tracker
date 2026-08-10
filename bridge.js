@@ -22,7 +22,11 @@ function normalizeUrl(raw) {
     let url = raw.trim();
     if (!url) return '';
     if (!/^https?:\/\//i.test(url)) {
-        url = `http://${url}`;
+        // Bridge Python cuma pernah jalan di HTTPS (self-signed, lihat
+        // cert_service.py) — default ke https: kalau admin cuma ngetik
+        // IP:port tanpa scheme, biar gak ke-CSP/mixed-content pas PWA
+        // ini diakses dari Vercel (https).
+        url = `https://${url}`;
     }
     return url.replace(/\/+$/, ''); // buang trailing slash
 }

@@ -370,7 +370,7 @@ function showBridgeSetupModal(hintText) {
 
     const input = document.getElementById('bridgeSetupUrlInput');
     if (input && !input.value) {
-        input.value = getBridgeUrl() || `http://192.168.1.10:${BRIDGE_DEFAULT_PORT}`;
+        input.value = getBridgeUrl() || `https://192.168.1.10:${BRIDGE_DEFAULT_PORT}`;
     }
 
     const hint = document.getElementById('bridgeSetupHint');
@@ -426,7 +426,7 @@ export function initBridgeSetupModalUI() {
         input.value = saved;
 
         if (!saved) {
-            setHint('Isi dulu alamat bridge-nya, (contoh: http://192.168.1.10:8877).', 'error');
+            setHint('Isi dulu alamat bridge-nya, (contoh: https://192.168.1.10:8877).', 'error');
             return;
         }
 
