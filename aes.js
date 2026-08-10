@@ -1,42 +1,34 @@
-import CryptoJS from 'crypto-js'
+import CryptoJS from 'crypto-js';
+import { secret } from './auth.js';
 
 export function decryptData(ciphertext) {
-    const AES_SECRET = import.meta.env.VITE_AES_KEY;
-    if (!AES_SECRET) {
-        console.error("VITE_AES_KEY nggak ketemu di .env");
+    if (!secret.key) {
         return ciphertext;
     }
+    if (ciphertext === null || ciphertext === undefined || typeof ciphertext !== 'string') return ciphertext;
+    if (!ciphertext.startsWith('U2Fsd')) return ciphertext;
     try {
-        const bytes = CryptoJS.AES.decrypt(ciphertext, AES_SECRET);
+        const bytes = CryptoJS.AES.decrypt(ciphertext, secret.key);
         const originalText = bytes.toString(CryptoJS.enc.Utf8);
-
-        if (!originalText) {
-            console.warn("⚠️ decryptData: hasil decrypt kosong");
-            return null;
-        }
-
+        if (!originalText) return ciphertext;
         try {
             return JSON.parse(originalText);
         } catch {
             return originalText;
         }
     } catch (e) {
-        console.error("Gagal Dekripsi:", e);
-        return null;
+        return ciphertext;
     }
 }
 
 export function encryptData(data) {
-    const AES_SECRET = import.meta.env.VITE_AES_KEY;
-    if (!AES_SECRET) {
-        console.error("VITE_AES_KEY nggak ketemu di .env");
+    if (!secret.key) {
         return data;
     }
     try {
         const stringData = typeof data === 'object' ? JSON.stringify(data) : String(data);
-        return CryptoJS.AES.encrypt(stringData, AES_SECRET).toString();
+        return CryptoJS.AES.encrypt(stringData, secret.key).toString();
     } catch (e) {
-        console.error("Gagal Enkripsi:", e);
-        return null;
+        return data;
     }
 }
