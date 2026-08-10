@@ -24,7 +24,7 @@ if (typeof window !== 'undefined') {
     // Registrasi Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js?v=23')
+            navigator.serviceWorker.register('/sw.js?v=24')
                 .then(reg => {
                     reg.onupdatefound = () => {
                         const installingWorker = reg.installing;
