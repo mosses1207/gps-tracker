@@ -29,7 +29,7 @@ export default defineConfig({
         shuffleStringArray: true,
         splitStrings: true,
         splitStringsChunkLength: 5,
-        selfDefending: true,
+        selfDefending: false,
         simplify: false,
         identifierNamesGenerator: 'hexadecimal',
         renameGlobals: false,
