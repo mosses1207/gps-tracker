@@ -1,24 +1,3 @@
-// bridgeSync.js
-//
-// Jembatan real-time PWA <-> Helper Bridge (aplikasi Python di komputer admin).
-// Helper Bridge sengaja TIDAK punya kredensial Supabase, jadi PWA ini yang
-// jadi "tangan"-nya buat baca & tulis tabel `planning` di Supabase.
-//
-// Tanggung jawab file ini:
-//   1. Connect WebSocket ke Helper Bridge (port ws = port http bridge + 1).
-//   2. Wajib balas { type: 'pong' } tiap kali dapat { type: 'ping' }.
-//   3. Balas 'supabase_sync_request' dengan isi tabel `planning` (7 field wajib).
-//   4. Eksekusi 'supabase_sync_instructions' (insert/update/delete) ke `planning`.
-//   5. Tampilkan badge kecil di pojok kanan atas peta tiap ada proses sync.
-//   6. Deteksi awal: kalau bridge belum konek, munculin form alamat/port bridge.
-//
-// Catatan soal "data kosong": tiap kali diminta sync, PWA SELALU balas dengan
-// bentuk JSON yang valid -> { type: 'supabase_sync_response', items: [...] }.
-// Kalau gak ada baris yang cocok (atau query gagal), items dikirim sebagai
-// array kosong ([]) -- BUKAN pesan yang di-skip / gak dibalas sama sekali --
-// supaya Helper Bridge selalu tahu pasti "isi Supabase buat moda ini ya
-// segini (kosong)", bukan salah duga koneksinya putus atau datanya beda.
-
 import { supabase } from './supabaseClient';
 import { getBridgeUrl, setBridgeUrl, checkBridgeHealth, BRIDGE_DEFAULT_PORT } from './bridge';
 import { dlog } from './debug';
@@ -32,9 +11,6 @@ let reconnectTimer = null;
 let manuallyClosed = false;
 let lastData2 = null;
 
-// ============================================
-// Konversi alamat HTTP bridge -> alamat WS bridge (port + 1)
-// ============================================
 function wsUrlFromHttp(httpUrl) {
     try {
         const u = new URL(httpUrl);
@@ -46,9 +22,6 @@ function wsUrlFromHttp(httpUrl) {
     }
 }
 
-// ============================================
-// Badge kecil pojok kanan-atas peta ("sedang insert/update/delete...")
-// ============================================
 let badgeQueue = [];
 let badgeBusy = false;
 
@@ -77,9 +50,6 @@ function processBadgeQueue() {
     }, next.duration);
 }
 
-// ============================================
-// WebSocket: connect, reconnect otomatis, ping/pong
-// ============================================
 function safeSend(obj) {
     if (ws && ws.readyState === WebSocket.OPEN) {
         try {
@@ -110,7 +80,6 @@ function connectBridgeWs() {
     manuallyClosed = false;
     clearTimeout(reconnectTimer);
 
-    // Tutup koneksi lama kalau masih ada (misal alamat baru disimpan)
     if (ws) {
         try { ws.onclose = null; ws.close(); } catch (e) { /* noop */ }
         ws = null;
@@ -143,7 +112,6 @@ function connectBridgeWs() {
     });
 }
 
-/** Dipanggil habis admin ganti/simpan alamat bridge baru, biar WS langsung nyoba konek ulang. */
 export function restartBridgeWs() {
     manuallyClosed = true;
     if (ws) {
@@ -191,9 +159,6 @@ export function getLastData2() {
     return lastData2;
 }
 
-// ============================================
-// PWA jadi "tangan" Supabase: balas isi tabel `planning`
-// ============================================
 function normalizeItem(row) {
     const out = {};
     REQUIRED_FIELDS.forEach((key) => {
@@ -217,27 +182,17 @@ async function handleSyncRequest(modaList) {
         const { data, error } = await query;
         if (error) throw error;
 
-        // Selalu kirim array (bisa kosong) dengan bentuk field yang konsisten,
-        // supaya Helper Bridge gak salah duga koneksi putus / data beda.
         const items = (data || []).map(normalizeItem);
 
         safeSend({ type: 'supabase_sync_response', items });
         showSyncBadge('ok', `Sync terkirim (${items.length} data)`);
     } catch (e) {
         console.error('[BRIDGE-WS] gagal ambil data planning:', e);
-        // Tetap balas dengan bentuk valid (items kosong) walau query gagal,
-        // biar Helper Bridge gak nunggu / salah asumsi.
         safeSend({ type: 'supabase_sync_response', items: [] });
         showSyncBadge('error', 'Gagal ambil data Supabase');
     }
 }
 
-// ============================================
-// Lokasi admin: Helper Bridge gak pernah ngirim field `lokasi` pas insert
-// (dia gak tau ini device/admin yang mana), jadi PWA ambil sendiri dari
-// tabel `admin` (kolom `lokasi`) berdasarkan uid user yang lagi login di
-// PWA ini, terus ditempelin ke tiap baris sebelum insert ke `planning`.
-// ============================================
 const LOKASI_CACHE_MS = 5 * 60 * 1000;
 let cachedLokasi = null;
 let lokasiFetchedAt = 0;
@@ -254,9 +209,6 @@ async function getMyLokasi() {
             return cachedLokasi;
         }
 
-        // PERBAIKAN: 
-        // 1. Select kolom 'Area' (bukan 'lokasi')
-        // 2. Menggunakan .eq('uid', user.id)
         const { data, error } = await supabase
             .from('admin')
             .select('Area')
@@ -278,9 +230,6 @@ async function getMyLokasi() {
     }
 }
 
-// ============================================
-// PWA jadi "tangan" Supabase: eksekusi insert/update/delete
-// ============================================
 function stripId(row) {
     if (!row || typeof row !== 'object') return row;
     const { id, ...rest } = row;
@@ -297,7 +246,6 @@ async function handleSyncInstructions(msg) {
         try {
             const lokasi = (await getMyLokasi()) || ''; // Berikan fallback string kosong jika lokasi null
             
-            // Buang key 'id' secara eksplisit agar Postgres menggunakan Sequence Auto-Increment
             const rows = inserts.map((row) => {
                 const cleanRow = { ...row };
                 delete cleanRow.id; 
@@ -361,9 +309,6 @@ async function handleSyncInstructions(msg) {
     }
 }
 
-// ============================================
-// Deteksi awal konek/gak + form alamat/port wajib muncul kalau belum konek
-// ============================================
 function showBridgeSetupModal(hintText) {
     const overlay = document.getElementById('bridgeSetupOverlay');
     if (!overlay) return;
@@ -403,7 +348,6 @@ async function ensureBridgeConfigured() {
     }
 }
 
-/** Wiring tombol Simpan/Tutup di form modal wajib-konek. Panggil sekali saat init. */
 export function initBridgeSetupModalUI() {
     const overlay = document.getElementById('bridgeSetupOverlay');
     const input = document.getElementById('bridgeSetupUrlInput');
@@ -459,7 +403,6 @@ export function initBridgeSetupModalUI() {
     }
 }
 
-/** Entry point utama, panggil sekali saat aplikasi mulai. */
 export async function initBridgeSync() {
     await ensureBridgeConfigured();
     connectBridgeWs();

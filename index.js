@@ -57,9 +57,6 @@ if (typeof window !== 'undefined') {
         showLoading('Memuat cabang...');
         await ambildataCabang();
         hideLoading();
-
-        // Cek konek ke Helper Bridge (munculin form alamat/port kalau belum
-        // konek) lalu buka WebSocket buat sinkron real-time & jembatan Supabase.
         initBridgeSync();
     };
 
@@ -129,9 +126,6 @@ function re_initEventListeners() {
         };
     }
 
-    // Tombol-tombol di bawah ini sebelumnya pakai onclick="..." inline di HTML.
-    // Dipindah ke addEventListener supaya CSP (script-src tanpa 'unsafe-inline')
-    // bisa dipasang tanpa mematikan tombol-tombol ini.
     const btnCloseForm = document.getElementById('btn-close-form');
     if (btnCloseForm) {
         btnCloseForm.addEventListener('click', () => {
@@ -155,9 +149,6 @@ function re_initEventListeners() {
         reloadBtn.addEventListener('click', () => window.location.reload());
     }
 
-    // Bug fix: tombol login sebelumnya type="submit" tanpa handler submit
-    // sama sekali -> klik-nya cuma trigger native form submit (reload halaman
-    // kosong), handleManualLogin() gak pernah kepanggil dari tombolnya.
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', (evt) => {
@@ -192,8 +183,6 @@ function initSidebarToggle() {
         localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
     });
 
-    // Klik salah satu tab pas sidebar lagi disembunyikan -> otomatis buka lagi
-    // biar konten tab-nya (list absen/active/instruksi) langsung kelihatan.
     document.querySelectorAll('.tab-btn[data-content]').forEach((tabBtn) => {
         tabBtn.addEventListener('click', () => {
             if (sidebar.classList.contains('collapsed')) {
@@ -204,8 +193,7 @@ function initSidebarToggle() {
         });
     });
 
-    // Klik bell notifikasi pas sidebar lagi disembunyikan -> buka juga,
-    // biar panel notifnya kelihatan jelas, sama kayak behavior tab.
+
     const notifBtn = document.getElementById('notifBtn');
     if (notifBtn) {
         notifBtn.addEventListener('click', () => {

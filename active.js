@@ -32,50 +32,30 @@ let markerontime = L.icon({
     shadowSize: [41, 41]
 });
 
-// ============================================
-// INITIALIZATION - Subscribe ke DataStore
-// ============================================
-
 export async function initializeActiveModule() {
     setupSearch();
     initArrivalModal();
     initArrivalReasonCounter();
     
-    // Subscribe ke perubahan data active
     dataStoreUnsubscribe = dataStore.subscribe('active', async (payload) => {
         dlog('DataStore active updated:', payload);
         await handleDataStoreChange(payload);
         checkActiveCountChange();
     });
 
-    // Subscribe ke perubahan filter moda (dari tombol Pengaturan) -> re-render list & marker
     onModaFilterChange(async () => {
         dlog('[ACTIVE] Moda filter berubah, re-render list & marker');
         await refreshTableActive();
         await reapplyMarkerFilter();
-        // Filter ganti = jumlah yang keitung ikut ganti, tapi ini BUKAN kejadian
-        // data baru/hilang -> baseline di-sinkronin ulang diam-diam, gak kedip.
         resyncActiveCountBaseline();
     });
 
-    // Initial render dari data yang udah ada di RAM
     await refreshTableActive();
     await createmarker();
 
-    // Baseline jumlah awal pas load pertama -> gak kedip di awal, cuma kepicu
-    // pas beneran ada perubahan jumlah setelahnya.
     resyncActiveCountBaseline();
 }
 
-// ============================================
-// KEDIP TAB ACTIVE (jumlah kiriman aktif berubah)
-// ============================================
-// Ganti nomer/badge -> tab-nya sendiri yang kedip 10 detik tiap kali TOTAL
-// kiriman aktif (yang lolos filter moda) berubah, naik ataupun turun
-// (misal 7 -> 8, atau 10 -> 9). Kalau lagi kedip terus jumlahnya berubah
-// lagi, timernya di-reset (kedip lanjut 10 detik lagi dari titik itu).
-// Ganti filter moda doang (tanpa data beneran berubah) sengaja gak bikin
-// kedip -- itu cuma nyaring tampilan, bukan kejadian baru.
 
 let lastActiveCount = null;
 let activeBlinkTimeout = null;
@@ -104,15 +84,10 @@ function checkActiveCountChange() {
     lastActiveCount = count;
 }
 
-// Sinkronin ulang baseline tanpa nge-trigger kedip (dipakai pas ganti filter
-// moda / pas init pertama kali).
 function resyncActiveCountBaseline() {
     lastActiveCount = getFilteredActiveCount();
 }
 
-// ============================================
-// ARRIVAL (tandai perjalanan selesai/berhenti karena insiden)
-// ============================================
 
 let pendingArrivalId = null;
 let sendingArrival = false;
@@ -224,7 +199,7 @@ async function submitArrival(id, reason) {
     }
 }
 
-// Buang marker yang moda-nya lagi di-filter (unchecked), lalu render ulang sisanya
+
 async function reapplyMarkerFilter() {
     const allData = dataStore.getData('active');
     const allowedIds = new Set(
@@ -240,8 +215,6 @@ async function reapplyMarkerFilter() {
 
     await createmarker();
 
-    // Kalau lagi mode Auto Center, sesuaikan bounds ke marker yang kelihatan sekarang.
-    // Kalau mode Manual, autoRecenterMap() gak akan ngapa-ngapain (lihat map.js).
     if (typeof window.autoRecenterMap === 'function') {
         window.autoRecenterMap();
     }
@@ -289,14 +262,9 @@ async function handleDataStoreChange(payload) {
     }
 }
 
-// ============================================
-// TABLE FUNCTIONS
-// ============================================
-
 export async function createtabelactive(data = null) {
     let displayData = data;
     
-    // Jika no data passed, ambil dari DataStore
     if (displayData === null) {
         displayData = dataStore.getData('active');
     }
@@ -463,10 +431,6 @@ function removeTableRow(id) {
     tableCache.delete(id);
 }
 
-// ============================================
-// PAGINATION & SEARCH
-// ============================================
-
 export async function renderPagination(data) {
     filteredData = data;
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -561,9 +525,6 @@ export async function refreshTableActive() {
     await renderPagination(filtered);
 }
 
-// ============================================
-// MARKER FUNCTIONS
-// ============================================
 
 function buildPopup(item) {
     const now = new Date();
@@ -696,10 +657,6 @@ export function removeMarker(id) {
     markerCache.delete(id);
 }
 
-// ============================================
-// UTILITY
-// ============================================
-
 function formatTanggalIndonesia(dateString) {
     const date = new Date(dateString);
     const hari = date.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -717,9 +674,6 @@ function formatTanggalIndonesia(dateString) {
     return `${hari}, ${tanggal} ${bulanIndo[date.getMonth()]} ${tahun} ${jam}`;
 }
 
-// Dipanggil dari notifications.js waktu salah satu notif (badge) di-klik:
-// reset search biar item pasti kebuka di daftar, loncat ke halaman yang
-// sesuai, scroll+kedip kartunya, dan pan/zoom map ke marker terkait.
 export async function focusActiveCard(idseason) {
     const searchInput = document.getElementById('searchInput2');
     if (searchInput) searchInput.value = '';
@@ -753,10 +707,6 @@ export async function focusActiveCard(idseason) {
         globalTooltipTimer = setTimeout(() => marker.closeTooltip(), 3000);
     }
 }
-
-// ============================================
-// CLEANUP
-// ============================================
 
 export function cleanupActiveModule() {
     if (dataStoreUnsubscribe) {

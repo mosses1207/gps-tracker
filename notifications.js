@@ -1,28 +1,3 @@
-// notifications.js
-//
-// Panel notifikasi/reminder buat admin di pojok kanan atas sidebar (sebelah
-// tombol Pengaturan). Isinya agregat dari data 'instruksi' dan 'active' di
-// DataStore, dan di-scroll kayak riwayat chat kalau isinya banyak.
-//
-// Kondisi yang dipantau:
-// 1) Item di tab Instruksi yang belum pindah status (masih di bucket
-//    'instruksi', artinya driver belum mulai jalan) lebih dari 1 jam sejak
-//    created_at.
-// 2) Item active yang "delay & belum sampai": update posisi TERAKHIR yang
-//    masuk (updated_at) sudah melewati target kedatangan (arrive_target,
-//    yaitu depart_at + leadtime yang udah dihitung backend). Artinya bukan
-//    cuma nebak dari jalannya jam, tapi udah kebukti dari data yang beneran
-//    masuk. Sengaja dibandingkan ke updated_at (bukan "jam sekarang") biar
-//    gak tumpang tindih sama kondisi #3 (device yang lagi silent/gak connect
-//    udah kepegang di situ). Kalau ternyata maksudnya "now > arrive_target"
-//    (real-time, samain kayak status "Delay" di kartu), tinggal ganti baris
-//    yang ditandain "GANTI DI SINI" di bawah.
-// 3) Item active yang updated_at-nya sudah lebih dari 10 menit dari waktu
-//    saat ini (reminder: GPS/koneksi mungkin bermasalah).
-//
-// Semua kondisi ikut filter moda yang lagi aktif (settings.js) — kalau lagi
-// difilter Self Drive doang, badge yang muncul cuma punya moda itu.
-
 import { dataStore } from './querysupabase';
 import { escapeHtml } from './sanitize';
 import { dlog } from './debug';
@@ -40,10 +15,6 @@ let unsubInstruksi = null;
 let unsubModa = null;
 let knownIds = new Set();
 let audioCtx = null;
-
-// ============================================
-// SOUND (chime pendek pas ada reminder baru)
-// ============================================
 
 function getAudioCtx() {
     if (!audioCtx) {
@@ -73,13 +44,9 @@ function playChime() {
         beep(720, 0, 0.12);
         beep(980, 0.12, 0.16);
     } catch (error) {
-        // audio context belum di-"unlock" sama gesture user, aman diabaikan
+        // audio context belum di-"unlock" aman diabaikan
     }
 }
-
-// ============================================
-// COMPUTE
-// ============================================
 
 function relativeTime(dateString) {
     const then = new Date(dateString).getTime();
@@ -97,9 +64,6 @@ function computeNotifications() {
     const now = Date.now();
     const notifs = [];
 
-    // Kondisi 1: instruksi belum berubah status > 1 jam dari updated_at
-    // (pakai updated_at, bukan created_at -- created_at gak reliable/gak selalu
-    // ke-return dari API buat baris instruksi, updated_at yang konsisten ada)
     dataStore.getData('instruksi').forEach(item => {
         if (!isModaAllowed(item.moda)) return;
         const lastUpdatedAt = new Date(item.updated_at).getTime();
@@ -125,11 +89,8 @@ function computeNotifications() {
         if (!item.status || item.status.toLowerCase() !== 'active') return;
 
         const updatedAt = new Date(item.updated_at).getTime();
-
-        // Kondisi 2: delay & belum sampai — arrive_target = depart_at + leadtime
-        // (field ini sama persis yang udah dipakai di active.js buat status "Delay")
         const deadline = new Date(item.arrive_target).getTime();
-        if (!isNaN(deadline) && !isNaN(updatedAt) && updatedAt > deadline) { // GANTI DI SINI kalau maunya now > deadline
+        if (!isNaN(deadline) && !isNaN(updatedAt) && updatedAt > deadline) { 
             notifs.push({
                 id: `delay-${item.idseason}`,
                 category: 'delay',
@@ -142,7 +103,6 @@ function computeNotifications() {
             });
         }
 
-        // Kondisi 3: gak ada update posisi > 10 menit
         if (!isNaN(updatedAt) && (now - updatedAt) > TEN_MIN_MS) {
             notifs.push({
                 id: `stale-${item.idseason}`,
@@ -157,9 +117,6 @@ function computeNotifications() {
         }
     });
 
-    // Urutan prioritas admin: delay pengiriman (udah lewat target) paling urgent,
-    // baru device/GPS gak ada update >10 menit, baru instruksi yang mangkrak >1 jam.
-    // Di dalam kategori yang sama, yang paling lama "nunggak" ditaruh paling atas.
     const CATEGORY_PRIORITY = { delay: 1, stale: 2, instruksi: 3 };
     notifs.sort((a, b) => {
         const prioA = CATEGORY_PRIORITY[a.category] ?? 99;
@@ -170,9 +127,6 @@ function computeNotifications() {
     return notifs;
 }
 
-// ============================================
-// RENDER
-// ============================================
 
 function iconForCategory(category) {
     switch (category) {
@@ -256,7 +210,6 @@ function refresh() {
         if (!knownIds.has(id)) hasNew = true;
     });
 
-    // Cuma bunyi kalau ada reminder BARU, dan bukan pas render pertama kali load
     if (hasNew && knownIds.size > 0) {
         playChime();
     }
@@ -265,9 +218,6 @@ function refresh() {
     renderPanel(notifs);
 }
 
-// ============================================
-// INIT / CLEANUP
-// ============================================
 
 export function initializeNotificationsModule() {
     const bellBtn = document.getElementById('notifBtn');

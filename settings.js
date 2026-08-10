@@ -1,7 +1,3 @@
-//settings.js
-// Filter moda (Self Drive / Single Carrier / Car Carrier / Double Carrier)
-// + UI tombol Pengaturan (dropdown checklist) + Logout dengan konfirmasi.
-
 import { dlog } from './debug';
 import { getBridgeUrl, setBridgeUrl, checkBridgeHealth } from './bridge';
 import { restartBridgeWs } from './bridgeSync';
@@ -60,10 +56,6 @@ export function onModaFilterChange(callback) {
         listeners = listeners.filter((cb) => cb !== callback);
     };
 }
-
-// ============================================
-// UI: tombol Pengaturan + dropdown + logout confirm
-// ============================================
 
 export function initSettingsUI() {
     const btn = document.getElementById('settingsBtn');
@@ -127,10 +119,6 @@ export function initSettingsUI() {
         });
     }
 }
-
-// ============================================
-// UI: alamat bridge lokal (Helper Push Data) dipakai buat autofill form
-// ============================================
 
 function initBridgeUrlUI() {
     const input = document.getElementById('bridgeUrlInput');

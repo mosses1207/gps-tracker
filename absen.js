@@ -11,21 +11,15 @@ let currentPage = 1;
 let dataStoreUnsubscribe = null;
 const ITEMS_PER_PAGE = 10;
 
-// ============================================
-// INITIALIZATION
-// ============================================
-
 export async function initializeAbsenModule() {
     setupSearchAbsen();
     initDeleteConfirmModal();
     
-    // Subscribe ke perubahan data absen
     dataStoreUnsubscribe = dataStore.subscribe('absen', async (payload) => {
         dlog('DataStore absen updated:', payload);
         await handleDataStoreChange(payload);
     });
     
-    // Initial render
     await refreshTableAbsen();
 }
 
@@ -59,10 +53,6 @@ async function handleDataStoreChange(payload) {
             break;
     }
 }
-
-// ============================================
-// REFRESH & TABLE CREATION
-// ============================================
 
 export async function refreshTableAbsen() {
     const allData = dataStore.getData('absen'); // Ambil dari DataStore
@@ -183,8 +173,6 @@ export async function createtabelactive(data = null) {
 
 function attachRowListener(element, id, item) {
     element.addEventListener('click', () => {
-        // Bersihin dulu sisa isian form sebelumnya (misal dari mode edit
-        // di tab instruksi), biar gak kebawa ke form input baru ini.
         resetForm();
 
         const form = document.querySelector('.bodyform');
@@ -192,12 +180,6 @@ function attachRowListener(element, id, item) {
         form.dataset.selectedId = id;
         form.dataset.sourceTab = 'absen';
 
-        // Ambil langsung dari data item (bukan muter lewat DOM/atribut
-        // tombol hapus) supaya gak ke-mask jadi teks "undefined" kalau
-        // datanya emang gak ada. Kalau item.id beneran gak ada, hapus
-        // recordId lama (kalau ada sisa dari klik row lain sebelumnya)
-        // biar submitForm() nolak dengan pesan jelas, bukan ngirim id
-        // basi/salah ke backend.
         if (item?.id !== undefined && item?.id !== null && item.id !== '') {
             form.dataset.recordId = String(item.id); // Primary key (id auto increment)
         } else {
@@ -207,7 +189,6 @@ function attachRowListener(element, id, item) {
         
         form.classList.add('show');
 
-        // Mode default: Input pengiriman (bukan edit)
         const titleEl = document.getElementById('formCardTitle');
         if (titleEl) titleEl.textContent = 'Input pengiriman';
         document.getElementById('formCard')?.classList.remove('form-mode-edit');
@@ -216,7 +197,7 @@ function attachRowListener(element, id, item) {
     const deleteBtn = element.querySelector('.balon-delete-btn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // biar gak ikut trigger klik-card (buka form) di atas
+            e.stopPropagation();
             const recordId = deleteBtn.dataset.recordId;
             const driverName = element.querySelector('.Nama')?.textContent || '';
             openDeleteConfirmModal(recordId, driverName);
@@ -290,10 +271,6 @@ function removeTableRow(id) {
     tableCache.delete(id);
 }
 
-// ============================================
-// PAGINATION & SEARCH
-// ============================================
-
 export async function renderPagination(data) {
     filteredData = data;
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -360,10 +337,6 @@ export function setupSearchAbsen() {
         await renderPagination(filtered);
     });
 }
-
-// ============================================
-// DELETE (hapus data absen dengan konfirmasi)
-// ============================================
 
 let pendingDeleteId = null;
 let sendingDelete = false;
@@ -448,10 +421,6 @@ async function deleteAbsenItem(id) {
     }
 }
 
-// ============================================
-// NOTIFICATION
-// ============================================
-
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playNotifSound() {
@@ -511,10 +480,6 @@ function checkForNewData(status = false) {
     }
 }
 
-// ============================================
-// UTILITY
-// ============================================
-
 function formatTanggalIndonesia(dateString) {
     const date = new Date(dateString);
     const hari = date.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -531,10 +496,6 @@ function formatTanggalIndonesia(dateString) {
     });
     return `${hari}, ${tanggal} ${bulanIndo[date.getMonth()]} ${tahun} ${jam}`;
 }
-
-// ============================================
-// CLEANUP
-// ============================================
 
 export function cleanupAbsenModule() {
     if (dataStoreUnsubscribe) {

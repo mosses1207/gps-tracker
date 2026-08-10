@@ -40,7 +40,7 @@ export function initializeMap() {
     map.on('zoomstart', matikanAutofokus);
     startInteractionChecker();
 
-    // ← Listener untuk auto update map saat data 'active' berubah
+    // Listener untuk auto update map saat data 'active' berubah
     dataStore.subscribe('active', (payload) => {
         dlog('[MAP LISTENER] Data active berubah:', payload);
 
@@ -49,14 +49,6 @@ export function initializeMap() {
     });
 }
 
-// BUG FIX: dulu beberapa tempat (querysupabase.js) manggil window.recenterMap()
-// langsung tiap ada payload baru, jadi map tetap ke-geser walau admin lagi di
-// mode Manual (habis drag/zoom). window.recenterMap() sendiri SELALU
-// mindahin map (dipakai tombol "center map" yang emang harus maksa pindah).
-//
-// window.autoRecenterMap() ini yang dipanggil tiap ada payload baru — dia
-// cuma recenter kalau mode masih Auto Center. Kalau admin lagi geser manual,
-// fungsi ini gak ngapa-ngapain sampai admin klik tombol center map lagi.
 window.autoRecenterMap = function () {
     if (window.autofokus) {
         window.recenterMap();
@@ -89,8 +81,8 @@ window.recenterMap = async function () {
     } else {
     }
 
-    window.autofokus = true;       // ← fix #2
-    window.lastUserInteraction = 0; // ← fix #2
+    window.autofokus = true;
+    window.lastUserInteraction = 0;
 };
 
 function startInteractionChecker() {

@@ -138,10 +138,6 @@ export function initializeRealtimeSync() {
         const newRecord = payload.new;
         const oldRecord = payload.old;
 
-        // Supabase DELETE gak pernah ngirim `new` (cuma `old`), jadi guard ini
-        // cuma berlaku buat INSERT/UPDATE. Sebelumnya guard ini nge-block SEMUA
-        // event DELETE karena newRecord selalu null buat DELETE -> makanya
-        // delete dari realtime gak pernah kepanggil sampai di-refresh manual.
         if (eventType !== 'DELETE' && !newRecord) {
             console.warn('[WS EVENT] No newRecord found in payload, skipping');
             return;
@@ -283,10 +279,6 @@ async function handleDelete(record) {
         await refreshTableActive();
         await createmarker();
     } else {
-        // Payload DELETE dari Supabase defaultnya cuma bawa primary key
-        // (kolom `status` gak ikut kecuali REPLICA IDENTITY table ini di-set
-        // FULL). Kalau status gak ada, cari id ini di ketiga bucket sekalian —
-        // aman karena id unik per baris, paling cuma satu yang ketemu.
         if (dataStore.getItem('order', id)) {
             dataStore.deleteItem('order', id);
             await refreshTableAbsen();
@@ -340,9 +332,6 @@ export async function requestDataLogistik({ status = null, userId = null, create
 
 let retryCount = 0;
 
-// ============================================
-// QUERY FUNCTIONS - ACTIVE
-// ============================================
 export async function querySupabaseActive() {
     const online = await hasInternet();
     if (!online) {

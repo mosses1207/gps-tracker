@@ -33,9 +33,6 @@ export async function openRealtimeChannel() {
             .subscribe((status, err) => {
                 dlog('[RT] Channel status:', status);
                 if (status === 'SUBSCRIBED') {
-                    // Setiap kali (re)subscribe berhasil — termasuk auto-reconnect
-                    // bawaan supabase-js setelah koneksi sempat putus — tarik data
-                    // yang mungkin kelewat selama channel tidak aktif.
                     fetchMissed();
                 }
                 if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -119,8 +116,6 @@ async function fetchMissed() {
         const rows = data || [];
         if (rows.length) {
             dlog(`[RT HISTORY] Got ${rows.length} historical rows`);
-            // Query di atas descending (created_at terbaru duluan),
-            // dibalik dulu biar diproses dari yang paling lama -> paling baru.
             rows.slice().reverse().forEach((item) => {
                 emit({ eventType: 'INSERT', new: item, old: null });
             });

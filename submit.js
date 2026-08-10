@@ -7,8 +7,7 @@ let isproses = true;
 let retryCount = 0;
 let selectedKordinat = null;
 
-// ─── Ambil data cabang dari Supabase ───────────────────────────────────────
-// ─── Ambil data cabang dari Supabase ───────────────────────────────────────
+
 export async function ambildataCabang() {
     isproses = false;
     const lastEntry = await db.storage.orderBy('created_at').reverse().first();
@@ -20,8 +19,7 @@ export async function ambildataCabang() {
             .select('branch, created_at, leadtime, kordinat')
             .order('created_at', { ascending: false });
 
-        // HANYA tambahkan filter .gt() jika sudah ada data sebelumnya di Dexie/lokal
-        // dan tanggalnya BUKAN tanggal dummy tahun 2000.
+
         if (lastTimestamp && !lastTimestamp.startsWith('2000-01-01')) {
             try {
                 const validDate = new Date(lastTimestamp).toISOString();
@@ -51,12 +49,11 @@ export async function ambildataCabang() {
     }
 }
 
-// ─── Set koordinat tujuan dari luar (dipakai pas prefill form mode edit) ──
 export function setSelectedKordinat(koordinat) {
     selectedKordinat = koordinat;
 }
 
-// ─── Parse koordinat dari string ke { lat, lng } ──────────────────────────
+
 function parseKordinat(str) {
     if (!str) return null;
     const [lat, lng] = str.split(',').map(s => parseFloat(s.trim()));
@@ -64,18 +61,11 @@ function parseKordinat(str) {
     return { lat, lng };
 }
 
-// ─── Validasi nomer rangka (fm1-fm6) gak boleh duplikat ───────────────────
-// Field kosong bebas (gak wajib semua keisi, minimal fm1), tapi antar field
-// yang KEISI gak boleh ada nilai yang sama persis -- ini yang jagain kalau
-// operator gak sadar udah nge-scan unit yang sama dua kali ke fm yang beda.
 const FRAME_FIELD_IDS = ['fm1', 'fm2', 'fm3', 'fm4', 'fm5', 'fm6'];
 const TYPE_FIELD_IDS = ['typefm1', 'typefm2', 'typefm3', 'typefm4', 'typefm5', 'typefm6'];
 const MODEL_FIELD_IDS = ['modelfm1', 'modelfm2', 'modelfm3', 'modelfm4', 'modelfm5', 'modelfm6'];
 const ALAMAT_FIELD_IDS = ['alamatfm1', 'alamatfm2', 'alamatfm3', 'alamatfm4', 'alamatfm5', 'alamatfm6'];
 
-// True selagi applyGroupToForm() lagi nulis value ke fm1-6 secara program.
-// Dipakai buat nyegah trigger lookup bridge ulang gara-gara autofill-nya
-// sendiri (fm2-6 ikut keisi pas fm1 discan, itu bukan "input baru" dari user).
 let isApplyingGroup = false;
 
 function getFrameValues() {
@@ -104,9 +94,7 @@ export function clearFrameFieldErrors() {
     FRAME_FIELD_IDS.forEach(id => document.getElementById(id).classList.remove('input-error'));
 }
 
-// Highlight field yang bentrok, tampilin pesan kalau ada duplikat.
-// Dipanggil tiap ada perubahan di salah satu fm (termasuk pas discan) biar
-// operator langsung sadar begitu scan kedua yang sama masuk, gak nunggu submit.
+
 function validateFrameUniqueness() {
     const dupIds = findDuplicateFrameFields();
     clearFrameFieldErrors();
@@ -117,9 +105,6 @@ function validateFrameUniqueness() {
         return false;
     }
 
-    // Jangan hideMsg() sembarangan -- bisa nimpa pesan error/info lain yang
-    // lagi ditampilin (misal pas proses submit). Cuma bersihin kalau msg yang
-    // lagi nongol emang pesan duplikat fm ini.
     const msgEl = document.getElementById('msg');
     if (msgEl.classList.contains('error') && msgEl.textContent.includes('Nomer rangka gak boleh sama')) {
         hideMsg();
@@ -127,7 +112,7 @@ function validateFrameUniqueness() {
     return true;
 }
 
-// ─── Bridge lokal: 1x input nomer rangka -> autofill fm1-6/type/model/alamat ─
+
 function setFmStatus(index, text, kind) {
     const el = document.getElementById(`fmstatus${index + 1}`);
     if (!el) return;
@@ -139,10 +124,7 @@ export function clearFmStatuses() {
     FRAME_FIELD_IDS.forEach((_, i) => setFmStatus(i, '', ''));
 }
 
-// Timpa fm1-6 + typefm1-6 + modelfm1-6 + alamatfm1-6 pakai 1 grup (idx sama)
-// yang dibalikin bridge. Ini dianggap "data baru" -> nimpa total isian lama
-// di slot-slot itu, baik lagi mode input baru (tab Absen) maupun mode edit
-// (tab instruksi).
+
 function applyGroupToForm(group) {
     const items = Array.isArray(group) ? group : [];
 
@@ -170,11 +152,9 @@ function applyGroupToForm(group) {
     }
 }
 
-// Dipanggil pas salah satu field fm1-6 selesai diisi (blur/Enter). Nomer
-// rangka adalah SATU-SATUNYA trigger ke bridge -- sjkb/tujuan sengaja gak
-// pernah memicu ini karena memang gak ada datanya di sisi python.
+
 async function handleFrameLookup(index) {
-    if (isApplyingGroup) return; // ini autofill program, bukan input user
+    if (isApplyingGroup) return;
 
     const id = FRAME_FIELD_IDS[index];
     const value = document.getElementById(id).value.trim();
@@ -204,7 +184,7 @@ async function handleFrameLookup(index) {
     applyGroupToForm(result.group);
 }
 
-// ─── Init form (panggil setelah DOM ready) ────────────────────────────────
+
 export function initForm() {
     const destInput = document.getElementById('dest');
     const dropdown = document.getElementById('dest-dropdown');
@@ -214,13 +194,10 @@ export function initForm() {
         const el = document.getElementById(id);
         el.addEventListener('input', validateFrameUniqueness);
 
-        // 'change' fire pas blur & value berubah -- pas operator selesai
-        // ngetik/scan 1 nomer rangka, itu yang mancing tanya ke bridge.
+ 
         el.addEventListener('change', () => handleFrameLookup(i));
 
-        // Kalau alat scan ngirim Enter setelah scan, langsung blur biar
-        // 'change' di atas kepicu saat itu juga (gak nunggu operator klik
-        // field lain dulu).
+
         el.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -266,7 +243,6 @@ export function initForm() {
     document.getElementById('btn-submit').addEventListener('click', submitForm);
 }
 
-// ─── Reset ────────────────────────────────────────────────────────────────
 export function resetForm() {
     [
         'sjkb', 'dest',
@@ -331,10 +307,7 @@ export async function submitForm() {
     const databaseId = form?.dataset.recordId; 
     const selectedId = form?.dataset.selectedId;
     const sourceTab = form?.dataset.sourceTab;
-    // Status ikut tab asal form-nya dibuka: dari tab Absen -> "order", dari
-    // tab instruksi -> "instruksi". Tab Active sengaja tidak pernah membuka
-    // form ini (manifest sudah tidak boleh diedit dari situ), jadi tidak
-    // akan pernah masuk sini dengan status lain.
+
     const status = sourceTab === 'absen' ? 'order' : sourceTab === 'instruksi' ? 'instruksi' : null;
 
     if (!selectedId) {
@@ -342,10 +315,7 @@ export async function submitForm() {
         return;
     }
 
-    // databaseId wajib ada dan valid (PK path_history dari Supabase).
-    // Cek eksplisit di sini (bukan cuma andelin validasi backend) karena
-    // kalau id-nya kosong/rusak dari sumber data, backend cuma bakal
-    // balikin 409 "Manifest tidak ditemukan" yang membingungkan admin.
+
     if (!databaseId || databaseId === 'undefined' || databaseId === 'null') {
         showMsg('ID data (primary key) tidak ditemukan untuk baris ini. Coba refresh halaman lalu pilih ulang; kalau masih gagal, cek response /api/request-data atau /api/decrypt — pastikan field "id" ikut dikembalikan.', 'error');
         return;
@@ -499,11 +469,7 @@ async function sendManifestInstruction(instructionPayload) {
     }
 
     try {
-        // Field-nya sama persis kayak body yang dulu dikirim ke /api/send-instruction,
-        // sekarang langsung UPDATE ke Supabase (tabel path_history) by id.
-        // Catatan: field type/model (tfm1-6/mfm1-6) baru terisi kalau nomer
-        // rangka-nya berhasil dicocokkan ke data python lewat bridge lokal —
-        // pastiin kolom tfm1-6/mfm1-6 sudah ada di tabel path_history.
+
         const { error } = await supabase
             .from('path_history')
             .update({

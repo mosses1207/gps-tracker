@@ -10,10 +10,6 @@ let dataStoreUnsubscribe = null;
 const ITEMS_PER_PAGE = 10;
 const tableCache = new Map();
 
-// ============================================
-// INITIALIZATION
-// ============================================
-
 export async function initializeInstruksiModule() {
     setupSearchInstruksi();
 
@@ -63,9 +59,6 @@ async function handleDataStoreChange(payload) {
     }
 }
 
-// ============================================
-// REFRESH & TABLE CREATION
-// ============================================
 
 export async function refreshTableInstruksi() {
     const allData = dataStore.getData('instruksi'); // Ambil dari DataStore
@@ -181,27 +174,17 @@ function attachRowListener(element, id, item) {
         
         form.classList.add('show');
 
-        // Mode edit: data yang udah ada lagi diubah, bukan input baru
         const titleEl = document.getElementById('formCardTitle');
         if (titleEl) titleEl.textContent = 'EDIT PENGIRIMAN';
         document.getElementById('formCard')?.classList.add('form-mode-edit');
 
-        // Field-nya diisi otomatis dari data item yang diklik, jadi admin
-        // tinggal edit bagian yang mau diubah aja.
         populateFormFromItem(item);
     });
 }
 
-// ============================================
-// PREFILL FORM (mode edit)
-// ============================================
-
 function setFieldValue(id, value) {
     const el = document.getElementById(id);
     if (!el) return;
-    // "-" dipakai submit.js sebagai penanda field kosong (fm2-6/alamatfm2-6
-    // yang gak diisi), jadi pas ditampilin balik di form harus kosong lagi,
-    // bukan literal tanda "-".
     el.value = (value && value !== '-') ? value : '';
 }
 
@@ -227,9 +210,6 @@ function populateFormFromItem(item) {
     setFieldValue('alamatfm5', item.afm5);
     setFieldValue('alamatfm6', item.afm6);
 
-    // type/model biasanya belum ada di data instruksi lama (kolom baru),
-    // tapi diisi juga kalau kebetulan sudah ada -- kalau admin scan ulang
-    // nomer rangka di sini, bridge bakal nimpa ini jadi "data baru".
     setFieldValue('typefm1', item.tfm1);
     setFieldValue('typefm2', item.tfm2);
     setFieldValue('typefm3', item.tfm3);
@@ -244,8 +224,6 @@ function populateFormFromItem(item) {
     setFieldValue('modelfm5', item.mfm5);
     setFieldValue('modelfm6', item.mfm6);
 
-    // Koordinat tujuan ikut diisi dari data lama, biar admin gak wajib
-    // pilih ulang dari dropdown kalau tujuannya emang gak diubah.
     if (item.lattujuan && item.langtujuan) {
         setSelectedKordinat({
             lat: parseFloat(item.lattujuan),
@@ -326,10 +304,6 @@ function removeTableRow(id) {
     tableCache.delete(id);
 }
 
-// ============================================
-// PAGINATION & SEARCH
-// ============================================
-
 export function setupSearchInstruksi() {
     const input = document.getElementById('searchInput4');
     if (!input) return;
@@ -398,10 +372,6 @@ export function renderPaginationButtons(totalItems) {
     }
 }
 
-// ============================================
-// UTILITY
-// ============================================
-
 function formatTanggalIndonesia(dateString) {
     const date = new Date(dateString);
     const hari = date.toLocaleDateString('id-ID', { weekday: 'long' });
@@ -419,8 +389,6 @@ function formatTanggalIndonesia(dateString) {
     return `${hari}, ${tanggal} ${bulanIndo[date.getMonth()]} ${tahun} ${jam}`;
 }
 
-// Dipanggil dari notifications.js waktu notif instruksi timeout di-klik:
-// reset search, loncat ke halaman yang sesuai, lalu scroll+kedip kartunya.
 export async function focusInstruksiCard(user_id) {
     const searchInput = document.getElementById('searchInput4');
     if (searchInput) searchInput.value = '';
@@ -443,10 +411,6 @@ export async function focusInstruksiCard(user_id) {
         }
     }, 60);
 }
-
-// ============================================
-// CLEANUP
-// ============================================
 
 export function cleanupInstruksiModule() {
     if (dataStoreUnsubscribe) {

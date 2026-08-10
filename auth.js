@@ -363,10 +363,6 @@ function clearRetryTimeout() {
     }
 }
 
-// Data dari Supabase sekarang plain text (gak ada AES lagi), jadi gak perlu
-// lagi request key ke API luar. `secret` dibiarin ada (key selalu null)
-// supaya aes.js (kalau ada yang masih import) tetap aman kompilasi —
-// decryptData/encryptData di sana sudah pass-through kalau secret.key kosong.
 export const secret = {
     key: null
 };
