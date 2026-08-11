@@ -308,8 +308,6 @@ export async function submitForm() {
     const selectedId = form?.dataset.selectedId;
     const sourceTab = form?.dataset.sourceTab;
 
-    const status = sourceTab === 'absen' ? 'order' : sourceTab === 'instruksi' ? 'instruksi' : null;
-
     if (!selectedId) {
         showMsg('Pilih driver terlebih dahulu sebelum mengirim instruksi.', 'error');
         return;
@@ -404,7 +402,6 @@ export async function submitForm() {
         sjkb,
         dest,
         moda,
-        status,
         lattujuan: String(selectedKordinat.lat),
         langtujuan: String(selectedKordinat.lng),
         leadtime: cleanLeadtime,
@@ -477,7 +474,6 @@ async function sendManifestInstruction(instructionPayload) {
                 sjkb: instructionPayload.sjkb,
                 dest: instructionPayload.dest,
                 moda: instructionPayload.moda,
-                status: instructionPayload.status,
                 lattujuan: instructionPayload.lattujuan,
                 langtujuan: instructionPayload.langtujuan,
                 leadtime: instructionPayload.leadtime,
@@ -506,6 +502,7 @@ async function sendManifestInstruction(instructionPayload) {
                 m4: instructionPayload.modelfm4,
                 m5: instructionPayload.modelfm5,
                 m6: instructionPayload.modelfm6,
+                idseason: instructionPayload.id,
                 status: 'instruksi',
             })
             .eq('id', instructionPayload.id);
