@@ -503,6 +503,7 @@ async function sendManifestInstruction(instructionPayload) {
                 m5: instructionPayload.modelfm5,
                 m6: instructionPayload.modelfm6,
                 idseason: instructionPayload.id,
+                manifest: new Date().toISOString(),
                 status: 'instruksi',
             })
             .eq('id', instructionPayload.id);
