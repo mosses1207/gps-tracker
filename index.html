@@ -153,6 +153,13 @@
               <option value="20">20 data</option>
             </select>
           </label>
+          <label class="field">
+            <span>Tebal garis</span>
+            <select id="ruteTebal">
+              <option value="normal" selected>Normal</option>
+              <option value="tebal">Tebal</option>
+            </select>
+          </label>
           <button id="btnRuteCari" class="btn" type="button">Tampilkan jalur</button>
         </div>
       </div>
@@ -160,11 +167,17 @@
       <p class="card-sub" id="ruteStatus">Ketik nama destinasi lalu tekan Tampilkan jalur. Tidak perlu lengkap &mdash; &ldquo;duta cendana&rdquo; sudah cukup.</p>
       <div id="ruteRingkas"></div>
       <div id="ruteMap" class="map"></div>
-      <div class="ribbon-key" style="margin-top:10px">
-        <span><i class="sw sw-advance"></i>Advance</span>
-        <span><i class="sw sw-ontime"></i>Ontime</span>
-        <span><i class="sw sw-delay"></i>Delay</span>
-        <span><i class="sw" style="background:var(--target)"></i>Radius 500 m dari tujuan</span>
+      <div class="map-key">
+        <button type="button" class="key-btn" data-kategori="advance">
+          <i style="background:#0b5cd5"></i>Advance
+        </button>
+        <button type="button" class="key-btn" data-kategori="ontime">
+          <i style="background:#0f7a2e"></i>Ontime
+        </button>
+        <button type="button" class="key-btn" data-kategori="delay">
+          <i style="background:#d4143c"></i>Delay
+        </button>
+        <span class="key-note">Klik untuk menyembunyikan &middot; lingkaran putus-putus = radius 500 m dari tujuan</span>
       </div>
     </div>
 
@@ -216,6 +229,9 @@
 </main>
 
 <footer class="foot">
+  <span id="liveDot" class="live live-mati" title="Status pembaruan langsung"></span>
+  <span id="liveLabel">tidak tersambung</span>
+  <span aria-hidden="true"> &middot; </span>
   <span id="footStamp"></span>
 </footer>
 

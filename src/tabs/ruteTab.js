@@ -17,11 +17,25 @@ import { emptyHtml } from '../lib/ribbon.js';
    pernah dilewati siapa pun.
    =========================================================================== */
 
+/* Warna di peta sengaja lebih pekat daripada warna tabel. Di tabel, warna
+   duduk di atas kertas putih polos; di peta ia harus menang melawan jalan,
+   sungai, dan label kota. Nada yang enak dilihat di tabel jadi lembek di sini. */
 const WARNA = {
-  advance: '#2e6f8e',
-  ontime: '#3f7d52',
-  delay: '#b23b2e',
+  advance: '#0b5cd5',
+  ontime: '#0f7a2e',
+  delay: '#d4143c',
 };
+
+/* Tiap jalur digambar dua lapis: garis putih lebar di bawah, garis berwarna
+   di atasnya. Teknik lama pembuat peta — tanpa lapisan putih ini, garis apa
+   pun akan lebur begitu melintas di atas jalan tol yang warnanya mirip. */
+const TEBAL = {
+  normal: { casing: 7, garis: 4, opasitas: 0.8 },
+  tebal: { casing: 11, garis: 7, opasitas: 0.9 },
+};
+
+let modeTebal = 'normal';
+const kategoriAktif = new Set(['advance', 'ontime', 'delay']);
 
 let map = null;
 let layerJalur = null;
@@ -64,9 +78,12 @@ function ensureMap() {
   if (map) return map;
 
   map = L.map('ruteMap', { scrollWheelZoom: false });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: '&copy; Kontributor OpenStreetMap',
+  // Basemap terang dan minim warna. Ini perbaikan keterbacaan yang paling
+  // besar: ubin OpenStreetMap standar penuh warna sendiri, sehingga garis
+  // rute harus bersaing dengan latar belakangnya.
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    attribution: '&copy; Kontributor OpenStreetMap &copy; CARTO',
   }).addTo(map);
   map.setView([-6.25, 106.9], 9);
 
@@ -84,40 +101,63 @@ function drawRoutes(rows) {
   layerJalur.clearLayers();
   layerTitik.clearLayers();
 
+  const ukuran = TEBAL[modeTebal];
   const semua = [];
 
   for (const r of rows) {
     const pts = decodePolyline(r.coords);
     if (pts.length < 2) continue;
     semua.push(...pts);
+    if (!kategoriAktif.has(r.kategori)) continue;
+
+    const warna = WARNA[r.kategori] ?? '#47576a';
 
     L.polyline(pts, {
-      color: WARNA[r.kategori] ?? '#47576a',
-      weight: 3,
-      opacity: 0.32,
+      color: '#ffffff',
+      weight: ukuran.casing,
+      opacity: 0.9,
       lineJoin: 'round',
-    }).addTo(layerJalur).bindPopup(
+      interactive: false,
+    }).addTo(layerJalur);
+
+    const garis = L.polyline(pts, {
+      color: warna,
+      weight: ukuran.garis,
+      opacity: ukuran.opasitas,
+      lineJoin: 'round',
+    }).addTo(layerJalur);
+
+    garis.bindPopup(
       `<b>${escapeHtml(r.driver ?? '-')}</b><br>${escapeHtml(r.vendor ?? '-')}<br>` +
       `${fmtDateID(r.hari)} &middot; ${fmtMinutes(Number(r.menit_aktual))} ` +
       `(${Math.round(Number(r.rasio_pct))}% target)`,
     );
+
+    // Satu jalur bisa ditelusuri dari tumpukan: yang disentuh naik ke depan
+    // dan menebal, sisanya tetap di tempatnya.
+    garis.on('mouseover', () => {
+      garis.setStyle({ weight: ukuran.garis + 4, opacity: 1 });
+      garis.bringToFront();
+    });
+    garis.on('mouseout', () => {
+      garis.setStyle({ weight: ukuran.garis, opacity: ukuran.opasitas });
+    });
   }
 
   const first = rows[0];
   if (first?.lat_tujuan != null && first?.lng_tujuan != null) {
     const tujuan = [first.lat_tujuan, first.lng_tujuan];
     semua.push(tujuan);
-    // Lingkaran 500 m: ambang yang dipakai menentukan jam sampai.
-    L.circle(tujuan, { radius: 500, color: '#c8860d', weight: 1, fillOpacity: 0.08 })
+    L.circle(tujuan, { radius: 500, color: '#b06a00', weight: 2, dashArray: '5,4', fillOpacity: 0.06 })
       .addTo(layerTitik);
-    L.circleMarker(tujuan, { radius: 6, color: '#c8860d', fillColor: '#c8860d', fillOpacity: 1 })
+    L.circleMarker(tujuan, { radius: 8, color: '#ffffff', weight: 3, fillColor: '#b06a00', fillOpacity: 1 })
       .addTo(layerTitik).bindPopup('Titik tujuan');
   }
 
   if (first?.lat_start != null && first?.lng_start != null) {
     const asal = [first.lat_start, first.lng_start];
     semua.push(asal);
-    L.circleMarker(asal, { radius: 6, color: '#16202b', fillColor: '#fff', fillOpacity: 1, weight: 2 })
+    L.circleMarker(asal, { radius: 8, color: '#ffffff', weight: 3, fillColor: '#16202b', fillOpacity: 1 })
       .addTo(layerTitik).bindPopup(escapeHtml(first.lokasi ?? 'Titik berangkat'));
   }
 
@@ -125,6 +165,12 @@ function drawRoutes(rows) {
     map.fitBounds(L.latLngBounds(semua), { padding: [24, 24] });
   }
   setTimeout(() => map.invalidateSize(), 60);
+}
+
+/** Gambar ulang tanpa mengambil data lagi — dipakai saat tebal garis atau
+ *  saringan kategori diubah. */
+function ulangGambar() {
+  if (lastRows.length > 0) drawRoutes(lastRows);
 }
 
 /* ------------------------------------------------------------------ daftar */
@@ -255,6 +301,26 @@ async function cari() {
 
 export function initRute() {
   document.getElementById('btnRuteCari').addEventListener('click', cari);
+
+  document.getElementById('ruteTebal').addEventListener('change', (e) => {
+    modeTebal = e.target.value;
+    ulangGambar();
+  });
+
+  // Legenda merangkap saringan. Menyembunyikan kategori lain adalah cara
+  // paling ampuh membaca tumpukan jalur: sisakan yang delay saja, lalu
+  // bandingkan dengan yang ontime saja.
+  document.querySelectorAll('[data-kategori]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const k = el.dataset.kategori;
+      if (kategoriAktif.has(k)) kategoriAktif.delete(k); else kategoriAktif.add(k);
+      if (kategoriAktif.size === 0) kategoriAktif.add(k);   // jangan sampai kosong
+      document.querySelectorAll('[data-kategori]').forEach((b) => {
+        b.classList.toggle('mati', !kategoriAktif.has(b.dataset.kategori));
+      });
+      ulangGambar();
+    });
+  });
   document.getElementById('ruteDest').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); cari(); }
   });

@@ -1,6 +1,7 @@
 import './style.css';
 import { getCurrentUser, signOut, onAuthStateChange } from './lib/supabase.js';
 import { fetchLeadtime, fetchDateBounds } from './lib/leadtimeService.js';
+import { startRealtime } from './lib/realtime.js';
 import { fmtInt } from './lib/aggregate.js';
 import { renderRingkasan } from './tabs/ringkasanTab.js';
 import { initDestinasi, renderDestinasi, resetDestinasiState } from './tabs/destinasiTab.js';
@@ -50,6 +51,63 @@ function repaintAll() {
   state.rendered.clear();
   paintTab(state.tab);
   state.rendered.add(state.tab);
+}
+
+/* ---------------------------------------------------------------- realtime */
+
+const LABEL_STATUS = {
+  nyala: 'pembaruan langsung aktif',
+  putus: 'sambungan terputus, mencoba lagi',
+  jeda: 'dijeda selagi tab tidak aktif',
+  mati: 'tidak tersambung',
+};
+
+function setStatusLive(s) {
+  const dot = document.getElementById('liveDot');
+  const label = document.getElementById('liveLabel');
+  if (!dot || !label) return;
+  dot.className = `live live-${s}`;
+  label.textContent = LABEL_STATUS[s] ?? s;
+}
+
+/** Baris di luar rentang tanggal aktif diabaikan — filternya harus tetap jujur. */
+function dalamRentang(hari) {
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+  if (from && hari < from) return false;
+  if (to && hari > to) return false;
+  return true;
+}
+
+function terapkanPerubahan(batch) {
+  const indeks = new Map(state.all.map((r, i) => [r.trip_id, i]));
+  let berubah = 0;
+
+  for (const p of batch) {
+    if (p.eventType === 'DELETE') {
+      const i = indeks.get(p.old?.trip_id);
+      if (i != null) { state.all.splice(i, 1); indeks.delete(p.old.trip_id); berubah++; }
+      continue;
+    }
+
+    const row = p.new;
+    if (!row || !dalamRentang(row.hari)) continue;
+
+    const i = indeks.get(row.trip_id);
+    if (i == null) {
+      state.all.push(row);
+      indeks.set(row.trip_id, state.all.length - 1);
+    } else {
+      state.all[i] = row;
+    }
+    berubah++;
+  }
+
+  if (berubah === 0) return;
+
+  // Destinasi baru bisa ikut masuk, jadi pilihan lokasi disegarkan juga.
+  fillLokasiOptions();
+  applyLokasiFilter();
 }
 
 /* ----------------------------------------------------------------- filters */
@@ -202,6 +260,14 @@ async function init() {
   }
 
   await reload();
+
+  // Realtime dinyalakan setelah muat awal selesai: kalau lebih dulu, batch
+  // pertama bisa datang ke state yang belum ada isinya.
+  startRealtime({
+    onBatch: terapkanPerubahan,
+    onStatus: setStatusLive,
+    onKembali: reload,   // ada perubahan yang lewat selama tab tersembunyi
+  });
 }
 
 onAuthStateChange((session) => {
