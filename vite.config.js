@@ -1,47 +1,16 @@
 import { defineConfig } from 'vite';
-import obfuscator from 'vite-plugin-javascript-obfuscator';
+import { resolve } from 'path';
 
 export default defineConfig({
-  server: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-      'Cross-Origin-Embedder-Policy': 'unsafe-none',
-    }
-  },
-  preview: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-      'Cross-Origin-Embedder-Policy': 'unsafe-none',
-    }
-  },
-  plugins: [
-    obfuscator({
-      options: {
-        compact: true,
-        controlFlowFlattening: true,
-        controlFlowFlatteningThreshold: 0.75,
-        deadCodeInjection: true,
-        deadCodeInjectionThreshold: 0.2,
-        stringArray: true,
-        stringArrayEncoding: ['rc4'],
-        stringArrayThreshold: 1,
-        rotateStringArray: true,
-        shuffleStringArray: true,
-        splitStrings: true,
-        splitStringsChunkLength: 5,
-        selfDefending: false,
-        simplify: false,
-        identifierNamesGenerator: 'hexadecimal',
-        renameGlobals: false,
-        numbersToExpressions: true,
-        disableConsoleOutput: true,
-        transformObjectKeys: true,
-        unicodeEscapeSequence: false
+  build: {
+    sourcemap: false,
+    // Vite hanya membundel index.html secara bawaan. login.html harus
+    // didaftarkan sendiri, kalau tidak halaman login hilang saat build.
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        login: resolve(__dirname, 'login.html'),
       },
-    }),
-  ],
-  esbuild: {
-    // Mematikan console.log, console.error, console.warn, dan debugger di production build
-    drop: ['console', 'debugger'],
+    },
   },
 });

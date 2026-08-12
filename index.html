@@ -1,493 +1,224 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self' https://accounts.google.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://accounts.google.com;
-    font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
-    img-src 'self' data: https://*.tile.openstreetmap.org;
-    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.gstatic.com https://accounts.google.com https: wss:;
-    frame-src https://accounts.google.com;
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-  ">
-  <title>GPS Dashboard</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/png" href="/Toyota-Logo-Free.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
-    rel="stylesheet">
-  <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RateTrip &middot; Waktu Sampai</title>
+<link rel="icon" href="/Toyota-Logo-Free.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 </head>
-
 <body>
-  <div class="bodyform">
-    <div class="card" id="formCard">
-      <button class="btn-close" id="btn-close-form">✕</button>
-      <p class="card-title" id="formCardTitle">Input pengiriman</p>
-      <div class="form-group">
-        <label>No. SJKB</label>
-        <input type="text" id="sjkb" placeholder="Contoh: NVDCCIB/20260513/0011/U4" />
-      </div>
 
-      <div class="form-group">
-        <label>Tujuan</label>
-        <div class="autocomplete-wrapper">
-          <input type="text" id="dest" placeholder="Cari tujuan..." autocomplete="off" />
-          <div class="dropdown" id="dest-dropdown"></div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Leadtime <span class="hint">(otomatis dari tujuan)</span></label>
-        <input type="text" id="leadtime" placeholder="—" disabled />
-      </div>
-
-      <div class="form-group">
-        <label>Moda</label>
-        <select id="moda">
-          <option value="" disabled selected>Pilih moda</option>
-          <option value="Self Drive">Self Drive</option>
-          <option value="Single Carrier">Single Carrier</option>
-          <option value="Car Carrier">Car Carrier</option>
-          <option value="Double Carrier">Double Carrier</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Nomer Rangka <span class="hint">(isi salah satu unit, sisanya otomatis dari data python)</span></label>
-      </div>
-
-      <div class="rowfm-unit" data-unit="1">
-        <div class="form-group">
-          <label>Nomer Rangka 1</label>
-          <input type="text" id="fm1" placeholder="Contoh: MHKM5EA3JKK123456" />
-          <span class="fm-status" id="fmstatus1"></span>
-        </div>
-        <div class="rowfm-sub">
-          <div class="form-group">
-            <label>Type</label>
-            <input type="text" id="typefm1" placeholder="—" disabled />
-          </div>
-          <div class="form-group">
-            <label>Warna</label>
-            <input type="text" id="modelfm1" placeholder="—" disabled />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Alamat</label>
-          <input type="text" id="alamatfm1" placeholder="Contoh: TO B01" />
-        </div>
-      </div>
-
-      <div class="rowfm-unit" data-unit="2">
-        <div class="form-group">
-          <label>Nomer Rangka 2</label>
-          <input type="text" id="fm2" placeholder="Contoh: MHKM5EA3JKK123456" />
-          <span class="fm-status" id="fmstatus2"></span>
-        </div>
-        <div class="rowfm-sub">
-          <div class="form-group">
-            <label>Type</label>
-            <input type="text" id="typefm2" placeholder="—" disabled />
-          </div>
-          <div class="form-group">
-            <label>Warna</label>
-            <input type="text" id="modelfm2" placeholder="—" disabled />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Alamat</label>
-          <input type="text" id="alamatfm2" placeholder="Contoh: TO B01" />
-        </div>
-      </div>
-
-      <div class="rowfm-unit" data-unit="3">
-        <div class="form-group">
-          <label>Nomer Rangka 3</label>
-          <input type="text" id="fm3" placeholder="Contoh: MHKM5EA3JKK123456" />
-          <span class="fm-status" id="fmstatus3"></span>
-        </div>
-        <div class="rowfm-sub">
-          <div class="form-group">
-            <label>Type</label>
-            <input type="text" id="typefm3" placeholder="—" disabled />
-          </div>
-          <div class="form-group">
-            <label>Warna</label>
-            <input type="text" id="modelfm3" placeholder="—" disabled />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Alamat</label>
-          <input type="text" id="alamatfm3" placeholder="Contoh: TO B01" />
-        </div>
-      </div>
-
-      <div class="rowfm-unit" data-unit="4">
-        <div class="form-group">
-          <label>Nomer Rangka 4</label>
-          <input type="text" id="fm4" placeholder="Contoh: MHKM5EA3JKK123456" />
-          <span class="fm-status" id="fmstatus4"></span>
-        </div>
-        <div class="rowfm-sub">
-          <div class="form-group">
-            <label>Type</label>
-            <input type="text" id="typefm4" placeholder="—" disabled />
-          </div>
-          <div class="form-group">
-            <label>Warna</label>
-            <input type="text" id="modelfm4" placeholder="—" disabled />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Alamat</label>
-          <input type="text" id="alamatfm4" placeholder="Contoh: TO B01" />
-        </div>
-      </div>
-
-      <div class="rowfm-unit" data-unit="5">
-        <div class="form-group">
-          <label>Nomer Rangka 5</label>
-          <input type="text" id="fm5" placeholder="Contoh: MHKM5EA3JKK123456" />
-          <span class="fm-status" id="fmstatus5"></span>
-        </div>
-        <div class="rowfm-sub">
-          <div class="form-group">
-            <label>Type</label>
-            <input type="text" id="typefm5" placeholder="—" disabled />
-          </div>
-          <div class="form-group">
-            <label>Warna</label>
-            <input type="text" id="modelfm5" placeholder="—" disabled />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Alamat</label>
-          <input type="text" id="alamatfm5" placeholder="Contoh: TO B01" />
-        </div>
-      </div>
-
-      <div class="rowfm-unit" data-unit="6">
-        <div class="form-group">
-          <label>Nomer Rangka 6</label>
-          <input type="text" id="fm6" placeholder="Contoh: MHKM5EA3JKK123456" />
-          <span class="fm-status" id="fmstatus6"></span>
-        </div>
-        <div class="rowfm-sub">
-          <div class="form-group">
-            <label>Type</label>
-            <input type="text" id="typefm6" placeholder="—" disabled />
-          </div>
-          <div class="form-group">
-            <label>Warna</label>
-            <input type="text" id="modelfm6" placeholder="—" disabled />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Alamat</label>
-          <input type="text" id="alamatfm6" placeholder="Contoh: TO B01" />
-        </div>
-      </div>
-
-      <div class="msg" id="msg"></div>
-
-      <div class="actions">
-        <button class="btn-reset" id="btn-reset">Reset</button>
-        <button class="btn-submit" id="btn-submit">Simpan</button>
-      </div>
+<header class="topbar">
+  <div class="brand">
+    <img src="/Toyota-Logo-Free.png" alt="" class="brand-mark" />
+    <div>
+      <div class="brand-name">RateTrip</div>
+      <div class="brand-sub">Waktu sampai per destinasi</div>
     </div>
   </div>
 
-
-  <div class="container">
-    <aside class="sidebar" id="sidebar">
-      <button id="sidebarToggleBtn" class="sidebar-toggle-btn" type="button" title="Sembunyikan sidebar">
-        <i class="fa-solid fa-chevron-left"></i>
-      </button>
-      <div class="header-container">
-        <div class="sidebar-header">
-          <div class="image-header">
-            <img src="/Toyota-Logo-Free.png" alt="Toyota Logo" class="logo">
-          </div>
-          <div class="text-header">
-            <h2 class="sidebar-title">Delivery Monitoring</h2>
-            <span class="sidebar-subtitle">NVDC CIBITUNG</span>
-          </div>
-          <div class="header-actions">
-            <div class="notif-wrapper">
-              <button id="notifBtn" class="notif-btn" type="button" title="Notifikasi">
-                <i class="fa-solid fa-bell"></i>
-                <span id="notifBadgeCount" class="notif-badge-count"></span>
-              </button>
-            </div>
-            <div class="settings-wrapper">
-              <button id="settingsBtn" class="settings-btn" type="button" title="Pengaturan">
-                <i class="fa-solid fa-gear"></i>
-              </button>
-              <div id="settingsPanel" class="settings-panel">
-                <p class="settings-panel-title">Tampilkan Moda</p>
-                <label class="settings-check-item">
-                  <input type="checkbox" data-moda="Self Drive">
-                  <span>Self Drive</span>
-                </label>
-                <label class="settings-check-item">
-                  <input type="checkbox" data-moda="Single Carrier">
-                  <span>Single Carrier</span>
-                </label>
-                <label class="settings-check-item">
-                  <input type="checkbox" data-moda="Car Carrier">
-                  <span>Car Carrier</span>
-                </label>
-                <label class="settings-check-item">
-                  <input type="checkbox" data-moda="Double Carrier">
-                  <span>Double Carrier</span>
-                </label>
-                <div class="settings-divider"></div>
-                <p class="settings-panel-title">Bridge Data (Python)</p>
-                <div class="settings-bridge-row">
-                  <input type="text" id="bridgeUrlInput" placeholder="https://192.168.1.5:8877" />
-                  <button id="bridgeUrlSaveBtn" type="button" class="settings-bridge-save-btn" title="Simpan alamat bridge">
-                    <i class="fa-solid fa-check"></i>
-                  </button>
-                </div>
-                <span class="settings-bridge-hint" id="bridgeUrlHint">Alamat ini muncul di aplikasi Helper Push Data pas tombol Start bridge diklik.</span>
-                <div class="settings-divider"></div>
-                <button id="settingsLogoutBtn" class="settings-logout-btn" type="button">
-                  <i class="fa-solid fa-right-from-bracket"></i>
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
-            <div id="notifPanel" class="notif-panel">
-              <div class="notif-panel-header">
-                <span class="notif-panel-title">
-                  <i class="fa-solid fa-bell"></i> Notifikasi
-                </span>
-                <span id="notifPanelCount" class="notif-panel-count">0</span>
-              </div>
-              <div id="notifList" class="notif-list">
-                <div class="notif-empty" id="notifEmpty">
-                  <i class="fa-regular fa-circle-check"></i>
-                  <span>Aman, gak ada reminder saat ini.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="tabs-container">
-        <div class="tabs-header">
-          <button class="tab-btn active" id="tab-btn-active" data-content="konten2">
-            <i class="fa-solid fa-route tab-icon-symbol"></i><span class="tab-label">Active</span>
-          </button>
-          <button class="tab-btn" id="tab-btn-absen" data-content="konten1">
-            <i class="fa-solid fa-clipboard-check tab-icon-symbol"></i><span class="tab-label">Absen</span><span
-              id="tab-icon" class="badge">0</span>
-          </button>
-          <button class="tab-btn" id="tab-btn-instruksi" data-content="konten4">
-            <i class="fa-solid fa-list-check tab-icon-symbol"></i><span class="tab-label">instruksi</span>
-          </button>
-        </div>
-        <div id="konten2" class="tab-content active">
-          <div class="search-wrapper">
-            <input type="text" id="searchInput2" placeholder="Cari Driver Active...">
-          </div>
-          <div class="active-container"></div>
-          <div class="pagination" id="pagination2"></div>
-        </div>
-        <div id="konten1" class="tab-content">
-          <div class="search-wrapper">
-            <input type="text" id="searchInput1" placeholder="Cari Absen Driver...">
-          </div>
-          <div class="active-container"></div>
-          <div class="pagination" id="pagination1"></div>
-        </div>
-        <div id="konten4" class="tab-content">
-          <div class="search-wrapper">
-            <input type="text" id="searchInput4" placeholder="Cari instruksi.">
-          </div>
-          <div class="active-container"></div>
-          <div class="pagination" id="pagination4"></div>
-        </div>
-      </div>
-
-    </aside>
-    <div class="map-container">
-      <main class="map-area" id="map"></main>
-      <button id="recenterBtn" class="recenter-btn">🖥️</button>
-      <div id="statusmap">Mode: Auto Center</div>
-      <div id="offline-status"></div>
-      <div id="syncBadge" class="sync-badge"></div>
-    </div>
+  <div class="filters">
+    <label class="field">
+      <span>Lokasi asal</span>
+      <select id="filterLokasi"><option value="">Semua lokasi</option></select>
+    </label>
+    <label class="field">
+      <span>Dari</span>
+      <input type="date" id="filterFrom" />
+    </label>
+    <label class="field">
+      <span>Sampai</span>
+      <input type="date" id="filterTo" />
+    </label>
+    <button id="btnReset" class="btn-ghost" type="button">Semua tanggal</button>
   </div>
 
-  <!-- Form wajib alamat/port Helper Bridge, muncul otomatis kalau PWA belum konek -->
-  <div id="bridgeSetupOverlay" class="bridge-setup-overlay">
-    <div class="login-card bridge-setup-card">
-      <button class="btn-close" id="bridgeSetupCloseBtn" title="Tutup, sambungkan nanti">✕</button>
-      <p class="login-eyebrow"><i class="fa-solid fa-tower-broadcast"></i> Sambungkan Helper Bridge</p>
-      <p class="login-subtitle">PWA belum terhubung ke aplikasi Helper Bridge di komputer admin. Buka tab "Bridge" di
-        Helper, klik Start, lalu masukkan alamat HTTPS dari helper di bawah ini.</p>
-      <div class="login-form-wrap">
-        <div class="form-group-light">
-          <label class="login-label">Alamat Bridge (HTTPS)</label>
-          <input type="text" id="bridgeSetupUrlInput" class="login-input" placeholder="https://192.168.1.10:8877" />
-        </div>
-        <button id="bridgeSetupSaveBtn" type="button" class="btn-login">Simpan &amp; Sambungkan</button>
-        <span class="bridge-setup-hint" id="bridgeSetupHint">PWA dan komputer admin harus ada di jaringan WiFi/LAN
-          yang sama.</span>
-      </div>
-    </div>
+  <div class="top-actions">
+    <button id="btnPrint" class="btn-ghost" type="button">Cetak</button>
+    <button id="btnLogout" class="btn-ghost" type="button">Keluar</button>
   </div>
+</header>
 
-  <!-- class login overlay-->
-  <div id="login-overlay">
-    <div class="login-card">
-      <div id="area-google" class="fade-in">
-        <p class="login-eyebrow">Selamat Datang</p>
-        <p class="login-subtitle">Silakan login untuk melanjutkan.</p>
-        <div class="login-form-wrap">
-          <form id="login-form">
-            <div class="form-group-light">
-              <label class="login-label">Email</label>
-              <input type="email" id="login-email" autocomplete="email" placeholder="nama@email.com"
-                class="login-input">
-            </div>
-            <div class="password-group">
-              <label class="password-label">Password</label>
-              <div class="password-wrapper">
-                <input type="password" id="login-password" autocomplete="current-password" class="password-input"
-                  placeholder="••••••••">
-                <button type="button" class="toggle-password" id="eyebuton">
-                  <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                    fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <button id="handleManualLogin" type="submit" class="btn-login">
-              Masuk ke Sistem
-            </button>
-          </form>
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="ringkasan">Ringkasan</button>
+  <button class="tab" data-tab="destinasi">Destinasi</button>
+  <button class="tab" data-tab="ekspedisi">Ekspedisi</button>
+  <button class="tab" data-tab="rute">Rute</button>
+  <button class="tab" data-tab="jam">Jam kirim</button>
+  <button class="tab" data-tab="kualitas">Kualitas data</button>
+</nav>
+
+<main class="main" id="main">
+  <div id="loading" class="state">Mengambil data&hellip;</div>
+  <div id="fatal" class="state state-error" hidden></div>
+
+  <!-- ============================ RINGKASAN ============================ -->
+  <section class="panel" id="tab-ringkasan" hidden>
+    <div class="hero">
+      <div class="hero-figure">
+        <div class="hero-num" id="heroOntime">&ndash;</div>
+        <div class="hero-label">tepat waktu</div>
+        <div class="hero-note" id="heroBasis"></div>
+      </div>
+
+      <div class="hero-ribbon">
+        <div class="ribbon-head">
+          <span>Sebaran seluruh trip terhadap target</span>
         </div>
-        <div class="login-divider">
-          <span></span>
-          <em>ATAU</em>
-          <span></span>
-        </div>
-        <div id="google-login-btn" class="google-btn-container"></div>
-        <div class="login-secure-note">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          <span>SECURED BY GOOGLE AUTH &amp; SUPABASE</span>
+        <div class="ribbon" id="heroRibbon"></div>
+        <div class="ribbon-key">
+          <span><i class="sw sw-advance"></i>Advance &lt;70%</span>
+          <span><i class="sw sw-ontime"></i>Ontime 70&ndash;100%</span>
+          <span><i class="sw sw-delay"></i>Delay &gt;100%</span>
         </div>
       </div>
-    </div>
-  </div>
-  <!-- end class login overlay-->
 
-  <!-- class loading overlay-->
-  <div id="loading-overlay">
-    <div id="loading-box">
-      <div class="spinner"></div>
-      <p id="loading-text">Memproses...</p>
+      <dl class="hero-stats">
+        <div><dt>Median</dt><dd id="heroMedian">&ndash;</dd></div>
+        <div><dt>Rata-rata</dt><dd id="heroMean">&ndash;</dd></div>
+        <div><dt>P90</dt><dd id="heroP90">&ndash;</dd></div>
+        <div><dt>Destinasi</dt><dd id="heroDest">&ndash;</dd></div>
+      </dl>
     </div>
-  </div>
-  <!-- end class loading overlay-->
 
-  <!-- class ofline screen-->
-  <div id="offline-screen" class="offline-overlay" style="display: none;">
-    <div class="offline-box">
-      <div class="offline-icon">📡</div>
-      <h2>Koneksi Terputus</h2>
-      <p id="offline-message">
-        Aplikasi sedang berjalan dalam mode offline.<br>
-        Data akan disinkronkan saat koneksi kembali.
-      </p>
-      <div class="signal-loader">
-        <span></span>
-        <span></span>
-        <span></span>
+    <div class="grid-2">
+      <div class="card">
+        <h2>Tren harian</h2>
+        <p class="card-sub">Persentase tepat waktu dan jumlah trip per hari berangkat</p>
+        <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
       </div>
-      <span class="offline-footer">
-        Menunggu koneksi...<br><br>
-        <button id="btn-reload-offline" class="reload-btn">
-          Muat Ulang Halaman
-        </button>
-      </span>
-    </div>
-  </div>
-  <!-- end class ofline screen-->
-
-  <!-- class logout confirm overlay-->
-  <div id="logoutConfirmOverlay" class="logout-confirm-overlay">
-    <div class="logout-confirm-modal">
-      <p class="logout-confirm-title">Keluar dari sistem?</p>
-      <p class="logout-confirm-text">Anda perlu login ulang untuk mengakses dashboard ini lagi.</p>
-      <div class="logout-confirm-actions">
-        <button id="logoutConfirmNo" class="btn-cancel-modal" type="button">Batal</button>
-        <button id="logoutConfirmYes" class="btn-confirm-danger" type="button">Ya, Logout</button>
+      <div class="card">
+        <h2>Perlu perhatian</h2>
+        <p class="card-sub">Destinasi dengan porsi delay tertinggi, minimal 5 trip</p>
+        <div id="topDelay" class="mini-list"></div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- end class logout confirm overlay-->
-
-  <!-- class arrival confirm overlay-->
-  <div id="arrivalConfirmOverlay" class="logout-confirm-overlay">
-    <div class="logout-confirm-modal">
-      <p class="logout-confirm-title">Selesaikan Perjalanan</p>
-      <p class="logout-confirm-text">
-        Dipakai kalau perjalanan terhenti di tengah jalan (insiden dll) dan
-        tidak bisa dilanjutkan sampai tujuan. Status akan diubah dari
-        <b>Active</b> ke <b>Arrival</b>.
-      </p>
-      <div class="form-group" style="text-align: left;">
-        <label>Alasan</label>
-        <textarea id="arrivalReason" class="modal-textarea" rows="3"
-          placeholder="Contoh: Kecelakaan di KM 45, unit tidak bisa lanjut ke tujuan"></textarea>
-        <p id="arrivalErrorMsg" class="modal-error-text" style="display:none;"></p>
+  <!-- ============================ DESTINASI ============================ -->
+  <section class="panel" id="tab-destinasi" hidden>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Waktu sampai per destinasi</h2>
+          <p class="card-sub">Klik satu baris untuk memecah per moda, lalu per ekspedisi</p>
+        </div>
+        <label class="field field-inline">
+          <span>Urutkan</span>
+          <select id="sortDest">
+            <option value="delay">Delay tertinggi</option>
+            <option value="ontime">Tepat waktu terendah</option>
+            <option value="median">Median terlama</option>
+            <option value="trips">Trip terbanyak</option>
+            <option value="nama">Nama destinasi</option>
+          </select>
+        </label>
       </div>
-      <div class="logout-confirm-actions">
-        <button id="arrivalConfirmNo" class="btn-cancel-modal" type="button">Batal</button>
-        <button id="arrivalConfirmYes" class="btn-confirm-danger" type="button">Ya, Set Arrival</button>
+      <div id="destTable" class="lt"></div>
+    </div>
+  </section>
+
+  <!-- ============================ EKSPEDISI ============================ -->
+  <section class="panel" id="tab-ekspedisi" hidden>
+    <div class="card">
+      <h2>Ketepatan per ekspedisi</h2>
+      <p class="card-sub">Semua destinasi digabung. Minimal 3 trip agar tampil.</p>
+      <div id="vendorTable" class="lt"></div>
+    </div>
+  </section>
+
+  <!-- ============================== RUTE ============================== -->
+  <section class="panel" id="tab-rute" hidden>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Jalur yang dilewati</h2>
+          <p class="card-sub">Jalur tiap trip digambar bertumpuk. Ruas yang dilewati banyak trip terlihat lebih pekat.</p>
+        </div>
+        <div class="filters">
+          <label class="field">
+            <span>Destinasi</span>
+            <input id="ruteDest" list="ruteDestList" autocomplete="off"
+                   placeholder="Ketik nama destinasi&hellip;" />
+            <datalist id="ruteDestList"></datalist>
+          </label>
+          <label class="field">
+            <span>Jumlah trip</span>
+            <select id="ruteJumlah">
+              <option value="5">5 data</option>
+              <option value="10" selected>10 data</option>
+              <option value="20">20 data</option>
+            </select>
+          </label>
+          <button id="btnRuteCari" class="btn" type="button">Tampilkan jalur</button>
+        </div>
+      </div>
+
+      <p class="card-sub" id="ruteStatus">Ketik nama destinasi lalu tekan Tampilkan jalur. Tidak perlu lengkap &mdash; &ldquo;duta cendana&rdquo; sudah cukup.</p>
+      <div id="ruteRingkas"></div>
+      <div id="ruteMap" class="map"></div>
+      <div class="ribbon-key" style="margin-top:10px">
+        <span><i class="sw sw-advance"></i>Advance</span>
+        <span><i class="sw sw-ontime"></i>Ontime</span>
+        <span><i class="sw sw-delay"></i>Delay</span>
+        <span><i class="sw" style="background:var(--target)"></i>Radius 500 m dari tujuan</span>
       </div>
     </div>
-  </div>
-  <!-- end class arrival confirm overlay-->
 
-  <!-- class delete absen confirm overlay-->
-  <div id="deleteAbsenConfirmOverlay" class="logout-confirm-overlay">
-    <div class="logout-confirm-modal">
-      <p class="logout-confirm-title">Hapus data absen?</p>
-      <p class="logout-confirm-text">
-        Data absen <b id="deleteAbsenDriverName"></b> akan dihapus permanen
-        dan tidak bisa dikembalikan.
-      </p>
-      <p id="deleteAbsenErrorMsg" class="modal-error-text" style="display:none;"></p>
-      <div class="logout-confirm-actions">
-        <button id="deleteAbsenConfirmNo" class="btn-cancel-modal" type="button">Batal</button>
-        <button id="deleteAbsenConfirmYes" class="btn-confirm-danger" type="button">Ya, Hapus</button>
+    <div class="card">
+      <h2>Trip yang digambar</h2>
+      <p class="card-sub">Klik garis di peta untuk melihat trip mana yang bersangkutan.</p>
+      <div id="ruteDaftar" class="lt lt-compact"></div>
+    </div>
+  </section>
+
+  <!-- ============================ JAM KIRIM ============================ -->
+  <section class="panel" id="tab-jam" hidden>
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Pengaruh jam berangkat</h2>
+          <p class="card-sub">Median menit dan ketepatan menurut jam keberangkatan (WIB)</p>
+        </div>
+        <label class="field field-inline">
+          <span>Destinasi</span>
+          <select id="jamDest"><option value="">Semua destinasi</option></select>
+        </label>
+      </div>
+      <div class="chart-wrap chart-tall"><canvas id="chartJam"></canvas></div>
+      <div id="jamTable" class="lt lt-compact"></div>
+    </div>
+  </section>
+
+  <!-- ============================ KUALITAS ============================ -->
+  <section class="panel" id="tab-kualitas" hidden>
+    <div class="grid-2">
+      <div class="card">
+        <h2>Trip yang tidak dihitung</h2>
+        <p class="card-sub">Angka di tab lain hanya memakai trip valid. Ini sisanya.</p>
+        <div id="alasanList" class="mini-list"></div>
+      </div>
+      <div class="card">
+        <h2>Cakupan per destinasi</h2>
+        <p class="card-sub">Porsi trip valid. Yang rendah biasanya soal koordinat tujuan, bukan sopirnya.</p>
+        <div id="cakupanTable" class="lt lt-compact"></div>
       </div>
     </div>
-  </div>
-  <!-- end class delete absen confirm overlay-->
-  <script type="module" src="/index.js"></script>
+    <div class="card">
+      <h2>Unduh data</h2>
+      <p class="card-sub">Satu baris per trip, mengikuti filter yang sedang aktif.</p>
+      <button id="btnCsv" class="btn" type="button">Unduh CSV</button>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span id="footStamp"></span>
+</footer>
+
+<script type="module" src="/src/main.js"></script>
 </body>
-
 </html>

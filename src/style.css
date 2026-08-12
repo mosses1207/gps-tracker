@@ -1,0 +1,596 @@
+/* ===========================================================================
+   RateTrip — papan jadwal keberangkatan
+   Tanda khas: pita rasio. Satu baris per destinasi, skala sama untuk semua,
+   dan garis target 100% membentuk satu rule vertikal utuh sepanjang tabel.
+   =========================================================================== */
+
+:root {
+  --ink:      #16202b;
+  --ink-2:    #47576a;
+  --ink-3:    #7b8b9c;
+  --paper:    #edeff0;
+  --surface:  #ffffff;
+  --rule:     #d5dadd;
+  --rule-2:   #e6eaec;
+
+  /* Advance sengaja biru, bukan hijau: jauh lebih cepat dari target itu
+     tanda targetnya keliru atau kendaraannya ngebut — bukan prestasi. */
+  --advance:  #2e6f8e;
+  --ontime:   #3f7d52;
+  --delay:    #b23b2e;
+  --target:   #c8860d;
+
+  --advance-soft: #dceaf1;
+  --ontime-soft:  #dfeee4;
+  --delay-soft:   #f7dedb;
+
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-body:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Skala pita: 0% .. 200% dari target. Garis target duduk di 50%. */
+  --ribbon-max: 200;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ topbar */
+
+.topbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding: 14px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+}
+
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+.brand-mark { width: 34px; height: auto; }
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+.brand-sub { font-size: 12px; color: var(--ink-3); }
+
+.filters { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field > span {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.field-inline { flex-direction: row; align-items: center; gap: 8px; }
+.field-inline > span { text-transform: none; letter-spacing: 0; font-size: 12px; }
+
+select, input[type="date"] {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 5px 8px;
+  min-width: 130px;
+}
+select:focus-visible, input:focus-visible, button:focus-visible {
+  outline: 2px solid var(--advance);
+  outline-offset: 1px;
+}
+
+.top-actions { display: flex; gap: 6px; }
+
+.btn, .btn-ghost {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink-2);
+}
+.btn { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 500; }
+.btn:hover { background: #223243; }
+.btn-ghost:hover { background: var(--paper); color: var(--ink); }
+
+/* -------------------------------------------------------------------- tabs */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+  overflow-x: auto;
+}
+
+.tab {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--ink); }
+.tab.active { color: var(--ink); border-bottom-color: var(--target); }
+
+/* -------------------------------------------------------------------- main */
+
+.main { padding: 20px 24px 40px; max-width: 1500px; }
+.panel[hidden] { display: none; }
+
+.state {
+  padding: 40px 0;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+.state-error {
+  color: var(--delay);
+  background: var(--delay-soft);
+  border-left: 3px solid var(--delay);
+  padding: 14px 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.card h2 { font-size: 15px; }
+.card-sub { margin: 3px 0 14px; font-size: 12px; color: var(--ink-3); }
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.card-head .card-sub { margin-bottom: 14px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* -------------------------------------------------------------------- hero */
+
+.hero {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 32px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+
+.hero-figure { text-align: left; }
+.hero-num {
+  font-family: var(--font-mono);
+  font-size: 52px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ontime);
+}
+.hero-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-top: 6px;
+}
+.hero-note { font-size: 12px; color: var(--ink-3); margin-top: 3px; }
+
+.hero-ribbon { min-width: 0; }
+.ribbon-head {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+.ribbon {
+  display: flex;
+  height: 30px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--rule-2);
+}
+.ribbon > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  min-width: 0;
+  overflow: hidden;
+}
+.ribbon-key {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ink-2);
+  flex-wrap: wrap;
+}
+.ribbon-key span { display: flex; align-items: center; gap: 5px; }
+.sw { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.sw-advance { background: var(--advance); }
+.sw-ontime  { background: var(--ontime); }
+.sw-delay   { background: var(--delay); }
+
+.hero-stats { display: flex; gap: 22px; margin: 0; }
+.hero-stats dt {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.hero-stats dd {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================ TANDA KHAS: pita rasio ======================
+   Setiap baris memakai skala 0..200% target yang sama, jadi garis target
+   berdiri di titik horizontal yang persis sama di semua baris dan membentuk
+   satu garis lurus turun sepanjang tabel.
+   ========================================================================= */
+
+.lt { width: 100%; }
+
+.lt-head, .lt-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) 62px 62px 62px minmax(200px, 3fr) 74px;
+  gap: 12px;
+  align-items: center;
+  padding: 7px 0;
+}
+
+.lt-head {
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 2;
+}
+
+.lt-row { border-bottom: 1px solid var(--rule-2); }
+.lt-row.clickable { cursor: pointer; }
+.lt-row.clickable:hover { background: #f6f8f9; }
+.lt-row.lvl-1 { padding-left: 18px; background: #fafbfc; }
+.lt-row.lvl-2 { padding-left: 36px; background: #fafbfc; }
+
+.lt-name { font-weight: 500; min-width: 0; }
+.lt-name small { display: block; font-weight: 400; font-size: 11px; color: var(--ink-3); }
+.lt-name .caret { color: var(--ink-3); font-size: 10px; margin-right: 5px; }
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  text-align: right;
+}
+.num-dim { color: var(--ink-3); }
+.num-head { text-align: right; }
+
+/* pita */
+.bar {
+  position: relative;
+  height: 17px;
+  background: var(--rule-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bar-seg { position: absolute; top: 0; bottom: 0; }
+.bar-advance { background: var(--advance); }
+.bar-ontime  { background: var(--ontime); }
+.bar-delay   { background: var(--delay); }
+
+/* garis target: 100% dari skala 0..200 = tepat separuh */
+.bar-target {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 50%;
+  width: 1px;
+  background: var(--target);
+  z-index: 1;
+}
+.bar-target::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 5px;
+  height: 3px;
+  background: var(--target);
+}
+
+.pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  padding: 2px 0;
+  border-radius: 2px;
+}
+.pill-good { background: var(--ontime-soft); color: var(--ontime); }
+.pill-warn { background: #fbeed4; color: var(--target); }
+.pill-bad  { background: var(--delay-soft); color: var(--delay); }
+
+/* varian ringkas untuk tabel tanpa pita */
+.lt-compact .lt-head, .lt-compact .lt-row {
+  grid-template-columns: minmax(160px, 3fr) 62px 62px 62px 74px;
+}
+
+/* ekspedisi memakai kolom sama dengan destinasi */
+.lt-vendor .lt-head, .lt-vendor .lt-row {
+  grid-template-columns: minmax(200px, 2fr) 62px 62px 62px minmax(200px, 3fr) 74px;
+}
+
+/* --------------------------------------------------------------- mini list */
+
+.mini-list { display: flex; flex-direction: column; }
+.mini-row {
+  display: grid;
+  grid-template-columns: 1fr auto 90px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule-2);
+}
+.mini-row:last-child { border-bottom: 0; }
+.mini-row .lbl { min-width: 0; }
+.mini-row .lbl small { display: block; font-size: 11px; color: var(--ink-3); }
+.mini-bar { height: 6px; background: var(--rule-2); border-radius: 3px; overflow: hidden; }
+.mini-bar > i { display: block; height: 100%; background: var(--delay); }
+
+/* ------------------------------------------------------------------ charts */
+
+.chart-wrap { position: relative; height: 260px; }
+
+/* Peta rute. Tinggi tetap supaya tata letak tidak melompat saat jalur dimuat. */
+.map {
+  height: 460px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--rule-2);
+}
+.leaflet-container { font-family: var(--font-body); font-size: 12px; }
+@media (max-width: 720px) { .map { height: 340px; } }
+@media print { .map { height: 320px; } }
+.chart-tall { height: 300px; margin-bottom: 18px; }
+
+/* -------------------------------------------------------------------- foot */
+
+.foot {
+  padding: 0 24px 26px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.notice {
+  background: #fbeed4;
+  border-left: 3px solid var(--target);
+  color: #6b4708;
+  padding: 11px 14px;
+  border-radius: 3px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.notice strong { font-weight: 600; }
+
+.empty { padding: 26px 0; color: var(--ink-3); font-size: 13px; }
+
+/* ------------------------------------------------------------- responsive */
+
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: 1fr; gap: 18px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .lt-head, .lt-row,
+  .lt-vendor .lt-head, .lt-vendor .lt-row {
+    grid-template-columns: minmax(140px, 2fr) 54px 54px minmax(140px, 3fr) 66px;
+  }
+  .lt-compact .lt-head, .lt-compact .lt-row {
+    grid-template-columns: minmax(140px, 3fr) 54px 54px 66px;
+  }
+  .lt-head .hide-sm, .lt-row .hide-sm { display: none; }
+}
+
+@media (max-width: 720px) {
+  .topbar { align-items: stretch; gap: 14px; }
+  .brand { margin-right: 0; }
+  .main { padding: 16px 14px 30px; }
+  .hero-num { font-size: 40px; }
+  .hero-stats { flex-wrap: wrap; gap: 16px; }
+  .lt-head, .lt-row,
+  .lt-vendor .lt-head, .lt-vendor .lt-row,
+  .lt-compact .lt-head, .lt-compact .lt-row {
+    grid-template-columns: 1fr 52px 62px;
+  }
+  .lt-head .hide-xs, .lt-row .hide-xs { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ------------------------------------------------------------------- cetak */
+/* Menjawab keluhan lama: hasil cetak memuat seluruh isi tab, termasuk bagian
+   yang harus discroll di layar — bukan cuma yang kelihatan. */
+
+@media print {
+  @page { size: A4 landscape; margin: 12mm; }
+  body { background: #fff; font-size: 11px; }
+  .topbar, .tabs, .top-actions, .filters, .foot, .btn, .btn-ghost { display: none !important; }
+  .panel[hidden] { display: none; }
+  .card, .hero { border-color: #bbb; break-inside: avoid; }
+  .chart-wrap { height: 200px; }
+  .lt-head { position: static; }
+  .lt-row { break-inside: avoid; }
+}
+
+/* ======================================================================
+   Halaman masuk. Memakai token yang sama dengan dashboard supaya tidak
+   terasa seperti dua aplikasi berbeda.
+   ====================================================================== */
+
+.login-container, .signup-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 372px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 32px 30px;
+}
+
+.login-header { margin-bottom: 22px; }
+.login-header .brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+.brand-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+.login-header h1, .login-header h2 { font-size: 19px; }
+.login-sub { margin: 5px 0 0; font-size: 13px; color: var(--ink-3); }
+
+.login-form { display: flex; flex-direction: column; gap: 15px; }
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.form-group input {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 9px 11px;
+  width: 100%;
+}
+.form-group input:focus-visible {
+  outline: 2px solid var(--advance);
+  outline-offset: 1px;
+}
+
+.btn-login {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  padding: 10px 14px;
+  cursor: pointer;
+  position: relative;
+}
+.btn-login:hover { background: #223243; }
+.btn-login:disabled { opacity: 0.55; cursor: default; }
+
+.btn-loader { display: none; gap: 4px; align-items: center; justify-content: center; }
+.btn-login.loading .btn-text { display: none; }
+.btn-login.loading .btn-loader { display: flex; }
+.btn-loader .dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor; opacity: 0.5;
+  animation: blink 1.2s infinite;
+}
+.btn-loader .dot:nth-child(2) { animation-delay: 0.2s; }
+.btn-loader .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+
+.login-error, .login-success {
+  font-size: 13px;
+  padding: 9px 11px;
+  border-radius: 3px;
+  display: none;
+}
+.login-error:not(:empty) {
+  display: block;
+  color: var(--delay);
+  background: var(--delay-soft);
+  border-left: 3px solid var(--delay);
+}
+.login-success:not(:empty) {
+  display: block;
+  color: var(--ontime);
+  background: var(--ontime-soft);
+  border-left: 3px solid var(--ontime);
+}
+
+.login-footer {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
+}
+.login-footer a { color: var(--advance); font-weight: 500; text-decoration: none; }
+.login-footer a:hover { text-decoration: underline; }
